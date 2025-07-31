@@ -83,6 +83,20 @@ function Home() {
         fetchAllData();
     }, [selectedLeague]);
 
+    // Check if all participants have made predictions for all matches
+    const allPredictionsMade = () => {
+        if (participants.length === 0 || matches.length === 0) return false;
+
+        return participants.every(participant => {
+            return matches.every(match => {
+                return predictions.some(prediction =>
+                    prediction.match_id === match.id &&
+                    prediction.User?.id === participant.User?.id
+                );
+            });
+        });
+    };
+
     if (leagues.length === 0 && !loading) {
         return (
             <div style={{
@@ -155,52 +169,49 @@ function Home() {
                 {/* Predicciones */}
                 <Col xs={24} md={18}>
                     <Card title="Predicciones de la semana" loading={loading} style={{ height: '100%' }}>
-
-                        {/* Encabezado: Partidos */}
-                        <div className="d-flex align-items-center mb-3 flex-wrap">
-                            <div style={{ minWidth: 60 }}>
-                                <Text strong>Partidos</Text>
-                            </div>
-                            <div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap">
-                                {matches.map((match) => (
-                                    <Tooltip title={match.Teams[0]?.name + ' vs ' + match.Teams[1]?.name}>
-
-                                        <div
-                                            key={match.id}
-                                            className="text-center rounded shadow-sm"
-                                            style={{ minWidth: 140, flex: '1 0 140px' }}
-                                        >
-                                            <div className="d-flex align-items-center justify-content-center mb-2">
-                                                <Image preview={false} src={match.Teams[0]?.logo_url} width={24} height={24} />
-                                                <Text strong className="mx-2">vs</Text>
-                                                <Image preview={false} src={match.Teams[1]?.logo_url} width={24} height={24} />
+                        {allPredictionsMade() ? (
+                            <div className="d-flex align-items-center mb-3 flex-wrap">
+                                <div style={{ minWidth: 60 }}>
+                                    <Text strong>Partidos</Text>
+                                </div>
+                                <div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap">
+                                    {matches.map((match) => (
+                                        <Tooltip key={match.id} title={match.Teams[0]?.name + ' vs ' + match.Teams[1]?.name}>
+                                            <div
+                                                className="text-center rounded shadow-sm"
+                                                style={{ minWidth: 140, flex: '1 0 140px' }}
+                                            >
+                                                <div className="d-flex align-items-center justify-content-center mb-2">
+                                                    <Image preview={false} src={match.Teams[0]?.logo_url} width={24} height={24} />
+                                                    <Text strong className="mx-2">vs</Text>
+                                                    <Image preview={false} src={match.Teams[1]?.logo_url} width={24} height={24} />
+                                                </div>
                                             </div>
+                                        </Tooltip>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                            </>
+                        )}
+
+                        {allPredictionsMade() ? (
+                            /* Show predictions */
+                            participants.map((participation) => (
+                                <div key={participation.User.id} className="d-flex align-items-center py-3 border-bottom flex-wrap">
+                                    <Tooltip title={participation.User.username}>
+                                        <div style={{ minWidth: 60 }} className="d-flex align-items-center ps-2 pe-2">
+                                            <Avatar
+                                                src={participation.User.logo_url}
+                                                icon={<UserOutlined />}
+                                                className="me-2"
+                                            />
                                         </div>
                                     </Tooltip>
-                                ))}
-                            </div>
-                        </div>
 
-                        {/* Participantes y predicciones */}
-                        {participants.map((participation) => (
-                            <div key={participation.User.id} className="d-flex align-items-center py-3 border-bottom flex-wrap">
-
-                                {/* Usuario */}
-                                <Tooltip title={participation.User.username}>
-
-                                    <div style={{ minWidth: 60 }} className="d-flex align-items-center ps-2 pe-2">
-                                        <Avatar
-                                            src={participation.User.logo_url}
-                                            icon={<UserOutlined />}
-                                            className="me-2"
-                                        />
-                                    </div>
-                                </Tooltip>
-
-                                {/* Predicciones */}
-                                < div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap" >
-                                    {
-                                        matches.map((match) => {
+                                    <div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap">
+                                        {matches.map((match) => {
                                             const prediction = predictions.find(
                                                 (p) => p.match_id === match.id && p.User?.id === participation.User?.id
                                             );
@@ -210,27 +221,19 @@ function Home() {
                                                 : null;
                                             const backgroundColor = (() => {
                                                 if (prediction?.winner === undefined) {
-                                                    // No hizo predicción aún
                                                     return 'rgba(240, 240, 240, 0.2)';
                                                 }
-
                                                 if (!result) {
-                                                    // Hay predicción, pero aún no llegó el resultado
                                                     return 'rgba(154, 176, 218, 0.2)';
                                                 }
-
-                                                // Hay predicción y resultado, ahora comparar
                                                 return result?.winner === prediction?.winner
-                                                    ? 'rgba(40, 167, 69, 0.2)' // Predicción acertada
-                                                    : 'rgba(214, 148, 148, 0.34)'; // Predicción fallida
+                                                    ? 'rgba(40, 167, 69, 0.2)'
+                                                    : 'rgba(214, 148, 148, 0.34)';
                                             })();
 
-
                                             return (
-                                                <Tooltip title={predictedTeam?.name}>
-
+                                                <Tooltip key={match.id} title={predictedTeam?.name}>
                                                     <div
-                                                        key={match.id}
                                                         className="text-center px-3 py-2 rounded"
                                                         style={{
                                                             minWidth: 140,
@@ -278,11 +281,23 @@ function Home() {
                                                     </div>
                                                 </Tooltip>
                                             );
-                                        })
-                                    }
+                                        })}
+                                    </div>
                                 </div>
+                            ))
+                        ) : (
+                            <div style={{
+                                textAlign: 'center',
+                                padding: '40px 20px',
+                                backgroundColor: "transparent",
+                                borderRadius: '8px',
+                                margin: '20px 0'
+                            }}>
+                                <Text type="secondary" style={{ fontSize: '16px' }}>
+                                    Las predicciones se mostrarán cuando todos los participantes hayan realizado sus pronósticos
+                                </Text>
                             </div>
-                        ))}
+                        )}
                     </Card>
                 </Col>
             </Row >
