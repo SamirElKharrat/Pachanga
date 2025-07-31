@@ -1,0 +1,420 @@
+/* Modern Dark Theme with League Spartan */
+:root {
+    /* Color Palette */
+    --bg-primary: #0F172A;
+    --bg-secondary: #1E293B;
+    --bg-tertiary: #334155;
+    --text-primary: #FFFFFF;
+    /* Changed to pure white */
+    --text-secondary: #FFFFFF;
+    /* Changed to pure white */
+    --primary: #3B82F6;
+    --primary-hover: #60A5FA;
+    --accent: #8B5CF6;
+    --success: #10B981;
+    --error: #EF4444;
+    --border: #2D3748;
+
+    /* Typography */
+    --font-sans: 'League Spartan', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Spacing */
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+
+    /* Shadows */
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* Transitions */
+    --transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+main {
+    background-color: #F0F0F0 !important;
+}
+
+
+/* Force all text to be white */
+* {
+    color: #FFFFFF !important;
+}
+
+p {
+    color: #000000 !important;
+}
+
+
+/* Override specific elements that might need different colors */
+.ant-table-thead>tr>th {
+    color: #FFFFFF !important;
+}
+
+/* Cards */
+.ant-card,
+.card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+    color: var(--text-primary);
+}
+
+.ant-card:hover,
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.ant-card-head,
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.ant-card-head-title,
+.card-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.125rem;
+    margin: 0;
+}
+
+.ant-card-body,
+.card-body {
+    padding: var(--spacing-lg);
+    color: var(--text-primary);
+}
+
+/* Bootstrap card specific overrides */
+.card {
+    border-color: var(--border);
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border);
+}
+
+.card-footer {
+    background-color: transparent;
+    border-top: 1px solid var(--border);
+    padding: var(--spacing-md) var(--spacing-lg);
+}
+
+/* Ensure text colors in cards */
+.card,
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card h5,
+.card h6,
+.card p {
+    color: var(--text-primary) !important;
+}
+
+/* Tables */
+.ant-table {
+    background: #0f172a !important;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.ant-table-container {
+    border-radius: 8px !important;
+    overflow: hidden;
+}
+
+.ant-table-thead>tr>th {
+    background: #0f172a !important;
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding: 0.875rem 1.25rem !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+.ant-table-tbody>tr>td {
+    background: #0f172a !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03) !important;
+    color: var(--text-primary);
+    padding: 0.75rem 1.25rem !important;
+    transition: var(--transition);
+    border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+
+.ant-table-tbody>tr.ant-table-row:hover>td {
+    background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.ant-table-tbody>tr:nth-child(even)>td {
+    background: #0c1221 !important;
+}
+
+.ant-table-tbody>tr:last-child>td {
+    border-bottom: none !important;
+}
+
+.ant-pagination {
+    color: var(--text-primary);
+}
+
+.ant-pagination-item {
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.03) !important;
+    margin-right: 8px;
+    border-radius: 4px;
+}
+
+.ant-pagination-item-active,
+.ant-pagination-item:hover {
+    background: rgba(59, 130, 246, 0.1) !important;
+    border-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.ant-pagination-item-link {
+    color: var(--text-primary);
+}
+
+
+/* User Menu */
+.ant-menu {
+    background: transparent !important;
+    border-right: none !important;
+    font-family: var(--font-sans);
+}
+
+.ant-menu-item {
+    margin: 0.25rem 0.5rem !important;
+    border-radius: 8px !important;
+    transition: var(--transition) !important;
+    font-weight: 500;
+}
+
+.ant-menu-item:hover {
+    color: var(--primary) !important;
+    background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.ant-menu-item-selected {
+    background: rgba(59, 130, 246, 0.2) !important;
+    color: var(--primary) !important;
+    font-weight: 600;
+}
+
+.ant-menu-item .anticon {
+    font-size: 1.25rem;
+    margin-right: 0.75rem;
+}
+
+/* Selects */
+.ant-select-selector {
+    background: var(--bg-tertiary) !important;
+    border: none !important;
+    color: var(--text-primary) !important;
+    border-radius: 6px !important;
+    padding: 0.5rem 1rem !important;
+    font-family: var(--font-sans) !important;
+    transition: var(--transition) !important;
+    box-shadow: none !important;
+}
+
+.ant-select-focused .ant-select-selector {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+}
+
+.ant-select-selection-placeholder {
+    color: var(--text-secondary) !important;
+    opacity: 0.8;
+}
+
+.ant-select-dropdown {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.ant-select-item {
+    color: var(--text-primary) !important;
+    transition: var(--transition) !important;
+}
+
+.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+    background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background: rgba(59, 130, 246, 0.5) !important;
+    color: var(--primary) !important;
+    font-weight: 600;
+}
+
+/* Inputs */
+.ant-input {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: transparent !important;
+    border-radius: 6px !important;
+    padding: 0.5rem 1rem !important;
+    font-family: var(--font-sans) !important;
+    transition: var(--transition) !important;
+    box-shadow: none !important;
+}
+
+.ant-input-password {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: transparent !important;
+    border-radius: 6px !important;
+    padding: 0.5rem 1rem !important;
+    font-family: var(--font-sans) !important;
+    transition: var(--transition) !important;
+    box-shadow: none !important;
+}
+
+
+.ant-input::placeholder {
+    color: var(--text-primary) !important;
+}
+
+.ant-form-item-explain-error {
+    color: var(--error) !important;
+}
+
+
+/* Date Picker */
+.ant-picker {
+    background: var(--bg-tertiary) !important;
+    border: transparent !important;
+    border-radius: 6px !important;
+    padding: 0.5rem 1rem !important;
+    font-family: var(--font-sans) !important;
+    transition: var(--transition) !important;
+    box-shadow: none !important;
+}
+
+.ant-picker-input>input::placeholder {
+    color: var(--text-primary) !important;
+}
+
+.ant-picker-panel {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.ant-picker-cell-inner {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.ant-picker-cell-selected .ant-picker-cell-inner,
+.ant-picker-cell-range-start .ant-picker-cell-inner,
+.ant-picker-cell-range-end .ant-picker-cell-inner {
+    background-color: var(--primary) !important;
+}
+
+.ant-picker-cell-inner:hover {
+    background-color: var(--bg-secondary) !important;
+}
+
+.ant-picker-footer {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+.ant-picker-today-btn,
+.ant-picker-now-btn {
+    color: var(--primary) !important;
+}
+
+.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+    background-color: var(--primary) !important;
+}
+
+.ant-picker-time-panel-cell-inner:hover {
+    background-color: var(--bg-secondary) !important;
+}
+
+/*Search Input*/
+.ant-input-affix-wrapper {
+    background-color: var(--bg-tertiary) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+.ant-input-search-button {
+    background-color: var(--bg-tertiary) !important;
+    border: none !important;
+    color: var(--text-primary) !important;
+}
+
+/* Modals */
+.ant-modal-content {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+.ant-modal-header {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.ant-modal-body {
+    color: var(--text-primary) !important;
+}
+
+.ant-modal-footer {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.ant-btn span {
+    color: var(--text-primary) !important;
+}
+
+.ant-btn-default span {
+    color: var(--bg-primary) !important;
+}
+
+.ant-btn-primary span {
+    color: var(--bg-primary) !important;
+}
+
+/*Alerts*/
+.ant-message-notice-content {
+    background-color: var(--bg-tertiary) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Carousel */
+.ant-carousel {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-radius: 6px !important;
+}
+
+/*Footer*/
+.ant-layout-footer {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/*User Dropdown*/
+.ant-dropdown-menu {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+/*No Content*/
+.noContent {
+    color: var(--bg-primary) !important;
+}

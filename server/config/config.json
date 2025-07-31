@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "samir123",
+    "database": "pachanga",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "samir123",
+    "database": "pachanga_test",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "samir123",
+    "database": "pachanga_prod",
+    "host": "localhost",
+    "dialect": "postgres"
+  }
+}
