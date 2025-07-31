@@ -87,7 +87,7 @@ const NextGames = () => {
             slidesToShow={1}
             slidesToScroll={1}
         >
-            {groupMatches([...nextGames].sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate))).map((group, i) => (
+            {groupMatches([...nextGames].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate))).map((group, i) => (
                 <div key={i} className='d-flex justify-content-around align-items-center'>
                     {group.map((match) => (
                         <div

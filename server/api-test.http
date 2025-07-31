@@ -48,10 +48,10 @@ POST http://localhost:3001/api/users/register
 Content-Type: application/json
 
 {
-  "username": "Samir",
-  "email": "samir@pachanga.com",
+  "username": "Admin",
+  "email": "admin@pachanga.com",
   "password": "pachanga123!",
-  "role": 2
+  "role": 1
 }
 
 ### Login user

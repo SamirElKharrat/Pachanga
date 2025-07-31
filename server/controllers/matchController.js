@@ -3,6 +3,7 @@ const Match = require('../models/match');
 const Team = require('../models/team');
 const Prediction = require('../models/prediction');
 const Result = require('../models/result');
+const { startOfWeek, endOfWeek } = require('./weekController');
 
 
 // Get all matches
@@ -43,22 +44,14 @@ exports.getTeamsFromMatch = async (req, res) => {
 //Get all matches of the current week
 exports.getCurrentWeekMatches = async (req, res) => {
     try {
-        // Recogo el primer dia de la semana
-        const now = new Date();
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Lunes siendo el primer día
-        const startOfWeek = new Date(now.setDate(diff));
-        startOfWeek.setHours(0, 0, 0, 0);
-        console.log(startOfWeek)
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6); // Fin de la semana (domingo)
-        endOfWeek.setHours(23, 59, 59, 999);
+        const currentStartOfWeek = startOfWeek();
+        const currentEndOfWeek = endOfWeek();
 
         const matches = await Match.findAll({
             where: {
                 date: {
-                    [Op.gte]: startOfWeek.toISOString(),
-                    [Op.lte]: endOfWeek.toISOString() // Menor o igual
+                    [Op.gte]: currentStartOfWeek.toISOString(),
+                    [Op.lte]: currentEndOfWeek.toISOString() // Menor o igual
                 }
             },
             include: [{
@@ -79,22 +72,14 @@ exports.getCurrentWeekMatches = async (req, res) => {
 exports.getCurrentWeekMatchesByLeague = async (req, res) => {
     const league_id = req.params.league_id
     try {
-        // Recogo el primer dia de la semana
-        const now = new Date();
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Lunes siendo el primer día
-        const startOfWeek = new Date(now.setDate(diff));
-        startOfWeek.setHours(0, 0, 0, 0);
-        console.log(startOfWeek)
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6); // Fin de la semana (domingo)
-        endOfWeek.setHours(23, 59, 59, 999);
+        const currentStartOfWeek = startOfWeek();
+        const currentEndOfWeek = endOfWeek();
 
         const matches = await Match.findAll({
             where: {
                 date: {
-                    [Op.gte]: startOfWeek.toISOString(),
-                    [Op.lte]: endOfWeek.toISOString() // Menor o igual
+                    [Op.gte]: currentStartOfWeek.toISOString(),
+                    [Op.lte]: currentEndOfWeek.toISOString() // Menor o igual
                 },
                 league_id: league_id
             },
