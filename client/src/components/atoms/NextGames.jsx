@@ -34,12 +34,13 @@ const NextGames = () => {
                 const filterDate = response.map(match => ({
                     ...match,
                     rawDate: new Date(match.date), // Para ordenar
-                    formattedDate: new Intl.DateTimeFormat('es-AR', {
+                    formattedDate: new Intl.DateTimeFormat('es-ES', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
+                        hour12: false
                     }).format(new Date(match.date))
                 }));
                 //All user participations in leagues
@@ -58,6 +59,34 @@ const NextGames = () => {
         };
         fetchData();
     }, [location.key]);
+
+    useEffect(() => {
+        const checkLiveMatches = async () => {
+            const now = new Date();
+
+            setNextGames(prevGames =>
+                prevGames.map(game => {
+                    const matchDate = new Date(game.date);
+                    // If match time has come and status is still 'scheduled' or similar
+                    if (matchDate <= now && game.status === 'scheduled') {
+                        // Update status in the backend
+                        API.put('/matches/update/' + game.id, { status: 'live' });
+                        // Optimistically update UI
+                        return { ...game, status: 'live' };
+                    }
+                    return game;
+                })
+            );
+        };
+
+        // Check immediately
+        checkLiveMatches();
+
+        // Then check every 30 seconds (more efficient than every minute)
+        const interval = setInterval(checkLiveMatches, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
 
     if (loading) {
         return <Skeleton className='container mt-5' />;

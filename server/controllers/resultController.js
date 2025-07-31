@@ -2,8 +2,10 @@ const Result = require('../models/result');
 const Match = require('../models/match');
 const Prediction = require('../models/prediction');
 const LeagueParticipation = require('../models/leagueParticipation');
+const Team = require('../models/team');
+const User = require('../models/user');
+const FavoriteTeam = require('../models/favoriteTeam');
 const { authenticateJwtToken } = require('../middlewares/auth');
-
 
 // Get all results
 exports.getAllResults = async (req, res) => {
@@ -48,38 +50,71 @@ exports.createResult = async (req, res) => {
     try {
         const result = await Result.create(req.body);
 
-        const match = await Match.findByPk(req.body.match_id);
+        const match = await Match.findByPk(req.body.match_id, {
+            include: [{
+                model: Team,
+                as: 'Teams',
+                through: { attributes: [] }
+            }]
+        });
+
         const winner = req.body.winner;
         const predictions = await Prediction.findAll({
-            where: { match_id: req.body.match_id }
+            where: { match_id: req.body.match_id },
         });
+
         if (predictions.length > 0) {
             const leagueParticipationsPromises = predictions.map(async prediction => {
                 let points = 0;
+                const favoriteTeam = await FavoriteTeam.findOne({
+                    where: {
+                        user_id: prediction.user_id,
+                        league_id: match.league_id,
+                        team_id: prediction.winner
+                    }
+                });
+
+                const isFavoriteTeam = !!favoriteTeam;
+
                 if (prediction.winner === winner) {
                     points += 2;
                     switch (match.format) {
                         case 'BO3':
                             if (req.body.result === prediction.description) {
                                 points += 3;
+                                if (isFavoriteTeam) {
+                                    points += 1;
+                                }
                             }
                             break;
                         case 'BO5':
                             if (req.body.result === prediction.description) {
                                 points += 5;
+                                if (isFavoriteTeam) {
+                                    points += 1;
+                                }
                             }
                             break;
                     }
                 }
-                await LeagueParticipation.increment('points', { by: points, where: { user_id: prediction.user_id, league_id: match.league_id } });
-                await prediction.update({ points: points });
+
+                await LeagueParticipation.increment('points', {
+                    by: points,
+                    where: {
+                        user_id: prediction.user_id,
+                        league_id: match.league_id
+                    }
+                });
+
+                await prediction.update({ points });
             });
+
             await Promise.all(leagueParticipationsPromises);
         }
 
-
         res.status(201).json(result);
     } catch (error) {
+        console.error('Error in createResult:', error);
         res.status(400).json({ error: error.message });
     }
 };
