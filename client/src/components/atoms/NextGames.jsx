@@ -14,9 +14,11 @@ const status = {
 
 // Función para agrupar partidos en grupos de 3
 const groupMatches = (matches) => {
+    const isMobile = window.innerWidth <= 768;
+    const chunkSize = isMobile ? 1 : 6;
     const result = [];
-    for (let i = 0; i < matches.length; i += 6) {
-        result.push(matches.slice(i, i + 6));
+    for (let i = 0; i < matches.length; i += chunkSize) {
+        result.push(matches.slice(i, i + chunkSize));
     }
     return result;
 };

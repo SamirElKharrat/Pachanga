@@ -318,6 +318,9 @@ function Home() {
                                 <Text type="secondary" style={{ fontSize: '16px' }}>
                                     Las predicciones se mostrarán cuando todos los participantes hayan realizado sus pronósticos
                                 </Text>
+                                <Button type="primary" onClick={() => nav('/predictions/')} style={{ marginTop: '16px' }}>
+                                    Ver predicciones
+                                </Button>
                             </div>
                         )}
                     </Card>
