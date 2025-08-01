@@ -14,6 +14,7 @@ function Home() {
     const [matches, setMatches] = useState([]);
     const [predictions, setPredictions] = useState([]);
     const [results, setResults] = useState([]);
+    const [favoriteTeams, setFavoriteTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const location = useLocation();
     const nav = useNavigate();
@@ -72,6 +73,18 @@ function Home() {
                     )
                 );
                 setResults(resultsArray.filter(Boolean));
+
+                // 7. Equipos Favoritos
+                const favoriteTeamsResponse = participantsResponse.map(participant =>
+                    API.get('/favoriteTeams/get/' + participant.User.id + '/' + leagueId)
+                );
+                const favoriteTeamsArray = await Promise.all(favoriteTeamsResponse);
+                const formattedFavorites = favoriteTeamsArray.map(item => ({
+                    user_id: item.favorite.user_id,
+                    team: item.team
+                }));
+                setFavoriteTeams(formattedFavorites);
+                console.log(formattedFavorites);
 
                 setLoading(false);
             } catch (err) {
@@ -160,6 +173,15 @@ function Home() {
                                         style={{ marginRight: '1rem' }}
                                     />
                                     <Text style={{ flex: 1 }}>{participation.User.username}</Text>
+                                    {favoriteTeams.some(favorite => favorite.user_id === participation.User.id) && (
+                                        <Avatar
+                                            src={favoriteTeams.find(favorite => favorite.user_id === participation.User.id).team.logo_url}
+                                            style={{ marginRight: '1rem' }}
+                                            size="small"
+                                            shape='square'
+
+                                        />
+                                    )}
                                     <Text strong>{participation.points} pts</Text>
                                 </div>
                             ))}

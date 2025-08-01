@@ -5,7 +5,7 @@ const LeagueParticipation = require('../models/leagueParticipation');
 const Team = require('../models/team');
 const User = require('../models/user');
 const FavoriteTeam = require('../models/favoriteTeam');
-const { authenticateJwtToken } = require('../middlewares/auth');
+const { startOfWeek, endOfWeek } = require('./weekController');
 
 // Get all results
 exports.getAllResults = async (req, res) => {

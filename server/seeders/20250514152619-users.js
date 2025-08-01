@@ -11,6 +11,15 @@ Role.belongsToMany(User, { through: 'UserRoles' });
 module.exports = {
   async up(queryInterface, Sequelize) {
     const hashedPass = await bcrypt.hash("pachanga123!", 10);
+
+    const existingUsers = await queryInterface.sequelize.query(
+      'SELECT id FROM "User" LIMIT 1',
+      { type: queryInterface.sequelize.QueryTypes.SELECT }
+    );
+    if (existingUsers && existingUsers.length > 0) {
+      console.log('Ya existen usuarios en la base de datos, omitiendo seeder');
+      return;
+    }
     await queryInterface.bulkInsert('User', [
       {
         username: 'Admin',
@@ -63,21 +72,26 @@ module.exports = {
         password: hashedPass,
       },
     ]);
-    const adminRole = await Role.findByPk(1);
-    const userRole = await Role.findByPk(2);
-    const adminUser = await User.findByPk(1);
 
-    await adminUser.addRole(adminRole);
+    const [adminRole, userRole] = await Promise.all([
+      Role.findOne({ where: { name: 'admin' } }),
+      Role.findOne({ where: { name: 'user' } })
+    ]);
 
-    const users = await User.findAll({
-      where: {
-        id: {
-          [Sequelize.Op.not]: 1,
-        },
-      },
+    const adminUser = await User.findOne({
+      where: { email: 'admin@pachanga.com' }
     });
 
-    for (const user of users) {
+    if (adminUser && adminRole) {
+      await adminUser.addRole(adminRole);
+    }
+
+    const otherUsers = await User.findAll({
+      where: {
+        email: { [Sequelize.Op.ne]: 'admin@pachanga.com' }
+      }
+    });
+    for (const user of otherUsers) {
       await user.addRole(userRole);
     }
   },

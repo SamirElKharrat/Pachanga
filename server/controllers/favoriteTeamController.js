@@ -49,7 +49,12 @@ exports.getUserFavoriteTeam = async (req, res) => {
             return res.status(404).json({ message: 'No favorite team found for this league' });
         }
 
-        res.json(favorite);
+        const team = await Team.findByPk(favorite.team_id);
+
+        res.json({
+            favorite,
+            team
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
