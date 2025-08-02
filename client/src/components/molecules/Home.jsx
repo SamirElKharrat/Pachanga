@@ -110,6 +110,8 @@ function Home() {
         });
     };
 
+    const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
+
     if (leagues.length === 0 && !loading) {
         return (
             <div style={{
@@ -197,7 +199,7 @@ function Home() {
                                     <Text strong>Partidos</Text>
                                 </div>
                                 <div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap">
-                                    {matches.map((match) => (
+                                    {sortedMatches.map((match) => (
                                         <Tooltip key={match.id} title={match.Teams[0]?.name + ' vs ' + match.Teams[1]?.name}>
                                             <div
                                                 className="text-center rounded shadow-sm"
@@ -217,10 +219,10 @@ function Home() {
                             <>
                             </>
                         )}
-
                         {allPredictionsMade() ? (
                             /* Show predictions */
                             participants.map((participation) => (
+
                                 <div key={participation.User.id} className="d-flex align-items-center py-3 border-bottom flex-wrap">
                                     <Tooltip title={participation.User.username}>
                                         <div style={{ minWidth: 60 }} className="d-flex align-items-center ps-2 pe-2">
@@ -233,7 +235,7 @@ function Home() {
                                     </Tooltip>
 
                                     <div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap">
-                                        {matches.map((match) => {
+                                        {sortedMatches.map((match) => {
                                             const prediction = predictions.find(
                                                 (p) => p.match_id === match.id && p.User?.id === participation.User?.id
                                             );
