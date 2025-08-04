@@ -46,12 +46,14 @@ exports.getCurrentWeekMatches = async (req, res) => {
     try {
         const currentStartOfWeek = startOfWeek();
         const currentEndOfWeek = endOfWeek();
+        console.log("MIAU", currentStartOfWeek);
+        console.log("MIAU", currentEndOfWeek);
 
         const matches = await Match.findAll({
             where: {
                 date: {
                     [Op.gte]: currentStartOfWeek.toISOString(),
-                    [Op.lte]: currentEndOfWeek.toISOString() // Menor o igual
+                    [Op.lte]: currentEndOfWeek.toISOString()
                 }
             },
             include: [{
@@ -79,7 +81,7 @@ exports.getCurrentWeekMatchesByLeague = async (req, res) => {
             where: {
                 date: {
                     [Op.gte]: currentStartOfWeek.toISOString(),
-                    [Op.lte]: currentEndOfWeek.toISOString() // Menor o igual
+                    [Op.lte]: currentEndOfWeek.toISOString()
                 },
                 league_id: league_id
             },

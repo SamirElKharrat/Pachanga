@@ -30,9 +30,9 @@ const Prediction = () => {
                     API.get('/leagues/get/' + participation.league_id)
                 );
                 const leagueArray = await Promise.all(leaguePromises);
-                
+
                 setLeague(leagueArray);
-                
+
                 if (leagueArray.length > 0) {
                     if (selectedLeague === null) {
                         setSelectedLeague(leagueArray[0]?.id);
@@ -40,6 +40,7 @@ const Prediction = () => {
 
                     //Las matches por semana actual
                     const responseMatches = await API.get('/matches/getByWeek/' + selectedLeague);
+                    console.log(responseMatches);
                     setMatches(responseMatches);
 
                     //Todos los resultados
@@ -69,9 +70,9 @@ const Prediction = () => {
                             responsePredictions.some(prediction => prediction.match_id === match.id)
                         );
                         const hasPredictions = predictedMatches.length === responseMatches.length;
-                        
+
                         if (!hasPredictions) {
-                            setMatches(responseMatches.filter(match => 
+                            setMatches(responseMatches.filter(match =>
                                 !predictedMatches.some(predictedMatch => predictedMatch.id === match.id)
                             ));
                         }
@@ -84,9 +85,9 @@ const Prediction = () => {
                 setLoading(false);
             }
         };
-        
+
         fetchData();
-    },[selectedLeague])
+    }, [selectedLeague])
 
 
     if (league.length === 0 && !loading) {
@@ -102,7 +103,7 @@ const Prediction = () => {
             }}>
                 <Title level={3} className='noContent'>No estás unido a ninguna liga</Title>
                 <Text className='noContent' style={{ marginTop: '16px', fontSize: '16px' }}>
-                Únete a una liga existente para comenzar a hacer predicciones.
+                    Únete a una liga existente para comenzar a hacer predicciones.
                 </Text>
                 <Button type="primary" onClick={() => navigate('/leagues/')} style={{ marginTop: '16px' }}>
                     Ver Ligas
