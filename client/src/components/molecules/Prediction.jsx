@@ -1,4 +1,4 @@
-import { Card, Row, Col, Button, Typography } from 'antd';
+import { Card, Row, Col, Button, Typography, Skeleton } from 'antd';
 import PredictionForm from '../atoms/PredictionForm';
 import { useEffect, useState } from 'react';
 import { API } from '../../services/api';
@@ -116,48 +116,54 @@ const Prediction = () => {
         <div className="container mt-5 mb-5">
             <Row gutter={[16, 24]} justify="start" className="mb-5">
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Col span={8} className='mb-2'>
-                        <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Seleccione una Liga</p>
-                    </Col>
-                    <Col span={16} className='mb-2'>
-                        <Select
-                            placeholder={selectedLeague ? <b>{league.find(league => league.id === selectedLeague)?.name}</b> : "Seleccione una liga"}
-                            options={league.map(league => ({
-                                label: league.name,
-                                value: league.id,
-                            }))}
-                            style={{ width: '100%' }}
-                            onChange={(value) => setSelectedLeague(value)}
-                            value={selectedLeague}
-                        />
-                    </Col>
+                    <Skeleton loading={loading} active>
+                        <Col span={8} className='mb-2'>
+                            <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Seleccione una Liga</p>
+                        </Col>
+                        <Col span={16} className='mb-2'>
+                            <Select
+                                placeholder={selectedLeague ? <b>{league.find(league => league.id === selectedLeague)?.name}</b> : "Seleccione una liga"}
+                                options={league.map(league => ({
+                                    label: league.name,
+                                    value: league.id,
+                                }))}
+                                style={{ width: '100%' }}
+                                onChange={(value) => setSelectedLeague(value)}
+                                value={selectedLeague}
+                            />
+                        </Col>
+                    </Skeleton>
                 </Col>
             </Row>
             <Row gutter={[16, 24]} justify="center">
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Card
-                        title={hasPredicted ? "Partidos predichos de la semana" : "Partidos a predecir de la semana"}
-                        extra={
-                            <Button
-                                type="primary"
-                                onClick={() => setSend(true)}
-                                hidden={hasPredicted}
-                            >
-                                Hacer Predicciones
-                            </Button>
-                        }
-                    >
-                        {hasPredicted ? (
-                            <PredictionTable result={userPredictions} matches={matches} />
-                        ) : (
-                            <PredictionForm send={send} data={matches} leagueId={selectedLeague} setSend={() => setSend(false)} />
-                        )}
-                    </Card>
+                    <Skeleton loading={loading} active>
+                        <Card
+                            title={hasPredicted ? "Partidos predichos de la semana" : "Partidos a predecir de la semana"}
+                            extra={
+                                <Button
+                                    type="primary"
+                                    onClick={() => setSend(true)}
+                                    hidden={hasPredicted}
+                                >
+                                    Hacer Predicciones
+                                </Button>
+                            }
+                        >
+                            {hasPredicted ? (
+                                <PredictionTable result={userPredictions} matches={matches} />
+                            ) : (
+                                <PredictionForm send={send} data={matches} leagueId={selectedLeague} setSend={() => setSend(false)} />
+                            )}
+                        </Card>
+                    </Skeleton>
                 </Col>
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Card title="Historial de partidos">
-                        <ResultTable results={results} matches={matchesResult} />
-                    </Card>
+                    <Skeleton loading={loading} active>
+                        <Card title="Historial de partidos">
+                            <ResultTable results={results} matches={matchesResult} />
+                        </Card>
+                    </Skeleton>
                 </Col>
             </Row>
         </div >

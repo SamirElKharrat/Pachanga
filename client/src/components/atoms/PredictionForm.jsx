@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Row, Col, Select, Image, Tooltip, Button } from 'antd'
+import { Row, Col, Select, Image, Tooltip, Button, Skeleton } from 'antd'
 import { API } from '../../services/api'
 import Coin from './Coin';
 import { useNavigate } from 'react-router-dom'
