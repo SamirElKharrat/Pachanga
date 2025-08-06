@@ -143,7 +143,8 @@ const Prediction = () => {
                                 <Button
                                     type="primary"
                                     onClick={() => setSend(true)}
-                                    hidden={hasPredicted || formLoading}
+                                    hidden={hasPredicted}
+                                    disabled={formLoading}
                                 >
                                     Hacer Predicciones
                                 </Button>
