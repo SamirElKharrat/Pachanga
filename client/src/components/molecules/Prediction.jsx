@@ -17,6 +17,7 @@ const Prediction = () => {
     const [league, setLeague] = useState([]);
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [formLoading, setFormLoading] = useState(true);
     const navigate = useNavigate();
     const { Title, Text } = Typography;
 
@@ -134,16 +135,15 @@ const Prediction = () => {
                 </Col>
             </Row>
             <Row gutter={[16, 24]} justify="center">
-                <Skeleton loading={loading} active>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                    <Skeleton loading={loading} active>
                         <Card
                             title={hasPredicted ? "Partidos predichos de la semana" : "Partidos a predecir de la semana"}
                             extra={
                                 <Button
                                     type="primary"
                                     onClick={() => setSend(true)}
-                                    hidden={hasPredicted}
-                                    disabled={loading}
+                                    hidden={hasPredicted || formLoading}
                                 >
                                     Hacer Predicciones
                                 </Button>
@@ -152,16 +152,24 @@ const Prediction = () => {
                             {hasPredicted ? (
                                 <PredictionTable result={userPredictions} matches={matches} />
                             ) : (
-                                <PredictionForm send={send} data={matches} leagueId={selectedLeague} setSend={() => setSend(false)} />
+                                <PredictionForm
+                                    send={send}
+                                    data={matches}
+                                    leagueId={selectedLeague}
+                                    setSend={() => setSend(false)}
+                                    setFormLoading={setFormLoading}
+                                />
                             )}
                         </Card>
-                    </Col>
-                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                    </Skeleton>
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
+                    <Skeleton loading={loading} active>
                         <Card title="Historial de partidos">
                             <ResultTable results={results} matches={matchesResult} />
                         </Card>
-                    </Col>
-                </Skeleton>
+                    </Skeleton>
+                </Col>
             </Row>
         </div >
     )

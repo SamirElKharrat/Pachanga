@@ -1,4 +1,4 @@
-import { Table, Image } from 'antd';
+import { Table, Image, Skeleton } from 'antd';
 import { useEffect, useState } from 'react';
 
 const ResultTable = ({ results, matches }) => {
@@ -106,6 +106,16 @@ const ResultTable = ({ results, matches }) => {
                     boxShadow: 'none',
                 }}
                 rowClassName={() => 'result-table-row'}
+                loading={joinedData.length === 0}
+                locale={{
+                    emptyText: (
+                        <Skeleton
+                            avatar={{ size: 'large' }}
+                            paragraph={{ rows: 5 }}
+                            active
+                        />
+                    ),
+                }}
             />
         </div>
     );
