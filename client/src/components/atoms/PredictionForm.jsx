@@ -34,10 +34,10 @@ export default function PredictionForm({ send, setSend, data, leagueId, setFormL
     const nav = useNavigate()
 
     useEffect(() => {
-        setFormLoading(false);
+        setFormLoading(true);
 
         return () => {
-            setFormLoading(true);
+            setFormLoading(false);
         };
     }, [setFormLoading]);
 
