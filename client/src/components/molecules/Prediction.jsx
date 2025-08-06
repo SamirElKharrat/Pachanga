@@ -116,28 +116,26 @@ const Prediction = () => {
         <div className="container mt-5 mb-5">
             <Row gutter={[16, 24]} justify="start" className="mb-5">
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Skeleton loading={loading} active>
-                        <Col span={8} className='mb-2'>
-                            <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Seleccione una Liga</p>
-                        </Col>
-                        <Col span={16} className='mb-2'>
-                            <Select
-                                placeholder={selectedLeague ? <b>{league.find(league => league.id === selectedLeague)?.name}</b> : "Seleccione una liga"}
-                                options={league.map(league => ({
-                                    label: league.name,
-                                    value: league.id,
-                                }))}
-                                style={{ width: '100%' }}
-                                onChange={(value) => setSelectedLeague(value)}
-                                value={selectedLeague}
-                            />
-                        </Col>
-                    </Skeleton>
+                    <Col span={8} className='mb-2'>
+                        <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Seleccione una Liga</p>
+                    </Col>
+                    <Col span={16} className='mb-2'>
+                        <Select
+                            placeholder={selectedLeague ? <b>{league.find(league => league.id === selectedLeague)?.name}</b> : "Seleccione una liga"}
+                            options={league.map(league => ({
+                                label: league.name,
+                                value: league.id,
+                            }))}
+                            style={{ width: '100%' }}
+                            onChange={(value) => setSelectedLeague(value)}
+                            value={selectedLeague}
+                        />
+                    </Col>
                 </Col>
             </Row>
             <Row gutter={[16, 24]} justify="center">
-                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Skeleton loading={loading} active>
+                <Skeleton loading={loading} active>
+                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                         <Card
                             title={hasPredicted ? "Partidos predichos de la semana" : "Partidos a predecir de la semana"}
                             extra={
@@ -156,15 +154,13 @@ const Prediction = () => {
                                 <PredictionForm send={send} data={matches} leagueId={selectedLeague} setSend={() => setSend(false)} />
                             )}
                         </Card>
-                    </Skeleton>
-                </Col>
-                <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Skeleton loading={loading} active>
+                    </Col>
+                    <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                         <Card title="Historial de partidos">
                             <ResultTable results={results} matches={matchesResult} />
                         </Card>
-                    </Skeleton>
-                </Col>
+                    </Col>
+                </Skeleton>
             </Row>
         </div >
     )
