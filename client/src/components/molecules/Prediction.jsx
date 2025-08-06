@@ -136,14 +136,14 @@ const Prediction = () => {
             </Row>
             <Row gutter={[16, 24]} justify="center">
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
-                    <Skeleton loading={formLoading} active>
+                    <Skeleton loading={loading} active>
                         <Card
                             title={hasPredicted ? "Partidos predichos de la semana" : "Partidos a predecir de la semana"}
                             extra={
                                 <Button
                                     type="primary"
                                     onClick={() => setSend(true)}
-                                    hidden={hasPredicted}
+                                    hidden={hasPredicted || formLoading}
                                 >
                                     Hacer Predicciones
                                 </Button>
