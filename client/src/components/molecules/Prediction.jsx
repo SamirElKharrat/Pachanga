@@ -24,6 +24,9 @@ const Prediction = () => {
         const fetchData = async () => {
             try {
                 setLoading(true);
+                setTimeout(() => {
+                    setLoading(false);
+                }, 3000);
                 //Todas las ligas en las que el usuario esta unido
                 const response = await API.get('/leagueParticipations/get/');
                 const leaguePromises = response.map(participation =>
@@ -81,8 +84,6 @@ const Prediction = () => {
                 }
             } catch (error) {
                 console.error('Error fetching prediction data:', error);
-            } finally {
-                setLoading(false);
             }
         };
 
@@ -156,7 +157,6 @@ const Prediction = () => {
                                     data={matches}
                                     leagueId={selectedLeague}
                                     setSend={() => setSend(false)}
-                                    loading={loading}
                                 />
                             )}
                         </Card>

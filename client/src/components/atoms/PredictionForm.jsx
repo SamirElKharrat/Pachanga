@@ -28,7 +28,7 @@ const getBOOptions = (format) => {
     }
 };
 
-export default function PredictionForm({ send, setSend, data, leagueId, loading }) {
+export default function PredictionForm({ send, setSend, data, leagueId }) {
     const [selectedTeams, setSelectedTeams] = useState([])
     const [selectedResults, setSelectedResults] = useState([])
     const nav = useNavigate()
@@ -100,7 +100,7 @@ export default function PredictionForm({ send, setSend, data, leagueId, loading 
 
     }
     return (
-        <Skeleton loading={loading} active>
+        <Skeleton loading={data.length === 0} active>
             <form onSubmit={handleSubmit} >
                 {data.map((match) => (
                     <Row key={match.id} className='m-4' style={{ display: 'flex', alignItems: 'center' }}>
