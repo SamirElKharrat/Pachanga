@@ -17,7 +17,6 @@ const Prediction = () => {
     const [league, setLeague] = useState([]);
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [formLoading, setFormLoading] = useState(true);
     const navigate = useNavigate();
     const { Title, Text } = Typography;
 
@@ -144,7 +143,6 @@ const Prediction = () => {
                                     type="primary"
                                     onClick={() => setSend(true)}
                                     hidden={hasPredicted}
-                                    disabled={formLoading}
                                 >
                                     Hacer Predicciones
                                 </Button>
@@ -158,7 +156,7 @@ const Prediction = () => {
                                     data={matches}
                                     leagueId={selectedLeague}
                                     setSend={() => setSend(false)}
-                                    setFormLoading={setFormLoading}
+                                    loading={loading}
                                 />
                             )}
                         </Card>

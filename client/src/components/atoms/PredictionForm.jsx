@@ -28,18 +28,10 @@ const getBOOptions = (format) => {
     }
 };
 
-export default function PredictionForm({ send, setSend, data, leagueId, setFormLoading }) {
+export default function PredictionForm({ send, setSend, data, leagueId, loading }) {
     const [selectedTeams, setSelectedTeams] = useState([])
     const [selectedResults, setSelectedResults] = useState([])
     const nav = useNavigate()
-
-    useEffect(() => {
-        setFormLoading(false);
-
-        return () => {
-            setFormLoading(true);
-        };
-    }, [setFormLoading]);
 
     useEffect(() => {
         if (send) {
@@ -108,7 +100,7 @@ export default function PredictionForm({ send, setSend, data, leagueId, setFormL
 
     }
     return (
-        <Skeleton loading={data.length === 0} active>
+        <Skeleton loading={loading} active>
             <form onSubmit={handleSubmit} >
                 {data.map((match) => (
                     <Row key={match.id} className='m-4' style={{ display: 'flex', alignItems: 'center' }}>
