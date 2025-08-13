@@ -89,8 +89,8 @@ exports.loginUser = async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid password' });
     }
-    //Generate a token with 24h life time
-    const token = jwt.sign({ email: user.email, role: user.role }, process.env.SECRET_KEY, { expiresIn: '24h' });
+    //Generate a token infinite live for now
+    const token = jwt.sign({ email: user.email, role: user.role }, process.env.SECRET_KEY);
     console.log("Usuario Logeado", token)
     res.json({ token });
   } catch (error) {

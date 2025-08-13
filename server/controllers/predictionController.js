@@ -136,3 +136,30 @@ exports.deletePrediction = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+
+//Check if user has predicted all games of the week
+exports.checkPredictions = async (req, res) => {
+    try {
+        const user = await User.findOne({
+            where: { email: req.user.email },
+            attributes: { exclude: ['password'] }
+        });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const predictions = await Prediction.findAll({
+            where: { user_id: user.id }
+        });
+        const matches = await Match.findAll({
+            where: { league_id: req.params.league_id }
+        });
+        const response = predictions.map((prediction, index) => ({
+            ...prediction.dataValues,
+            Match: matches[index]
+        }))
+        res.json(response);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};

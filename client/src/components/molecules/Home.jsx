@@ -16,6 +16,7 @@ function Home() {
     const [results, setResults] = useState([]);
     const [favoriteTeams, setFavoriteTeams] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [predictionsMade, setPredictionsMade] = useState(false);
     const location = useLocation();
     const nav = useNavigate();
 
@@ -84,9 +85,21 @@ function Home() {
                     team: item.team
                 }));
                 setFavoriteTeams(formattedFavorites);
-                console.log(formattedFavorites);
 
+                if (matchesResponse.length === 0) return false;
+
+                const predictionsMade = await API.getUserByToken().then(res => {
+                    return matchesResponse.every(match =>
+                        predictionsArray.some(prediction =>
+                            prediction.match_id === match.id &&
+                            prediction.User?.id === res.id
+                        )
+                    );
+                });
+
+                setPredictionsMade(predictionsMade);
                 setLoading(false);
+
             } catch (err) {
                 console.error(err);
                 setLoading(false);
@@ -95,20 +108,6 @@ function Home() {
 
         fetchAllData();
     }, [selectedLeague]);
-
-    // Check if all participants have made predictions for all matches
-    const allPredictionsMade = () => {
-        if (participants.length === 0 || matches.length === 0) return false;
-
-        return participants.every(participant => {
-            return matches.every(match => {
-                return predictions.some(prediction =>
-                    prediction.match_id === match.id &&
-                    prediction.User?.id === participant.User?.id
-                );
-            });
-        });
-    };
 
     const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -193,7 +192,7 @@ function Home() {
                 {/* Predicciones */}
                 <Col xs={24} md={18}>
                     <Card title="Predicciones de la semana" loading={loading} style={{ height: '100%' }}>
-                        {allPredictionsMade() ? (
+                        {predictionsMade ? (
                             <div className="d-flex align-items-center mb-3 flex-wrap">
                                 <div style={{ minWidth: 60 }}>
                                     <Text strong>Partidos</Text>
@@ -219,7 +218,7 @@ function Home() {
                             <>
                             </>
                         )}
-                        {allPredictionsMade() ? (
+                        {predictionsMade ? (
                             /* Show predictions */
                             participants.map((participation) => (
 
