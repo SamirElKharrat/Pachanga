@@ -1,4 +1,4 @@
-import { Table, Image, Skeleton } from 'antd';
+import { Table, Image, Skeleton, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 
 const ResultTable = ({ results, matches }) => {
@@ -14,6 +14,7 @@ const ResultTable = ({ results, matches }) => {
                 match: match.Teams.find(team => team.id !== result.winner).logo_url,
                 winner: match.Teams.find(team => team.id === result.winner).logo_url,
                 result: result.result,
+                vs: result.result
             };
         }).filter(Boolean);
         setJoinedData(joined);
@@ -27,8 +28,8 @@ const ResultTable = ({ results, matches }) => {
                 <Image
                     src={url}
                     preview={false}
-                    width={50}
-                    height={50}
+                    width={window.innerWidth < 768 ? 25 : 50}
+                    height={window.innerWidth < 768 ? 25 : 50}
                     style={{
                         objectFit: 'contain',
                         opacity: 0.4,
@@ -41,12 +42,15 @@ const ResultTable = ({ results, matches }) => {
         {
             dataIndex: 'vs',
             key: 'vs',
-            render: () => (
-                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
-                    vs
+            render: (text) => (
+                <div style={{ fontWeight: 'bold', fontSize: window.innerWidth < 768 ? '0.8rem' : '1.1rem', textAlign: 'center' }}>
+                    <Tooltip title={text}>
+                        vs
+                    </Tooltip>
                 </div>
             ),
             align: 'center',
+
         },
         {
             dataIndex: 'winner',
@@ -55,8 +59,8 @@ const ResultTable = ({ results, matches }) => {
                 <Image
                     src={url}
                     preview={false}
-                    width={50}
-                    height={50}
+                    width={window.innerWidth < 768 ? 25 : 50}
+                    height={window.innerWidth < 768 ? 25 : 50}
                     style={{
                         objectFit: 'contain',
                         borderRadius: 0,
@@ -69,7 +73,7 @@ const ResultTable = ({ results, matches }) => {
             dataIndex: 'result',
             key: 'result',
             render: (text) => (
-                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '1.1rem', textAlign: 'center' }} className='d-none d-sm-table-cell'>
                     {text}
                 </div>
             ),
@@ -87,24 +91,17 @@ const ResultTable = ({ results, matches }) => {
 
     return (
         <div
-            style={{
-                maxWidth: '100%',
-                margin: '0 auto',
-                padding: '1rem',
-                overflowX: 'auto',
-            }}
+            className='mx-auto overflow-x-auto'
+            style={{ maxWidth: '100%' }}
+
         >
             <Table
                 columns={columns}
                 dataSource={joinedData}
-                pagination={{ pageSize: 4 }}
-                size="middle"
+                pagination={{ pageSize: 5 }}
+                size="small"
                 showHeader={false}
-                scroll={{ y: 310 }}
-                style={{
-                    borderRadius: '8px',
-                    boxShadow: 'none',
-                }}
+                scroll={{ x: true }}
                 rowClassName={() => 'result-table-row'}
                 loading={joinedData.length === 0}
                 locale={{

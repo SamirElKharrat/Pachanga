@@ -103,20 +103,20 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
         <Skeleton loading={data.length === 0} active>
             <form onSubmit={handleSubmit} >
                 {data.map((match) => (
-                    <Row key={match.id} className='m-4' style={{ display: 'flex', alignItems: 'center' }}>
-                        <Col span={8}>
-                            <div className={`image${match.id}`} style={{ display: 'flex', alignItems: 'center' }}>
+                    <Row key={match.id} className='m-4' gutter={[0, 16]}>
+                        <Col xs={24} sm={24} md={12} lg={12} xl={8}>
+                            <div className={`image${match.id}`} >
                                 {match.Teams.map((team, index) => (
                                     <>
                                         <Tooltip title={team.name} placement='topRight'>
-                                            <Image id={team.id} src={team.logo_url} alt={team.name} width={50} preview={false} style={{ marginLeft: '1rem' }} onClick={() => handleSelected(team.name, match.id)} />
+                                            <Image id={team.id} src={team.logo_url} alt={team.name} width={window.innerWidth < 768 ? 40 : 50} preview={false} style={{ marginLeft: '1rem' }} onClick={() => handleSelected(team.name, match.id)} />
                                         </Tooltip>
                                         {index === 0 ? <span style={{ marginLeft: '2rem' }}>vs</span> : null}
                                     </>
                                 ))}
                             </div>
                         </Col>
-                        <Col span={4} style={{ marginRight: '2rem' }}>
+                        <Col xs={24} sm={24} md={12} lg={12} xl={12} className='d-flex flex-row align-items-center'>
                             <Coin
                                 teams={[
                                     match.Teams[0],
@@ -124,8 +124,6 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
                                 ]}
                                 onSuccess={(side) => handleSelected(side, match.id)}
                             />
-                        </Col>
-                        <Col span={10}>
                             <Select
                                 onChange={(value) => {
                                     setSelectedResults((prev) => {

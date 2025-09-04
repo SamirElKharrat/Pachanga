@@ -118,7 +118,7 @@ const Prediction = () => {
             <Row gutter={[16, 24]} justify="start" className="mb-5">
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                     <Col span={8} className='mb-2'>
-                        <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Seleccione una Liga</p>
+                        <p style={{ fontWeight: 'bold' }}>Seleccione una Liga</p>
                     </Col>
                     <Col span={16} className='mb-2'>
                         <Select
@@ -138,15 +138,17 @@ const Prediction = () => {
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
                     <Skeleton loading={loading} active>
                         <Card
-                            title={hasPredicted ? "Partidos predichos de la semana" : "Partidos a predecir de la semana"}
+                            title={window.innerWidth < 768 ? "" : hasPredicted ? "Partidos predichos" : "Partidos a predecir"}
                             extra={
-                                <Button
-                                    type="primary"
-                                    onClick={() => setSend(true)}
-                                    hidden={hasPredicted}
-                                >
-                                    Hacer Predicciones
-                                </Button>
+                                window.innerWidth < 768 ? null : (
+                                    <Button
+                                        type="primary"
+                                        onClick={() => setSend(true)}
+                                        hidden={hasPredicted}
+                                    >
+                                        Hacer Predicciones
+                                    </Button>
+                                )
                             }
                         >
                             {hasPredicted ? (
@@ -159,7 +161,20 @@ const Prediction = () => {
                                     setSend={() => setSend(false)}
                                 />
                             )}
+
+                            {window.innerWidth < 768 && (
+                                <Row justify="center" style={{ marginTop: '16px' }}>
+                                    <Button
+                                        type="primary"
+                                        onClick={() => setSend(true)}
+                                        hidden={hasPredicted}
+                                    >
+                                        Hacer Predicciones
+                                    </Button>
+                                </Row>
+                            )}
                         </Card>
+
                     </Skeleton>
                 </Col>
                 <Col xs={24} sm={24} md={12} lg={12} xl={12}>
