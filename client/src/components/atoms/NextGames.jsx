@@ -1,8 +1,9 @@
 import { Carousel, Image, Skeleton, Typography } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { API } from '../../services/api'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { showAlert } from './AlertInfo';
+import { Tooltip } from 'antd';
 
 const { Text } = Typography;
 
@@ -27,6 +28,7 @@ const NextGames = () => {
     const [loading, setLoading] = useState(false);
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
+    const nav = useNavigate();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -136,7 +138,11 @@ const NextGames = () => {
                                 <span className="badge rounded-pill fw-semibold fs-6 user-select-none px-3 py-1">
                                     {match.formattedDate}
                                 </span>
-                                {status[match.status]}
+                                {match.status === 'scheduled' ? (
+                                    <Text onClick={() => nav('/predictions/')}>{status[match.status]}</Text>
+                                ) : (
+                                    status[match.status]
+                                )}
                             </div>
                         </div>
                     ))}

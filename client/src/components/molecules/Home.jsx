@@ -59,6 +59,11 @@ function Home() {
                 const matchesResponse = await API.get('/matches/getByWeek/' + leagueId);
                 setMatches(matchesResponse);
 
+                if (matchesResponse.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+
                 // 5. Predicciones
                 const predictionsArray = [];
                 for (const match of matchesResponse) {
@@ -168,12 +173,16 @@ function Home() {
                                     }}
                                 >
                                     <Text strong style={{ width: 30 }}>{index + 1}.</Text>
-                                    <Avatar
-                                        src={participation.User.logo_url}
-                                        icon={<UserOutlined />}
-                                        style={{ marginRight: '1rem' }}
-                                    />
-                                    <Text style={{ flex: 1 }}>{participation.User.username}</Text>
+                                    <Tooltip title={participation.User.username}>
+                                        <Avatar
+                                            src={participation.User.logo_url}
+                                            icon={<UserOutlined />}
+                                            style={{ marginRight: '1rem' }}
+                                        />
+                                    </Tooltip>
+                                    {window.innerWidth > 768 && (
+                                        <Text strong style={{ flex: 1 }}>{participation.User.username}</Text>
+                                    )}
                                     {favoriteTeams.some(favorite => favorite.user_id === participation.User.id) && (
                                         <Avatar
                                             src={favoriteTeams.find(favorite => favorite.user_id === participation.User.id).team.logo_url}
@@ -317,10 +326,10 @@ function Home() {
                                 margin: '20px 0'
                             }}>
                                 <Text type="secondary" style={{ fontSize: '16px' }}>
-                                    Las predicciones se mostrarán cuando todos los participantes hayan realizado sus pronósticos
+                                    Haz las predicciones cochino
                                 </Text>
                                 <Button type="primary" onClick={() => nav('/predictions/')} style={{ marginTop: '16px' }}>
-                                    Ver predicciones
+                                    Ir a las predicciones
                                 </Button>
                             </div>
                         )}

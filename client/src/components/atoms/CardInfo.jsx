@@ -16,7 +16,7 @@ const CardInfo = ({
         <Card
             hoverable
             style={{
-                width: 320,
+                width: 'auto',
                 height: 'auto',
                 display: 'flex',
                 flexDirection: 'column',

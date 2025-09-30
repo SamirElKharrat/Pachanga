@@ -90,7 +90,7 @@ const LeagueHome = () => {
                             image={league.logo_url}
                             date={{
                                 count: 2,
-                                dates: [new Date().toISOString(), new Date().toISOString()]
+                                dates: [league.start_date, league.end_date]
                             }}
                             onAction={() => {
                                 if (joinedLeagues.some(participation => participation.league_id === league.id)) {

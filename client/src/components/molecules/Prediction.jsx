@@ -26,7 +26,7 @@ const Prediction = () => {
                 setLoading(true);
                 setTimeout(() => {
                     setLoading(false);
-                }, 3000);
+                }, 2000);
                 //Todas las ligas en las que el usuario esta unido
                 const response = await API.get('/leagueParticipations/get/');
                 const leaguePromises = response.map(participation =>

@@ -3,7 +3,7 @@ import { Image, Tooltip } from 'antd'
 
 const PredictionTable = ({ result, matches }) => {
     // Check if there are no predictions
-    const hasNoPredictions = matches.every(match => 
+    const hasNoPredictions = matches.every(match =>
         !result?.some(pred => pred.match_id === match.id)
     )
 
@@ -31,8 +31,8 @@ const PredictionTable = ({ result, matches }) => {
                                             src={match.Teams[0]?.logo_url}
                                             alt={match.Teams[0]?.name}
                                             style={{
-                                                width: '4rem',
-                                                height: '4rem',
+                                                width: window.innerWidth < 768 ? '2rem' : '4rem',
+                                                height: window.innerWidth < 768 ? '2rem' : '4rem',
                                                 objectFit: 'cover',
                                                 margin: '0 10px',
                                                 opacity: match.Teams[0]?.id === prediction?.winner ? 1 : 0.3
@@ -42,9 +42,9 @@ const PredictionTable = ({ result, matches }) => {
                                 </div>
                             </td>
                             <td>
-                                <span style={{ fontSize: '1.5rem' }}>vs</span>
+                                <span style={{ fontSize: window.innerWidth < 768 ? '1rem' : '1.5rem' }}>vs</span>
                             </td>
-                            <td style={{ padding: '1rem 0 0 0', textAlign: 'center' }}>
+                            <td style={{ padding: window.innerWidth < 768 ? '0.5rem 0 0 0' : '1rem 0 0 0', textAlign: 'center' }}>
                                 <div className="team-info">
                                     <Tooltip title={match.Teams[1]?.name}>
                                         <Image
@@ -52,8 +52,8 @@ const PredictionTable = ({ result, matches }) => {
                                             src={match.Teams[1]?.logo_url}
                                             alt={match.Teams[1]?.name}
                                             style={{
-                                                width: '4rem',
-                                                height: '4rem',
+                                                width: window.innerWidth < 768 ? '2rem' : '4rem',
+                                                height: window.innerWidth < 768 ? '2rem' : '4rem',
                                                 objectFit: 'cover',
                                                 margin: '0 10px',
                                                 opacity: match.Teams[1]?.id === prediction?.winner ? 1 : 0.3
@@ -62,7 +62,7 @@ const PredictionTable = ({ result, matches }) => {
                                     </Tooltip>
                                 </div>
                             </td>
-                            <td style={{ paddingRight: '1rem', fontWeight: 'bold', fontSize: '1.2rem' }}>
+                            <td style={{ paddingRight: '1rem', fontWeight: 'bold', fontSize: window.innerWidth < 768 ? '1rem' : '1.2rem' }}>
                                 <div>
                                     <span>
                                         {prediction?.description || prediction?.result}
