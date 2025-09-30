@@ -323,14 +323,23 @@ function Home() {
                                 padding: '40px 20px',
                                 backgroundColor: "transparent",
                                 borderRadius: '8px',
-                                margin: '20px 0'
+                                margin: '20px 0',
+                                flexDirection: 'column'
                             }}>
-                                <Text type="secondary" style={{ fontSize: '16px' }}>
-                                    Haz las predicciones cochino
-                                </Text>
-                                <Button type="primary" onClick={() => nav('/predictions/')} style={{ marginTop: '16px' }}>
-                                    Ir a las predicciones
-                                </Button>
+                                {matches.length === 0 ? (
+                                    <>
+                                        <Text type="secondary" style={{ fontSize: '16px' }}>
+                                            Haz las predicciones cochino
+                                        </Text>
+                                        <Button type="primary" onClick={() => nav('/predictions/')} style={{ marginTop: '16px' }}>
+                                            Ir a las predicciones
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Text type="secondary" style={{ fontSize: '16px' }}>
+                                        No hay partidos esta semana
+                                    </Text>
+                                )}
                             </div>
                         )}
                     </Card>
