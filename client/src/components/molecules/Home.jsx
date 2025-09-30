@@ -38,13 +38,14 @@ function Home() {
                 if (!selectedLeague && leagueArray.length > 0) {
                     leagueId = leagueArray[0].id;
                     if (location.state && location.state.leagueId) {
-                        console.log(location.state.leagueId);
                         leagueId = location.state.leagueId;
                         setSelectedLeague(leagueId);
                     } else {
                         setSelectedLeague(leagueId);
                     }
                 }
+
+                console.log(leagueId);
 
                 if (!leagueId) {
                     setLoading(false);
@@ -55,32 +56,7 @@ function Home() {
                 const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
                 setParticipants(participantsResponse);
 
-                // 4. Partidos
-                const matchesResponse = await API.get('/matches/getByWeek/' + leagueId);
-                setMatches(matchesResponse);
-
-                if (matchesResponse.length === 0) {
-                    setLoading(false);
-                    return;
-                }
-
-                // 5. Predicciones
-                const predictionsArray = [];
-                for (const match of matchesResponse) {
-                    const response = await API.get('/predictions/getByMatch/' + match.id);
-                    predictionsArray.push(...response);
-                }
-                setPredictions(predictionsArray);
-
-                // 6. Resultados
-                const resultsArray = await Promise.all(
-                    matchesResponse.map(match =>
-                        API.get('/results/getByMatch/' + match.id).then(res => res).catch(() => null)
-                    )
-                );
-                setResults(resultsArray.filter(Boolean));
-
-                // 7. Equipos Favoritos
+                // 4. Equipos Favoritos
                 const favoriteTeamsResponse = participantsResponse.map(participant =>
                     API.get('/favoriteTeams/get/' + participant.User.id + '/' + leagueId)
                 );
@@ -91,7 +67,31 @@ function Home() {
                 }));
                 setFavoriteTeams(formattedFavorites);
 
-                if (matchesResponse.length === 0) return false;
+                // 5. Partidos
+                const matchesResponse = await API.get('/matches/getByWeek/' + leagueId);
+                setMatches(matchesResponse);
+
+                if (matchesResponse.length === 0) {
+                    setLoading(false);
+                    return;
+                }
+
+                // 6. Predicciones
+                const predictionsArray = [];
+                for (const match of matchesResponse) {
+                    const response = await API.get('/predictions/getByMatch/' + match.id);
+                    predictionsArray.push(...response);
+                }
+                setPredictions(predictionsArray);
+
+                // 7. Resultados
+                const resultsArray = await Promise.all(
+                    matchesResponse.map(match =>
+                        API.get('/results/getByMatch/' + match.id).then(res => res).catch(() => null)
+                    )
+                );
+                setResults(resultsArray.filter(Boolean));
+
 
                 const predictionsMade = await API.getUserByToken().then(res => {
                     return matchesResponse.every(match =>
@@ -112,7 +112,7 @@ function Home() {
         };
 
         fetchAllData();
-    }, [selectedLeague]);
+    }, [selectedLeague, location.state]);
 
     const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -143,11 +143,11 @@ function Home() {
             <div style={{ marginBottom: '24px' }}>
                 <Select
                     value={selectedLeague}
-                    onChange={setSelectedLeague}
+                    onChange={(value) => setSelectedLeague(value)}
                     style={{ width: 300 }}
                     loading={leagues.length === 0}
                 >
-                    {leagues.map(league => (
+                    {leagues.sort((a, b) => a.id - b.id).map(league => (
                         <Option key={league.id} value={league.id}>
                             {league.name}
                         </Option>
@@ -257,6 +257,9 @@ function Home() {
                                                 }
                                                 if (!result) {
                                                     return 'rgba(154, 176, 218, 0.2)';
+                                                }
+                                                if (result?.winner === prediction?.winner && result?.result != prediction?.description) {
+                                                    return 'rgba(228, 224, 31, 0.2)';
                                                 }
                                                 return result?.winner === prediction?.winner
                                                     ? 'rgba(40, 167, 69, 0.2)'
