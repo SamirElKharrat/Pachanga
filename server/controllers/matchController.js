@@ -52,10 +52,6 @@ exports.getCurrentWeekMatches = async (req, res) => {
         const currentStartOfWeek = startOfWeek(now);
         const currentEndOfWeek = endOfWeek(now);
 
-        // Convertir a cadenas de fecha para la consulta
-        const startDate = currentStartOfWeek.toISOString().split('T')[0] + 'T00:00:00.000Z';
-        const endDate = currentEndOfWeek.toISOString().split('T')[0] + 'T23:59:59.999Z';
-
         console.log("Buscando partidos entre:", startDate, "y", endDate);
 
         const matches = await Match.findAll({
