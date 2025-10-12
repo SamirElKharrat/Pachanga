@@ -42,27 +42,37 @@ exports.getTeamsFromMatch = async (req, res) => {
 };
 
 //Get all matches of the current week
+// Modificar la función getCurrentWeekMatches en matchController.js
 exports.getCurrentWeekMatches = async (req, res) => {
     try {
-        const currentStartOfWeek = startOfWeek();
-        const currentEndOfWeek = endOfWeek();
-        console.log("MIAU", currentStartOfWeek);
-        console.log("MIAU", currentEndOfWeek);
+        // Usar la fecha actual
+        const now = new Date();
+
+        // Obtener el inicio y fin de semana en la zona horaria local
+        const currentStartOfWeek = startOfWeek(now);
+        const currentEndOfWeek = endOfWeek(now);
+
+        // Convertir a cadenas de fecha para la consulta
+        const startDate = currentStartOfWeek.toISOString().split('T')[0] + 'T00:00:00.000Z';
+        const endDate = currentEndOfWeek.toISOString().split('T')[0] + 'T23:59:59.999Z';
+
+        console.log("Buscando partidos entre:", startDate, "y", endDate);
 
         const matches = await Match.findAll({
             where: {
                 date: {
-                    [Op.gte]: currentStartOfWeek.toISOString(),
-                    [Op.lte]: currentEndOfWeek.toISOString()
+                    [Op.between]: [startDate, endDate]
                 }
             },
             include: [{
                 model: Team,
                 attributes: ['id', 'name', 'logo_url'],
                 through: { attributes: [] }
-            }]
+            }],
+            order: [['date', 'ASC']] // Ordenar por fecha ascendente
         });
 
+        console.log("Partidos encontrados:", matches.length);
         res.json(matches);
     } catch (error) {
         console.error('Error getting current week matches:', error);
