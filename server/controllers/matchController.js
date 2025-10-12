@@ -52,7 +52,7 @@ exports.getCurrentWeekMatches = async (req, res) => {
         const currentStartOfWeek = startOfWeek(now);
         const currentEndOfWeek = endOfWeek(now);
 
-        console.log("Buscando partidos entre:", startDate, "y", endDate);
+        console.log("Buscando partidos entre:", currentStartOfWeek, "y", currentEndOfWeek);
 
         const matches = await Match.findAll({
             where: {
