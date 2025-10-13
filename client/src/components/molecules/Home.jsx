@@ -332,6 +332,10 @@ function Home() {
                                 flexDirection: 'column'
                             }}>
                                 {matches.length === 0 ? (
+                                    <Text type="secondary" style={{ fontSize: '16px' }}>
+                                        No hay partidos esta semana
+                                    </Text>
+                                ) : (
                                     <>
                                         <Text type="secondary" style={{ fontSize: '16px' }}>
                                             Haz las predicciones cochino
@@ -340,10 +344,7 @@ function Home() {
                                             Ir a las predicciones
                                         </Button>
                                     </>
-                                ) : (
-                                    <Text type="secondary" style={{ fontSize: '16px' }}>
-                                        No hay partidos esta semana
-                                    </Text>
+
                                 )}
                             </div>
                         )}
