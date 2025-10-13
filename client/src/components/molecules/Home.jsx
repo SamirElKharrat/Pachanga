@@ -36,7 +36,9 @@ function Home() {
                 // 2. Seleccionar liga si no hay una ya seleccionada
                 let leagueId = selectedLeague;
                 if (!selectedLeague && leagueArray.length > 0) {
+                    leagueArray.sort((a, b) => b.id - a.id);
                     leagueId = leagueArray[0].id;
+                    console.log(leagueId);
                     if (location.state && location.state.leagueId) {
                         leagueId = location.state.leagueId;
                         setSelectedLeague(leagueId);

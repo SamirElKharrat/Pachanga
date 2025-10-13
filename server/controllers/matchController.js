@@ -45,19 +45,16 @@ exports.getTeamsFromMatch = async (req, res) => {
 // Modificar la función getCurrentWeekMatches en matchController.js
 exports.getCurrentWeekMatches = async (req, res) => {
     try {
-        // Usar la fecha actual
-        const now = new Date();
 
-        // Obtener el inicio y fin de semana en la zona horaria local
-        const currentStartOfWeek = startOfWeek(now);
-        const currentEndOfWeek = endOfWeek(now);
+        const currentStartOfWeek = startOfWeek();
+        const currentEndOfWeek = endOfWeek();
 
         console.log("Buscando partidos entre:", currentStartOfWeek, "y", currentEndOfWeek);
 
         const matches = await Match.findAll({
             where: {
                 date: {
-                    [Op.between]: [startDate, endDate]
+                    [Op.between]: [currentStartOfWeek, currentEndOfWeek]
                 }
             },
             include: [{

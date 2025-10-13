@@ -38,6 +38,7 @@ const Prediction = () => {
 
                 if (leagueArray.length > 0) {
                     if (selectedLeague === null) {
+                        leagueArray.sort((a, b) => b.id - a.id);
                         setSelectedLeague(leagueArray[0]?.id);
                     }
 
