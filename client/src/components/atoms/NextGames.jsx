@@ -120,7 +120,14 @@ const NextGames = () => {
             slidesToShow={1}
             slidesToScroll={1}
         >
-            {groupMatches([...nextGames].sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate))).map((group, i) => (
+            {groupMatches([...nextGames].sort((a, b) => {
+                // Primero ordenar por estado (scheduled primero)
+                if (a.status === 'scheduled' && b.status !== 'scheduled') return -1;
+                if (a.status !== 'scheduled' && b.status === 'scheduled') return 1;
+
+                // Luego por fecha y hora (más cercano primero)
+                return new Date(a.rawDate) - new Date(b.rawDate);
+            })).map((group, i) => (
                 <div key={i} className='d-flex justify-content-around align-items-center'>
                     {group.map((match) => (
                         <div
