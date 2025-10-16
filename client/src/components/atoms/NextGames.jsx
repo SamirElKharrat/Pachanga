@@ -47,11 +47,15 @@ const NextGames = () => {
                         hour12: false
                     }).format(new Date(match.date))
                 }));
+
+                //Filter matches without finished status
+                const filterFinished = filterDate.filter(match => match.status !== 'finished')
+
                 //All user participations in leagues
                 const responseLeagueParticipation = await API.get('/leagueParticipations/get/').then(response => response.map(participation => participation.league_id))
 
                 //Filter matches by user participations
-                const filterResponse = filterDate.filter(match => responseLeagueParticipation.includes(match.league_id))
+                const filterResponse = filterFinished.filter(match => responseLeagueParticipation.includes(match.league_id))
                 setNextGames(filterResponse)
 
             } catch (error) {
@@ -121,9 +125,9 @@ const NextGames = () => {
             slidesToScroll={1}
         >
             {groupMatches([...nextGames].sort((a, b) => {
-                // Primero ordenar por estado (scheduled primero)
-                if (a.status === 'scheduled' && b.status !== 'scheduled') return -1;
-                if (a.status !== 'scheduled' && b.status === 'scheduled') return 1;
+                // Primero ordenar por estado (live primero, luego scheduled)
+                if (a.status === 'live' && b.status !== 'live') return -1;
+                if (a.status !== 'live' && b.status === 'live') return 1;
 
                 // Luego por fecha y hora (más cercano primero)
                 return new Date(a.rawDate) - new Date(b.rawDate);
