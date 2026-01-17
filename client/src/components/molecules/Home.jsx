@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Select, Avatar, Tooltip, Typography, Image, Button } from 'antd';
 import { API } from '../../services/api';
-import { UserOutlined } from '@ant-design/icons';
+import { UserOutlined, CloseOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
@@ -17,6 +17,7 @@ function Home() {
     const [favoriteTeams, setFavoriteTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [predictionsMade, setPredictionsMade] = useState(false);
+    const [selectedParticipant, setSelectedParticipant] = useState(null);
     const location = useLocation();
     const nav = useNavigate();
 
@@ -57,6 +58,7 @@ function Home() {
                 // 3. Participantes
                 const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
                 setParticipants(participantsResponse);
+                setSelectedParticipant(participantsResponse);
 
                 // 4. Equipos Favoritos
                 const favoriteTeamsResponse = participantsResponse.map(participant =>
@@ -173,6 +175,7 @@ function Home() {
                                         padding: '12px 0',
                                         borderBottom: '1px solid #f0f0f0'
                                     }}
+                                    onClick={() => setSelectedParticipant([participation])}
                                 >
                                     <Text strong style={{ width: 30 }}>{index + 1}.</Text>
                                     <Tooltip title={participation.User.username}>
@@ -202,7 +205,24 @@ function Home() {
 
                 {/* Predicciones */}
                 <Col xs={24} md={18}>
-                    <Card title="Predicciones de la semana" loading={loading} style={{ height: '100%' }}>
+                    <Card
+                        title={
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>Predicciones de la semana</span>
+                                <Tooltip title="Quitar Filtro">
+                                    <Button
+                                        type="text"
+                                        icon={<CloseOutlined />}
+                                        onClick={() => {
+                                            setSelectedParticipant(participants);
+                                        }}
+                                        style={{ opacity: 0.5 }}
+                                    />
+                                </Tooltip>
+                            </div>
+                        }
+                        loading={loading}
+                        style={{ height: '100%' }}>
                         {predictionsMade ? (
                             <div className="d-flex align-items-center mb-3 flex-wrap">
                                 <div style={{ minWidth: 60 }}>
@@ -229,9 +249,10 @@ function Home() {
                             <>
                             </>
                         )}
+                        {console.log(selectedParticipant)}
                         {predictionsMade ? (
                             /* Show predictions */
-                            participants.map((participation) => (
+                            selectedParticipant.map((participation) => (
 
                                 <div key={participation.User.id} className="d-flex align-items-center py-3 border-bottom flex-wrap">
                                     <Tooltip title={participation.User.username}>
