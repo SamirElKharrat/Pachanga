@@ -109,6 +109,10 @@ exports.createResult = async (req, res) => {
                 await prediction.update({ points });
             });
 
+
+            await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
+
+
             await Promise.all(leagueParticipationsPromises);
         }
 
