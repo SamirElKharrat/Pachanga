@@ -1,6 +1,6 @@
 const startOfWeek = (date = new Date()) => {
     const day = date.getDay();
-    const offset = (day + 6) % 7;
+    const offset = (day + 5) % 7;
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - offset);
     startOfWeek.setHours(0, 0, 0, 0);
@@ -9,7 +9,7 @@ const startOfWeek = (date = new Date()) => {
 
 const endOfWeek = (date = new Date()) => {
     const day = date.getDay();
-    const offset = (day + 6) % 7;
+    const offset = (day + 5) % 7;
     const endOfWeek = new Date(date);
     endOfWeek.setDate(date.getDate() + (7 - offset));
     endOfWeek.setHours(23, 59, 59, 999);
