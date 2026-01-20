@@ -18,6 +18,8 @@ function Home() {
     const [loading, setLoading] = useState(true);
     const [predictionsMade, setPredictionsMade] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
+    const [selectedWeek, setSelectedWeek] = useState(null);
+    const [weeks, setWeeks] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
 
@@ -74,6 +76,7 @@ function Home() {
                     const weekEnd = currentWeekEnd > endDate ? endDate : currentWeekEnd;
 
                     weeks.push({
+                        id: weekNumber,
                         name: `Semana ${weekNumber}`,
                         start: currentWeekStart.toISOString().split('T')[0],
                         end: weekEnd.toISOString().split('T')[0]
@@ -84,10 +87,19 @@ function Home() {
                     weekNumber++;
                 }
 
-                console.log("Semanas", weeks);
+                setWeeks(weeks);
+
+                //Seleccionar la semana más cercana
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0];
+                console.log("Hoy:", todayStr);
+                console.log("Semanas disponibles:", weeks);
+
+                const closestWeek = weeks.find(week => week.start >= todayStr && week.end >= todayStr);
+                setSelectedWeek(closestWeek.id);
+                console.log("Semana seleccionada:", closestWeek);
 
 
-                console.log(leagueId);
 
                 if (!leagueId) {
                     setLoading(false);
@@ -194,6 +206,21 @@ function Home() {
                     {leagues.sort((a, b) => a.id - b.id).map(league => (
                         <Option key={league.id} value={league.id}>
                             {league.name}
+                        </Option>
+                    ))}
+                </Select>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+                <Select
+                    value={selectedWeek}
+                    onChange={(value) => setSelectedWeek(value)}
+                    style={{ width: 220 }}
+                    loading={weeks.length === 0}
+                >
+                    {weeks.sort((a, b) => a.id - b.id).map(week => (
+                        <Option key={week.id} value={week.id}>
+                            {week.name}
                         </Option>
                     ))}
                 </Select>
