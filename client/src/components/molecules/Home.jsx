@@ -58,8 +58,12 @@ function Home() {
 
                 const weeks = [];
 
-                let currentWeekStart = new Date(startDate);
-                let weekNumber = 1;
+let currentWeekStart = new Date(startDate);
+const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, 2 = martes, ...
+const daysToTuesday = dayOfWeek <= 2 ? (2 - dayOfWeek) : (9 - dayOfWeek);
+currentWeekStart.setDate(currentWeekStart.getDate() + daysToTuesday);
+console.log("Primer martes:", currentWeekStart);
+let weekNumber = 1;
 
                 while (currentWeekStart <= endDate) {
                     console.log("Procesando semana:", weekNumber, "desde:", currentWeekStart);
