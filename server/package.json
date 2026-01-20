@@ -5,11 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "npx sequelize-cli db:migrate",
-    "migrate:prod": "NODE_ENV=production npx sequelize-cli db:migrate",
-    "build": "echo 'No build needed'",
-    "deploy": "npm run migrate:prod && npm start"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Samir El Kharrat Martín",
   "license": "ISC",
