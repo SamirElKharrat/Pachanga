@@ -54,51 +54,56 @@ function Home() {
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
                 const endDate = new Date(liga.end_date);
-
-                console.log("startDate:", startDate);
-                console.log("endDate:", endDate);
+                const today = new Date();
 
                 const weeks = [];
 
                 let currentWeekStart = new Date(startDate);
                 const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
-                const daysToFriday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
-                currentWeekStart.setDate(currentWeekStart.getDate() + daysToFriday);
-                console.log("Primer martes:", currentWeekStart);
+                const daysToSaturday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
+                currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
                 let weekNumber = 1;
 
-                while (currentWeekStart <= endDate) {
-                    console.log("Procesando semana:", weekNumber, "desde:", currentWeekStart);
 
+                while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
                     currentWeekEnd.setDate(currentWeekStart.getDate() + 2); // Sábado a lunes = 3 días (sábado, domingo, lunes)
-
                     const weekEnd = currentWeekEnd > endDate ? endDate : currentWeekEnd;
 
-                    weeks.push({
-                        id: weekNumber,
-                        name: `Semana ${weekNumber}`,
-                        start: currentWeekStart.toISOString().split('T')[0],
-                        end: weekEnd.toISOString().split('T')[0]
-                    });
+                    // Calcular la fecha límite (hoy + 7 días)
+                    const limitDate = new Date(today);
+                    limitDate.setDate(today.getDate() + 7);
+
+                    // Luego en el bucle:
+                    console.log("currentWeekStart", currentWeekStart);
+                    console.log("limitDate", limitDate);
+                    console.log(currentWeekStart <= limitDate);
+                    if (currentWeekStart <= limitDate) {
+                        weeks.push({
+                            id: weekNumber,
+                            name: `Semana ${weekNumber}`,
+                            start: currentWeekStart.toISOString().split('T')[0],
+                            end: weekEnd.toISOString().split('T')[0]
+                        });
+                    }
 
                     currentWeekStart = new Date(weekEnd);
                     currentWeekStart.setDate(weekEnd.getDate() + 5); // Saltar al siguiente sábado (lunes + 5 días)
                     weekNumber++;
+
                 }
 
                 setWeeks(weeks);
+                console.log(weeks);
 
-                //Seleccionar la semana más cercana
-                const today = new Date();
+                // Seleccionar la semana más cercana
                 const todayStr = today.toISOString().split('T')[0];
-                console.log("Hoy:", todayStr);
-                console.log("Semanas disponibles:", weeks);
-
                 const closestWeek = weeks.find(week => week.start >= todayStr && week.end >= todayStr);
-                setSelectedWeek(closestWeek.id);
-                console.log("Semana seleccionada:", closestWeek);
 
+                // Si no hay semana futura, seleccionar la última semana disponible
+                if (selectedWeek === null) {
+                    setSelectedWeek(closestWeek ? closestWeek.id : weeks[weeks.length - 1]?.id || 1);
+                }
 
 
                 if (!leagueId) {
@@ -123,7 +128,7 @@ function Home() {
                 setFavoriteTeams(formattedFavorites);
 
                 // 5. Partidos
-                const matchesResponse = await API.get('/matches/getByWeek/' + leagueId);
+                const matchesResponse = await API.get('/matches/getByWeek/' + leagueId + '/' + weeks[selectedWeek - 1].start + '/' + weeks[selectedWeek - 1].end);
                 setMatches(matchesResponse);
 
                 if (matchesResponse.length === 0) {
@@ -167,7 +172,7 @@ function Home() {
         };
 
         fetchAllData();
-    }, [selectedLeague, location.state]);
+    }, [selectedLeague, location.state, selectedWeek]);
 
     const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -195,37 +200,41 @@ function Home() {
 
     return (
         <div style={{ padding: '24px' }}>
-
             <div style={{ marginBottom: '24px' }}>
-                <Select
-                    value={selectedLeague}
-                    onChange={(value) => setSelectedLeague(value)}
-                    style={{ width: 220 }}
-                    loading={leagues.length === 0}
-                >
-                    {leagues.sort((a, b) => a.id - b.id).map(league => (
-                        <Option key={league.id} value={league.id}>
-                            {league.name}
-                        </Option>
-                    ))}
-                </Select>
-            </div>
+                <Row gutter={[8, 8]}>
+                    <Col xs={24} md={11}>
+                        <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Liga</p>
+                        <Select
+                            value={selectedLeague}
+                            onChange={(value) => setSelectedLeague(value)}
+                            style={{ width: '100%' }}
+                            loading={leagues.length === 0}
+                        >
+                            {leagues.sort((a, b) => a.id - b.id).map(league => (
+                                <Option key={league.id} value={league.id}>
+                                    {league.name}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Col>
 
-            <div style={{ marginBottom: '24px' }}>
-                <Select
-                    value={selectedWeek}
-                    onChange={(value) => setSelectedWeek(value)}
-                    style={{ width: 220 }}
-                    loading={weeks.length === 0}
-                >
-                    {weeks.sort((a, b) => a.id - b.id).map(week => (
-                        <Option key={week.id} value={week.id}>
-                            {week.name}
-                        </Option>
-                    ))}
-                </Select>
+                    <Col xs={24} md={11}>
+                        <p style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Semana</p>
+                        <Select
+                            value={selectedWeek}
+                            onChange={(value) => setSelectedWeek(value)}
+                            style={{ width: '100%' }}
+                            loading={weeks.length === 0}
+                        >
+                            {weeks.sort((a, b) => a.id - b.id).map(week => (
+                                <Option key={week.id} value={week.id}>
+                                    {week.name}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Col>
+                </Row>
             </div>
-
             <Row gutter={[16, 16]}>
                 {/* Clasificación */}
                 <Col xs={24} md={5}>

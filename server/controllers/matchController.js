@@ -102,6 +102,35 @@ exports.getCurrentWeekMatchesByLeague = async (req, res) => {
     }
 };
 
+//Get all matches of a week
+exports.getCurrentWeekMatchesByWeek = async (req, res) => {
+    const league_id = req.params.league_id
+    try {
+        const currentStartOfWeek = startOfWeek();
+        const currentEndOfWeek = endOfWeek();
+
+        const matches = await Match.findAll({
+            where: {
+                date: {
+                    [Op.gte]: req.params.startDate,
+                    [Op.lte]: req.params.endDate
+                },
+                league_id: league_id
+            },
+            include: [{
+                model: Team,
+                attributes: ['id', 'name', 'logo_url'],
+                through: { attributes: [] }
+            }]
+        });
+
+        res.json(matches);
+    } catch (error) {
+        console.error('Error getting current week matches:', error);
+        res.status(500).json({ error: 'Error fetching matches. Please try again later.' });
+    }
+};
+
 //Get all matches of a league
 exports.getMatchesByLeague = async (req, res) => {
     try {
