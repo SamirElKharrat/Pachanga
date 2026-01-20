@@ -13,5 +13,6 @@ router.put("/changePassword/:id", authenticateJwtToken, usersController.changePa
 router.delete("/delete/:id", authenticateJwtToken, usersController.deleteUser);
 router.get("/protected", authenticateJwtToken, usersController.protectedRoute);
 router.get("/admin", authenticateJwtToken, usersController.adminRoute);
+router.put("/resetPassword/:id", authenticateJwtToken, usersController.resetPassword);
 
 module.exports = router;

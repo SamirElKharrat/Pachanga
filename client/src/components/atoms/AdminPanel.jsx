@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { API } from '../../services/api';
 import { Table, Button, Space, Row, Col } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UndoOutlined } from '@ant-design/icons';
 import Search from 'antd/es/input/Search';
 import ModalInfo from './ModalInfo';
 import BasicForm from './BasicForm';
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { showAlert } from './AlertInfo';
 
 import dayjs from 'dayjs';
+
 
 const AdminPanel = ({ table, names, fields, relation }) => {
     const [data, setData] = useState([]);
@@ -174,6 +175,17 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                         }}
                         title="Eliminar"
                     />
+                    {table == "users" ? 
+                    <Button
+                        type="text"
+                        icon={<UndoOutlined/>}
+                        onClick={async () => {
+                            await API.put(`/users/resetPassword/${record.id}`);
+                            localStorage.removeItem('token');
+                            nav('/login');
+                        }}
+                        title="Reestablecer contraseña"
+                    /> : ""}
                 </Space>
             ),
         };

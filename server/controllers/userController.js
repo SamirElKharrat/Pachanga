@@ -183,3 +183,19 @@ exports.adminRoute = async (req, res) => {
 }
 
 
+//Reset Password
+exports.resetPassword = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    const hashedPass = await bcrypt.hash("pachanga123!", 10);
+    const updatedUser = await user.update({ password: hashedPass });
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+}
+
+
