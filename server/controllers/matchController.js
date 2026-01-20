@@ -178,14 +178,11 @@ exports.createMatch = async (req, res) => {
 // Update match
 exports.updateMatch = async (req, res) => {
     try {
-        const teams = await Team.findAll({ where: { id: req.body.teams } });
-        const name = `${teams[0].acronym} vs ${teams[1].acronym}`;
         const match = await Match.findByPk(req.params.id);
         if (!match) {
             return res.status(404).json({ error: 'Match not found' });
         }
-        const updatedMatch = await match.update({ ...req.body, name });
-        match.setTeams(teams);
+        const updatedMatch = await match.update({ ...req.body });
         res.json(updatedMatch);
     } catch (error) {
         res.status(400).json({ error: error.message });

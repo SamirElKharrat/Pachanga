@@ -35,7 +35,19 @@ const NextGames = () => {
             setLoading(true);
             try {
                 const response = await API.get('/matches/getByWeek/');
-                const filterDate = response.map(match => ({
+                const now = new Date();
+                const updatePromises = response.map(async game => {
+                    const matchDate = new Date(game.date);
+                    if (matchDate <= now && game.status === 'scheduled') {
+                        await API.put('/matches/update/' + game.id, { status: 'live' });
+                        return { ...game, status: 'live' }; 
+                    }
+                    return game; 
+                });
+
+                const updatedGames = await Promise.all(updatePromises);
+
+                const filterDate = updatedGames.map(match => ({
                     ...match,
                     rawDate: new Date(match.date), // Para ordenar
                     formattedDate: new Intl.DateTimeFormat('es-ES', {
@@ -56,6 +68,7 @@ const NextGames = () => {
 
                 //Filter matches by user participations
                 const filterResponse = filterFinished.filter(match => responseLeagueParticipation.includes(match.league_id))
+
                 setNextGames(filterResponse)
 
             } catch (error) {
@@ -67,34 +80,6 @@ const NextGames = () => {
         };
         fetchData();
     }, [location.key]);
-
-    useEffect(() => {
-        const checkLiveMatches = async () => {
-            const now = new Date();
-
-            setNextGames(prevGames =>
-                prevGames.map(game => {
-                    const matchDate = new Date(game.date);
-                    // If match time has come and status is still 'scheduled' or similar
-                    if (matchDate <= now && game.status === 'scheduled') {
-                        // Update status in the backend
-                        API.put('/matches/update/' + game.id, { status: 'live' });
-                        // Optimistically update UI
-                        return { ...game, status: 'live' };
-                    }
-                    return game;
-                })
-            );
-        };
-
-        // Check immediately
-        checkLiveMatches();
-
-        // Then check every 30 seconds (more efficient than every minute)
-        const interval = setInterval(checkLiveMatches, 30000);
-
-        return () => clearInterval(interval);
-    }, []);
 
     if (loading) {
         return <Skeleton className='container mt-5' />;
