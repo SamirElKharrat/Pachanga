@@ -23,6 +23,10 @@ const League = sequelize.define('League', {
     logo_url: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    status: {
+        type: DataTypes.ENUM('scheduled', 'live', 'finished'),
+        defaultValue: 'scheduled'
     }
 }, {
     tableName: 'League',

@@ -28,8 +28,8 @@ const Admin = () => {
                         table="leagues"
                         relation={["teams"]}
                         name="Liga"
-                        fields={["text", "date", "date", "file", "multiselect"]}
-                        names={["name", "start_date", "end_date", "logo_url", "teams"]} />
+                        fields={["text", "date", "date", "file", "multiselect", 'select']}
+                        names={["name", "start_date", "end_date", "logo_url", "teams", "status"]} />
                 </TabPane>
                 <TabPane tab="Equipos" key="4">
                     <AdminPanel
