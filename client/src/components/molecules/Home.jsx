@@ -208,7 +208,12 @@ function Home() {
                     <Card
                         title={
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>Predicciones de la semana</span>
+                                {window.innerWidth <= 768 && (
+                                    <span>Predicciones</span>
+                                )}
+                                {window.innerWidth > 768 && (
+                                    <span>Predicciones de la semana</span>
+                                )}
                                 <Tooltip title="Quitar Filtro">
                                     <Button
                                         type="text"
