@@ -48,6 +48,41 @@ function Home() {
                     }
                 }
 
+                //2.5 Crear array de semanas desde start_date hasta end_date (ignorando fecha actual)
+                const liga = leagueArray.find(l => l.id === leagueId);
+                const startDate = new Date(liga.start_date);
+                const endDate = new Date(liga.end_date);
+
+                console.log("startDate:", startDate);
+                console.log("endDate:", endDate);
+
+                const weeks = [];
+
+                let currentWeekStart = new Date(startDate);
+                let weekNumber = 1;
+
+                while (currentWeekStart <= endDate) {
+                    console.log("Procesando semana:", weekNumber, "desde:", currentWeekStart);
+
+                    const currentWeekEnd = new Date(currentWeekStart);
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+
+                    const weekEnd = currentWeekEnd > endDate ? endDate : currentWeekEnd;
+
+                    weeks.push({
+                        name: `Semana ${weekNumber}`,
+                        start: currentWeekStart.toISOString().split('T')[0],
+                        end: weekEnd.toISOString().split('T')[0]
+                    });
+
+                    currentWeekStart = new Date(weekEnd);
+                    currentWeekStart.setDate(weekEnd.getDate() + 1);
+                    weekNumber++;
+                }
+
+                console.log("Semanas", weeks);
+
+
                 console.log(leagueId);
 
                 if (!leagueId) {
