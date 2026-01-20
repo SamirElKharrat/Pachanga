@@ -59,7 +59,7 @@ function Home() {
                 const weeks = [];
 
                 let currentWeekStart = new Date(startDate);
-                const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 5 = viernes
+                const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
                 const daysToFriday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToFriday);
                 console.log("Primer martes:", currentWeekStart);
@@ -69,7 +69,7 @@ function Home() {
                     console.log("Procesando semana:", weekNumber, "desde:", currentWeekStart);
 
                     const currentWeekEnd = new Date(currentWeekStart);
-                    currentWeekEnd.setDate(currentWeekStart.getDate() + 3); // Viernes a lunes = 4 días (viernes, sábado, domingo, lunes)
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 2); // Sábado a lunes = 3 días (sábado, domingo, lunes)
 
                     const weekEnd = currentWeekEnd > endDate ? endDate : currentWeekEnd;
 
@@ -80,7 +80,7 @@ function Home() {
                     });
 
                     currentWeekStart = new Date(weekEnd);
-                    currentWeekStart.setDate(weekEnd.getDate() + 1);
+                    currentWeekStart.setDate(weekEnd.getDate() + 5); // Saltar al siguiente sábado (lunes + 5 días)
                     weekNumber++;
                 }
 
