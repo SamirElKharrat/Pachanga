@@ -128,7 +128,7 @@ const Prediction = () => {
                                 label: league.name,
                                 value: league.id,
                             }))}
-                            style={{ width: '100%' }}
+                            style={{ width: 220 }}
                             onChange={(value) => setSelectedLeague(value)}
                             value={selectedLeague}
                         />

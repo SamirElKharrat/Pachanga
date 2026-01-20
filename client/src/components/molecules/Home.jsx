@@ -144,11 +144,12 @@ function Home() {
 
     return (
         <div style={{ padding: '24px' }}>
+
             <div style={{ marginBottom: '24px' }}>
                 <Select
                     value={selectedLeague}
                     onChange={(value) => setSelectedLeague(value)}
-                    style={{ width: 300 }}
+                    style={{ width: 220 }}
                     loading={leagues.length === 0}
                 >
                     {leagues.sort((a, b) => a.id - b.id).map(league => (
