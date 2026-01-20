@@ -60,7 +60,7 @@ function Home() {
 
                 let currentWeekStart = new Date(startDate);
                 const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 5 = viernes
-                const daysToFriday = dayOfWeek <= 5 ? (5 - dayOfWeek) : (12 - dayOfWeek);
+                const daysToFriday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToFriday);
                 console.log("Primer martes:", currentWeekStart);
                 let weekNumber = 1;
