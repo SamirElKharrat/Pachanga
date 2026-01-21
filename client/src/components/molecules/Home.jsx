@@ -248,7 +248,7 @@ function Home() {
             </div>
             <Row gutter={[16, 16]}>
                 {/* Clasificación */}
-                <Col xs={24} md={5}>
+                <Col xs={24} md={7}>
                     <Card title="Clasificación" loading={loading}>
                         {participants
                             .slice()
@@ -291,7 +291,7 @@ function Home() {
                 </Col>
 
                 {/* Predicciones */}
-                <Col xs={24} md={18}>
+                <Col xs={24} md={15}>
                     <Card
                         title={
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
