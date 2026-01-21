@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Avatar, Tooltip, Typography, Image, Button } from 'antd';
+import { Card, Row, Col, Select, Avatar, Tooltip, Typography, Image, Button, Carousel } from 'antd';
 import { API } from '../../services/api';
 import { UserOutlined, CloseOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -19,6 +19,8 @@ function Home() {
     const [predictionsMade, setPredictionsMade] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [selectedWeek, setSelectedWeek] = useState(null);
+    const [prevLeague, setPrevLeague] = useState(selectedLeague);
+    const [sortedMatches, setSortedMatches] = useState([]);
     const [weeks, setWeeks] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
@@ -41,7 +43,6 @@ function Home() {
                 if (!selectedLeague && leagueArray.length > 0) {
                     leagueArray.sort((a, b) => b.id - a.id);
                     leagueId = leagueArray[0].id;
-                    console.log(leagueId);
                     if (location.state && location.state.leagueId) {
                         leagueId = location.state.leagueId;
                         setSelectedLeague(leagueId);
@@ -49,11 +50,21 @@ function Home() {
                         setSelectedLeague(leagueId);
                     }
                 }
+                if (selectedLeague !== prevLeague) {
+                    setSelectedWeek(null);
+                    setWeeks([]);
+                    setMatches([]);
+                    setSortedMatches([]);
+                    setPredictions([]);
+                    setResults([]);
+                    setPrevLeague(selectedLeague);
+                    return; // Salga temprano para que la efecto se ejecute de nuevo con los estados restablecidos
+                }
 
                 //2.5 Crear array de semanas desde start_date hasta end_date (ignorando fecha actual)
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
-                const endDate = new Date(liga.end_date);
+                let endDate = new Date(liga.end_date);
                 const today = new Date();
 
                 const weeks = [];
@@ -64,20 +75,17 @@ function Home() {
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
                 let weekNumber = 1;
 
-
                 while (currentWeekStart <= endDate) {
+
                     const currentWeekEnd = new Date(currentWeekStart);
                     currentWeekEnd.setDate(currentWeekStart.getDate() + 2); // Sábado a lunes = 3 días (sábado, domingo, lunes)
-                    const weekEnd = currentWeekEnd > endDate ? endDate : currentWeekEnd;
+                    const weekEnd = currentWeekEnd;
 
                     // Calcular la fecha límite (hoy + 7 días)
                     const limitDate = new Date(today);
                     limitDate.setDate(today.getDate() + 7);
 
                     // Luego en el bucle:
-                    console.log("currentWeekStart", currentWeekStart);
-                    console.log("limitDate", limitDate);
-                    console.log(currentWeekStart <= limitDate);
                     if (currentWeekStart <= limitDate) {
                         weeks.push({
                             id: weekNumber,
@@ -94,17 +102,14 @@ function Home() {
                 }
 
                 setWeeks(weeks);
-                console.log(weeks);
-
-                // Seleccionar la semana más cercana
-                const todayStr = today.toISOString().split('T')[0];
-                const closestWeek = weeks.find(week => week.start >= todayStr && week.end >= todayStr);
 
                 // Si no hay semana futura, seleccionar la última semana disponible
-                if (selectedWeek === null) {
-                    setSelectedWeek(closestWeek ? closestWeek.id : weeks[weeks.length - 1]?.id || 1);
+                if (selectedWeek === null || selectedLeague !== prevLeague) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const closestWeek = weeks.find(week => week.start >= todayStr) || weeks[weeks.length - 1];
+                    setSelectedWeek(closestWeek?.id || 1);
+                    setPrevLeague(selectedLeague);
                 }
-
 
                 if (!leagueId) {
                     setLoading(false);
@@ -128,42 +133,49 @@ function Home() {
                 setFavoriteTeams(formattedFavorites);
 
                 // 5. Partidos
-                const matchesResponse = await API.get('/matches/getByWeek/' + leagueId + '/' + weeks[selectedWeek - 1].start + '/' + weeks[selectedWeek - 1].end);
-                setMatches(matchesResponse);
+                if (weeks.length > 0 && selectedWeek) {
+                    const weekData = weeks.find(w => w.id === selectedWeek) || weeks[0];
+                    if (weekData) {
+                        const matchesResponse = await API.get(`/matches/getByWeek/${leagueId}/${weekData.start}/${weekData.end}`);
+                        setMatches(matchesResponse);
+                        const sortedMatches = [...matchesResponse].sort((a, b) => new Date(a.date) - new Date(b.date));
+                        setSortedMatches(sortedMatches);
 
-                if (matchesResponse.length === 0) {
-                    setLoading(false);
-                    return;
+                        if (matchesResponse.length === 0) {
+                            setLoading(false);
+                            return;
+                        }
+
+                        // 6. Predicciones
+                        const predictionsArray = [];
+                        for (const match of matchesResponse) {
+                            const response = await API.get('/predictions/getByMatch/' + match.id);
+                            predictionsArray.push(...response);
+                        }
+                        setPredictions(predictionsArray);
+
+                        // 7. Resultados
+                        const resultsArray = await Promise.all(
+                            matchesResponse.map(match =>
+                                API.get('/results/getByMatch/' + match.id).then(res => res).catch(() => null)
+                            )
+                        );
+                        setResults(resultsArray.filter(Boolean));
+
+
+                        const predictionsMade = await API.getUserByToken().then(res => {
+                            return matchesResponse.every(match =>
+                                predictionsArray.some(prediction =>
+                                    prediction.match_id === match.id &&
+                                    prediction.User?.id === res.id
+                                )
+                            );
+                        });
+
+                        setPredictionsMade(predictionsMade);
+                        setLoading(false);
+                    }
                 }
-
-                // 6. Predicciones
-                const predictionsArray = [];
-                for (const match of matchesResponse) {
-                    const response = await API.get('/predictions/getByMatch/' + match.id);
-                    predictionsArray.push(...response);
-                }
-                setPredictions(predictionsArray);
-
-                // 7. Resultados
-                const resultsArray = await Promise.all(
-                    matchesResponse.map(match =>
-                        API.get('/results/getByMatch/' + match.id).then(res => res).catch(() => null)
-                    )
-                );
-                setResults(resultsArray.filter(Boolean));
-
-
-                const predictionsMade = await API.getUserByToken().then(res => {
-                    return matchesResponse.every(match =>
-                        predictionsArray.some(prediction =>
-                            prediction.match_id === match.id &&
-                            prediction.User?.id === res.id
-                        )
-                    );
-                });
-
-                setPredictionsMade(predictionsMade);
-                setLoading(false);
 
             } catch (err) {
                 console.error(err);
@@ -172,9 +184,8 @@ function Home() {
         };
 
         fetchAllData();
-    }, [selectedLeague, location.state, selectedWeek]);
+    }, [selectedLeague, location.state, selectedWeek, prevLeague]);
 
-    const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (leagues.length === 0 && !loading) {
         return (
@@ -309,29 +320,37 @@ function Home() {
                                 <div style={{ minWidth: 60 }}>
                                     <Text strong>Partidos</Text>
                                 </div>
-                                <div className="d-flex flex-grow-1 justify-content-start gap-2 flex-wrap">
-                                    {sortedMatches.map((match) => (
-                                        <Tooltip key={match.id} title={match.Teams[0]?.name + ' vs ' + match.Teams[1]?.name}>
-                                            <div
-                                                className="text-center rounded shadow-sm"
-                                                style={{ minWidth: 140, flex: '1 0 140px' }}
-                                            >
-                                                <div className="d-flex align-items-center justify-content-center mb-2">
-                                                    <Image preview={false} src={match.Teams[0]?.logo_url} width={24} height={24} />
-                                                    <Text strong className="mx-2">vs</Text>
-                                                    <Image preview={false} src={match.Teams[1]?.logo_url} width={24} height={24} />
+                                <Carousel
+                                    style={{ padding: '20px' }}
+                                    dots={false}
+                                    arrows={true}
+                                    slidesToShow={1}
+                                    slidesToScroll={1}
+                                >
+                                    <div className='d-flex justify-content-around align-items-center'>
+
+                                        {sortedMatches.map((match) => (
+                                            <Tooltip key={match.id} title={match.Teams[0]?.name + ' vs ' + match.Teams[1]?.name}>
+                                                <div
+                                                    className="text-center rounded shadow-sm"
+                                                    style={{ minWidth: 140, flex: '1 0 140px' }}
+                                                >
+                                                    <div className="d-flex align-items-center justify-content-center mb-2">
+                                                        <Image preview={false} src={match.Teams[0]?.logo_url} width={24} height={24} />
+                                                        <Text strong className="mx-2">vs</Text>
+                                                        <Image preview={false} src={match.Teams[1]?.logo_url} width={24} height={24} />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </Tooltip>
-                                    ))}
-                                </div>
+                                            </Tooltip>
+                                        ))}
+                                    </div>
+                                </Carousel>
                             </div>
                         ) : (
                             <>
                             </>
                         )}
-                        {console.log(selectedParticipant)}
-                        {predictionsMade ? (
+                        {predictionsMade && matches.length != 0 ? (
                             /* Show predictions */
                             selectedParticipant.map((participation) => (
 
@@ -435,7 +454,7 @@ function Home() {
                             }}>
                                 {matches.length === 0 ? (
                                     <Text type="secondary" style={{ fontSize: '16px' }}>
-                                        No hay partidos esta semana
+                                        No hay partidos disponibles
                                     </Text>
                                 ) : (
                                     <>
