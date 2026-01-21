@@ -19,6 +19,7 @@ function Home() {
     const [predictionsMade, setPredictionsMade] = useState(false);
     const [selectedParticipant, setSelectedParticipant] = useState(null);
     const [selectedWeek, setSelectedWeek] = useState(null);
+    const [prevLeague, setPrevLeague] = useState(selectedLeague);
     const [weeks, setWeeks] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
@@ -53,7 +54,7 @@ function Home() {
                 //2.5 Crear array de semanas desde start_date hasta end_date (ignorando fecha actual)
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
-                const endDate = new Date(liga.end_date);
+                let endDate = new Date(liga.end_date);
                 const today = new Date();
 
                 const weeks = [];
@@ -64,11 +65,11 @@ function Home() {
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
                 let weekNumber = 1;
 
-
                 while (currentWeekStart <= endDate) {
+
                     const currentWeekEnd = new Date(currentWeekStart);
                     currentWeekEnd.setDate(currentWeekStart.getDate() + 2); // Sábado a lunes = 3 días (sábado, domingo, lunes)
-                    const weekEnd = currentWeekEnd > endDate ? endDate : currentWeekEnd;
+                    const weekEnd = currentWeekEnd;
 
                     // Calcular la fecha límite (hoy + 7 días)
                     const limitDate = new Date(today);
@@ -96,14 +97,14 @@ function Home() {
                 setWeeks(weeks);
                 console.log(weeks);
 
-                // Seleccionar la semana más cercana
-                const todayStr = today.toISOString().split('T')[0];
-                const closestWeek = weeks.find(week => week.start >= todayStr && week.end >= todayStr);
-
                 // Si no hay semana futura, seleccionar la última semana disponible
-                if (selectedWeek === null) {
-                    setSelectedWeek(closestWeek ? closestWeek.id : weeks[weeks.length - 1]?.id || 1);
+                if (selectedLeague !== prevLeague && weeks.length > 0) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const closestWeek = weeks.find(week => week.start >= todayStr);
+                    setSelectedWeek(closestWeek?.id || weeks[weeks.length - 1]?.id || 1);
+                    setPrevLeague(selectedLeague);
                 }
+
 
 
                 if (!leagueId) {
@@ -143,6 +144,7 @@ function Home() {
                     predictionsArray.push(...response);
                 }
                 setPredictions(predictionsArray);
+                console.log("predictions", predictionsArray);
 
                 // 7. Resultados
                 const resultsArray = await Promise.all(
@@ -165,6 +167,7 @@ function Home() {
                 setPredictionsMade(predictionsMade);
                 setLoading(false);
 
+
             } catch (err) {
                 console.error(err);
                 setLoading(false);
@@ -172,7 +175,7 @@ function Home() {
         };
 
         fetchAllData();
-    }, [selectedLeague, location.state, selectedWeek]);
+    }, [selectedLeague, location.state, selectedWeek, prevLeague]);
 
     const sortedMatches = [...matches].sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -331,7 +334,7 @@ function Home() {
                             </>
                         )}
                         {console.log(selectedParticipant)}
-                        {predictionsMade ? (
+                        {predictionsMade && selectedParticipant.length > 0 && sortedMatches.length > 0 ? (
                             /* Show predictions */
                             selectedParticipant.map((participation) => (
 
@@ -435,7 +438,7 @@ function Home() {
                             }}>
                                 {matches.length === 0 ? (
                                     <Text type="secondary" style={{ fontSize: '16px' }}>
-                                        No hay partidos esta semana
+                                        No hay partidos disponibles
                                     </Text>
                                 ) : (
                                     <>
