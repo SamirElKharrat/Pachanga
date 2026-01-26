@@ -85,6 +85,9 @@ function Home() {
                     const limitDate = new Date(today);
                     limitDate.setDate(today.getDate() + 4);
 
+                    console.log("currentWeekStart", currentWeekStart);
+                    console.log("limitDate", limitDate);
+
                     // Luego en el bucle:
                     if (currentWeekStart <= limitDate) {
                         weeks.push({
@@ -100,6 +103,8 @@ function Home() {
                     weekNumber++;
 
                 }
+
+                console.log(weeks);
 
                 setWeeks(weeks);
 
