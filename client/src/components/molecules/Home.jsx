@@ -60,7 +60,6 @@ function Home() {
                     setPrevLeague(selectedLeague);
                     return; // Salga temprano para que la efecto se ejecute de nuevo con los estados restablecidos
                 }
-
                 //2.5 Crear array de semanas desde start_date hasta end_date (ignorando fecha actual)
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
@@ -69,17 +68,18 @@ function Home() {
 
                 const weeks = [];
 
+                // Encontrar el primer sábado desde la fecha de inicio
                 let currentWeekStart = new Date(startDate);
                 const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
                 const daysToSaturday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
                 let weekNumber = 1;
 
-                while (currentWeekStart <= endDate) {
+                console.log("daysToSaturday", daysToSaturday);
 
+                while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
-                    currentWeekEnd.setDate(currentWeekStart.getDate() + 4); // Sábado a martes = 4 días (sábado, domingo, lunes, martes)
-                    const weekEnd = currentWeekEnd;
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 3); // Sábado a martes = 4 días (sábado, domingo, lunes, martes)
 
                     // Calcular la fecha límite (hoy + 4 días)
                     const limitDate = new Date(today);
@@ -88,24 +88,22 @@ function Home() {
                     console.log("currentWeekStart", currentWeekStart);
                     console.log("limitDate", limitDate);
 
-                    // Luego en el bucle:
                     if (currentWeekStart <= limitDate) {
                         weeks.push({
                             id: weekNumber,
                             name: `Semana ${weekNumber}`,
                             start: currentWeekStart.toISOString().split('T')[0],
-                            end: weekEnd.toISOString().split('T')[0]
+                            end: currentWeekEnd.toISOString().split('T')[0]
                         });
                     }
 
-                    currentWeekStart = new Date(weekEnd);
-                    currentWeekStart.setDate(weekEnd.getDate() + 5); // Saltar al siguiente sábado (lunes + 5 días)
+                    // Calcular el siguiente sábado correctamente
+                    currentWeekStart = new Date(currentWeekStart);
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7); // Saltar exactamente 7 días al siguiente sábado
                     weekNumber++;
-
                 }
 
                 console.log(weeks);
-
                 setWeeks(weeks);
 
                 // Si no hay semana futura, seleccionar la última semana disponible
