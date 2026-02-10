@@ -106,8 +106,6 @@ exports.getCurrentWeekMatchesByLeague = async (req, res) => {
 exports.getCurrentWeekMatchesByWeek = async (req, res) => {
     const league_id = req.params.league_id
     try {
-        const currentStartOfWeek = startOfWeek();
-        const currentEndOfWeek = endOfWeek();
 
         const matches = await Match.findAll({
             where: {

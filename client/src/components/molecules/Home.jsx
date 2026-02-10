@@ -21,6 +21,7 @@ function Home() {
     const [selectedWeek, setSelectedWeek] = useState(null);
     const [prevLeague, setPrevLeague] = useState(selectedLeague);
     const [sortedMatches, setSortedMatches] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
     const [weeks, setWeeks] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
@@ -75,18 +76,14 @@ function Home() {
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
                 let weekNumber = 1;
 
-                console.log("daysToSaturday", daysToSaturday);
-
                 while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
-                    currentWeekEnd.setDate(currentWeekStart.getDate() + 3); // Sábado a martes = 4 días (sábado, domingo, lunes, martes)
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 4); // Sábado a miércoles = 4 días (sábado, domingo, lunes, martes, miércoles)
 
                     // Calcular la fecha límite (hoy + 4 días)
                     const limitDate = new Date(today);
                     limitDate.setDate(today.getDate() + 4);
 
-                    console.log("currentWeekStart", currentWeekStart);
-                    console.log("limitDate", limitDate);
 
                     if (currentWeekStart <= limitDate) {
                         weeks.push({
@@ -103,7 +100,6 @@ function Home() {
                     weekNumber++;
                 }
 
-                console.log(weeks);
                 setWeeks(weeks);
 
                 // Si no hay semana futura, seleccionar la última semana disponible
@@ -120,10 +116,12 @@ function Home() {
                 }
 
                 // 3. Participantes
+                const getCurrentUser = await API.getUserByToken();
+
                 const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
                 setParticipants(participantsResponse);
                 setSelectedParticipant(participantsResponse);
-
+                setCurrentUser(participantsResponse.find(p => p.user_id === getCurrentUser.id));
                 // 4. Equipos Favoritos
                 const favoriteTeamsResponse = participantsResponse.map(participant =>
                     API.get('/favoriteTeams/get/' + participant.User.id + '/' + leagueId)
@@ -265,7 +263,13 @@ function Home() {
                                         padding: '12px 0',
                                         borderBottom: '1px solid #f0f0f0'
                                     }}
-                                    onClick={() => setSelectedParticipant([participation])}
+                                    onClick={() => {
+                                        if (selectedParticipant.find(p => p.User.id === currentUser.User.id)) {
+                                            // do nothing
+                                        } else {
+                                            setSelectedParticipant([currentUser, participation]);
+                                        }
+                                    }}
                                 >
                                     <Text strong style={{ width: 30 }}>{index + 1}.</Text>
                                     <Tooltip title={participation.User.username}>
@@ -353,10 +357,10 @@ function Home() {
                             <>
                             </>
                         )}
+                        {console.log(selectedParticipant)}
                         {predictionsMade && matches.length != 0 ? (
                             /* Show predictions */
                             selectedParticipant.map((participation) => (
-
                                 <div key={participation.User.id} className="d-flex align-items-center py-3 border-bottom flex-wrap">
                                     <Tooltip title={participation.User.username}>
                                         <div style={{ minWidth: 60 }} className="d-flex align-items-center ps-2 pe-2">
@@ -471,6 +475,7 @@ function Home() {
 
                                 )}
                             </div>
+
                         )}
                     </Card>
                 </Col>
