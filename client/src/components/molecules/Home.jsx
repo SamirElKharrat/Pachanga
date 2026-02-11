@@ -94,9 +94,9 @@ function Home() {
                         });
                     }
 
-                    // Calcular el siguiente sábado correctamente
+                    // Calcular el siguiente viernes correctamente
                     currentWeekStart = new Date(currentWeekStart);
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 7); // Saltar exactamente 7 días al siguiente sábado
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 6); // Saltar exactamente 6 días al siguiente viernes
                     weekNumber++;
                 }
 
@@ -119,11 +119,14 @@ function Home() {
                 const getCurrentUser = await API.getUserByToken();
 
                 const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
-                setParticipants(participantsResponse);
-                setSelectedParticipant(participantsResponse);
-                setCurrentUser(participantsResponse.find(p => p.user_id === getCurrentUser.id));
+                const currentUserParticipant = participantsResponse.find(p => p.user_id === getCurrentUser.id);
+                const otherParticipants = participantsResponse.filter(p => p.user_id !== getCurrentUser.id);
+                const sortedParticipants = [currentUserParticipant, ...otherParticipants];
+                setParticipants(sortedParticipants);
+                setSelectedParticipant(sortedParticipants);
+                setCurrentUser(sortedParticipants.find(p => p.user_id === getCurrentUser.id));
                 // 4. Equipos Favoritos
-                const favoriteTeamsResponse = participantsResponse.map(participant =>
+                const favoriteTeamsResponse = sortedParticipants.map(participant =>
                     API.get('/favoriteTeams/get/' + participant.User.id + '/' + leagueId)
                 );
                 const favoriteTeamsArray = await Promise.all(favoriteTeamsResponse);
@@ -264,9 +267,10 @@ function Home() {
                                         borderBottom: '1px solid #f0f0f0'
                                     }}
                                     onClick={() => {
-                                        if (selectedParticipant.find(p => p.User.id === currentUser.User.id)) {
-                                            // do nothing
-                                        } else {
+                                        if (participation.id === currentUser.id) {
+                                            setSelectedParticipant([participation]);
+                                        }
+                                        else {
                                             setSelectedParticipant([currentUser, participation]);
                                         }
                                     }}
@@ -357,7 +361,6 @@ function Home() {
                             <>
                             </>
                         )}
-                        {console.log(selectedParticipant)}
                         {predictionsMade && matches.length != 0 ? (
                             /* Show predictions */
                             selectedParticipant.map((participation) => (
