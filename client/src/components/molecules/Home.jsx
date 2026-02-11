@@ -69,11 +69,11 @@ function Home() {
 
                 const weeks = [];
 
-                // Encontrar el primer viernes desde la fecha de inicio
+                // Encontrar el primer sábado desde la fecha de inicio
                 let currentWeekStart = new Date(startDate);
                 const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
-                const daysToFriday = dayOfWeek <= 5 ? (5 - dayOfWeek) : (11 - dayOfWeek);
-                currentWeekStart.setDate(currentWeekStart.getDate() + daysToFriday);
+                const daysToSaturday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
+                currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
                 let weekNumber = 1;
 
                 while (currentWeekStart <= endDate) {
@@ -94,9 +94,9 @@ function Home() {
                         });
                     }
 
-                    // Calcular el siguiente viernes correctamente
+                    // Calcular el siguiente sabado correctamente
                     currentWeekStart = new Date(currentWeekStart);
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 6); // Saltar exactamente 6 días al siguiente viernes
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7); // Saltar exactamente 7 días al siguiente sábado
                     weekNumber++;
                 }
 
