@@ -100,6 +100,7 @@ function Home() {
                     weekNumber++;
                 }
 
+                console.log(weeks)
                 setWeeks(weeks);
 
                 // Si no hay semana futura, seleccionar la última semana disponible
