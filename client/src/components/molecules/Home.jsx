@@ -69,11 +69,11 @@ function Home() {
 
                 const weeks = [];
 
-                // Encontrar el primer sábado desde la fecha de inicio
+                // Encontrar el primer viernes desde la fecha de inicio
                 let currentWeekStart = new Date(startDate);
                 const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
-                const daysToSaturday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
-                currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
+                const daysToFriday = dayOfWeek <= 5 ? (5 - dayOfWeek) : (11 - dayOfWeek);
+                currentWeekStart.setDate(currentWeekStart.getDate() + daysToFriday);
                 let weekNumber = 1;
 
                 while (currentWeekStart <= endDate) {
