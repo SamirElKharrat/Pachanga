@@ -65,27 +65,33 @@ function Home() {
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
                 let endDate = new Date(liga.end_date);
-                const today = new Date();
 
                 const weeks = [];
 
-                // Encontrar el primer sábado desde la fecha de inicio
+
                 let currentWeekStart = new Date(startDate);
-                const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
-                const daysToSaturday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
-                currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
+                const dayOfWeek = currentWeekStart.getDay();
+
+                let daysToThursday;
+                if (dayOfWeek === 4) {
+                    daysToThursday = 0;
+                } else if (dayOfWeek > 4) {
+                    daysToThursday = -(dayOfWeek - 4);
+                } else {
+                    daysToThursday = -(dayOfWeek + 3);
+                }
+
+                currentWeekStart.setDate(currentWeekStart.getDate() + daysToThursday);
                 let weekNumber = 1;
 
                 while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
-                    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Sábado a viernes = 6 días (sábado, domingo, lunes, martes, miércoles, jueves)
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
 
-                    // Calcular la fecha límite (hoy + 4 días)
-                    const limitDate = new Date(today);
-                    limitDate.setDate(today.getDate() + 4);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
 
-
-                    if (currentWeekStart <= limitDate) {
+                    if (currentWeekStart <= today) {
                         weeks.push({
                             id: weekNumber,
                             name: `Semana ${weekNumber}`,
@@ -94,9 +100,8 @@ function Home() {
                         });
                     }
 
-                    // Calcular el siguiente sabado correctamente
                     currentWeekStart = new Date(currentWeekStart);
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 7); // Saltar exactamente 7 días al siguiente sábado
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
                     weekNumber++;
                 }
 
