@@ -78,7 +78,7 @@ function Home() {
 
                 while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
-                    currentWeekEnd.setDate(currentWeekStart.getDate() + 4); // Sábado a miércoles = 4 días (sábado, domingo, lunes, martes, miércoles)
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Sábado a viernes = 6 días (sábado, domingo, lunes, martes, miércoles, jueves)
 
                     // Calcular la fecha límite (hoy + 4 días)
                     const limitDate = new Date(today);
