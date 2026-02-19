@@ -64,7 +64,9 @@ function Home() {
                 //2.5 Crear array de semanas desde start_date hasta end_date (ignorando fecha actual)
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
+                startDate.setHours(0, 0, 0, 0);
                 let endDate = new Date(liga.end_date);
+                endDate.setHours(0, 0, 0, 0);
 
                 const weeks = [];
 
@@ -84,14 +86,15 @@ function Home() {
                 currentWeekStart.setDate(currentWeekStart.getDate() + daysToThursday);
                 let weekNumber = 1;
 
+
                 while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
                     currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
 
                     const today = new Date();
-                    today.setHours(0, 0, 0, 0);
 
                     if (currentWeekStart <= today) {
+
                         weeks.push({
                             id: weekNumber,
                             name: `Semana ${weekNumber}`,
