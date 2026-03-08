@@ -74,14 +74,17 @@ export default function Team() {
                 </Col>
                 <Col xs={24} sm={12} md={8} lg={6} className='mb-2'>
                     <Select
-                        placeholder={selectedLeague ? <b>{leagues.find(league => league.id === selectedLeague)?.name}</b> : "Seleccione una liga"}
-                        options={leagues.map(league => ({
-                            label: league.name,
-                            value: league.id,
-                        }))}
-                        style={{ width: '100%', maxWidth: '300px' }}
+                        value={selectedLeague}
                         onChange={(value) => setSelectedLeague(value)}
-                    />
+                        style={{ width: '100%' }}
+                        loading={leagues.length === 0}
+                    >
+                        {leagues.sort((a, b) => a.id - b.id).map(league => (
+                            <Option key={league.id} value={league.id}>
+                                {league.name}
+                            </Option>
+                        ))}
+                    </Select>
                 </Col>
             </Row>
             <Row gutter={[16, 16]}>
