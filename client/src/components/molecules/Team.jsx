@@ -24,14 +24,22 @@ export default function Team() {
 
                 setLeagues(leagueArray);
 
-                if (leagueArray.length > 0) {
-                    if (selectedLeague === null) {
-                        setSelectedLeague(leagueArray[0].id);
+                let leagueId = selectedLeague;
+                if (!selectedLeague && leagueArray.length > 0) {
+                    leagueArray.sort((a, b) => b.id - a.id);
+                    leagueId = leagueArray[0].id;
+                    if (location.state && location.state.leagueId) {
+                        leagueId = location.state.leagueId;
+                        setSelectedLeague(leagueId);
                     } else {
-                        const currentLeague = leagueArray.find(league => league.id == selectedLeague);
-                        if (currentLeague) {
-                            setTeams(currentLeague.Teams || []);
-                        }
+                        setSelectedLeague(leagueId);
+                    }
+                }
+
+                if (leagueArray.length > 0) {
+                    const currentLeague = leagueArray.find(league => league.id == selectedLeague);
+                    if (currentLeague) {
+                        setTeams(currentLeague.Teams || []);
                     }
                 }
             } catch (error) {
