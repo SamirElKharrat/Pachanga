@@ -21,6 +21,7 @@ function Home() {
     const [selectedWeek, setSelectedWeek] = useState(null);
     const [prevLeague, setPrevLeague] = useState(selectedLeague);
     const [sortedMatches, setSortedMatches] = useState([]);
+    const [currentUser, setCurrentUser] = useState(null);
     const [weeks, setWeeks] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
@@ -63,32 +64,37 @@ function Home() {
                 //2.5 Crear array de semanas desde start_date hasta end_date (ignorando fecha actual)
                 const liga = leagueArray.find(l => l.id === leagueId);
                 const startDate = new Date(liga.start_date);
+                startDate.setHours(0, 0, 0, 0);
                 let endDate = new Date(liga.end_date);
-                const today = new Date();
+                endDate.setHours(0, 0, 0, 0);
 
                 const weeks = [];
 
-                // Encontrar el primer sábado desde la fecha de inicio
+
                 let currentWeekStart = new Date(startDate);
-                const dayOfWeek = currentWeekStart.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sabado 
-                const daysToSaturday = dayOfWeek <= 6 ? (6 - dayOfWeek) : (12 - dayOfWeek);
-                currentWeekStart.setDate(currentWeekStart.getDate() + daysToSaturday);
+                const dayOfWeek = currentWeekStart.getDay();
+
+                let daysToThursday;
+                if (dayOfWeek === 4) {
+                    daysToThursday = 0;
+                } else if (dayOfWeek > 4) {
+                    daysToThursday = -(dayOfWeek - 4);
+                } else {
+                    daysToThursday = -(dayOfWeek + 3);
+                }
+
+                currentWeekStart.setDate(currentWeekStart.getDate() + daysToThursday);
                 let weekNumber = 1;
 
-                console.log("daysToSaturday", daysToSaturday);
 
                 while (currentWeekStart <= endDate) {
                     const currentWeekEnd = new Date(currentWeekStart);
-                    currentWeekEnd.setDate(currentWeekStart.getDate() + 3); // Sábado a martes = 4 días (sábado, domingo, lunes, martes)
+                    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
 
-                    // Calcular la fecha límite (hoy + 4 días)
-                    const limitDate = new Date(today);
-                    limitDate.setDate(today.getDate() + 4);
+                    const today = new Date();
 
-                    console.log("currentWeekStart", currentWeekStart);
-                    console.log("limitDate", limitDate);
+                    if (currentWeekStart <= today) {
 
-                    if (currentWeekStart <= limitDate) {
                         weeks.push({
                             id: weekNumber,
                             name: `Semana ${weekNumber}`,
@@ -97,13 +103,12 @@ function Home() {
                         });
                     }
 
-                    // Calcular el siguiente sábado correctamente
                     currentWeekStart = new Date(currentWeekStart);
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 7); // Saltar exactamente 7 días al siguiente sábado
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
                     weekNumber++;
                 }
 
-                console.log(weeks);
+                console.log(weeks)
                 setWeeks(weeks);
 
                 // Si no hay semana futura, seleccionar la última semana disponible
@@ -120,12 +125,17 @@ function Home() {
                 }
 
                 // 3. Participantes
-                const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
-                setParticipants(participantsResponse);
-                setSelectedParticipant(participantsResponse);
+                const getCurrentUser = await API.getUserByToken();
 
+                const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
+                const currentUserParticipant = participantsResponse.find(p => p.user_id === getCurrentUser.id);
+                const otherParticipants = participantsResponse.filter(p => p.user_id !== getCurrentUser.id);
+                const sortedParticipants = [currentUserParticipant, ...otherParticipants];
+                setParticipants(sortedParticipants);
+                setSelectedParticipant(sortedParticipants);
+                setCurrentUser(sortedParticipants.find(p => p.user_id === getCurrentUser.id));
                 // 4. Equipos Favoritos
-                const favoriteTeamsResponse = participantsResponse.map(participant =>
+                const favoriteTeamsResponse = sortedParticipants.map(participant =>
                     API.get('/favoriteTeams/get/' + participant.User.id + '/' + leagueId)
                 );
                 const favoriteTeamsArray = await Promise.all(favoriteTeamsResponse);
@@ -265,7 +275,14 @@ function Home() {
                                         padding: '12px 0',
                                         borderBottom: '1px solid #f0f0f0'
                                     }}
-                                    onClick={() => setSelectedParticipant([participation])}
+                                    onClick={() => {
+                                        if (participation.id === currentUser.id) {
+                                            setSelectedParticipant([participation]);
+                                        }
+                                        else {
+                                            setSelectedParticipant([currentUser, participation]);
+                                        }
+                                    }}
                                 >
                                     <Text strong style={{ width: 30 }}>{index + 1}.</Text>
                                     <Tooltip title={participation.User.username}>
@@ -356,7 +373,6 @@ function Home() {
                         {predictionsMade && matches.length != 0 ? (
                             /* Show predictions */
                             selectedParticipant.map((participation) => (
-
                                 <div key={participation.User.id} className="d-flex align-items-center py-3 border-bottom flex-wrap">
                                     <Tooltip title={participation.User.username}>
                                         <div style={{ minWidth: 60 }} className="d-flex align-items-center ps-2 pe-2">
@@ -471,6 +487,7 @@ function Home() {
 
                                 )}
                             </div>
+
                         )}
                     </Card>
                 </Col>
