@@ -89,7 +89,8 @@ const LeagueInfo = ({ leagueId }) => {
                                             src={team.logo_url}
                                             alt={team.name}
                                             preview={false}
-                                            style={{ width: '60px', height: '60px', objectFit: 'contain', margin: '0 auto 0.5rem' }}
+                                            style={{ width: '60px', height: '60px', objectFit: 'contain', margin: '0 auto 0.5rem', cursor: 'pointer' }}
+                                            onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
                                         />
                                         <div className="text-truncate" style={{ fontWeight: '600' }}>{team.name}</div>
                                     </div>

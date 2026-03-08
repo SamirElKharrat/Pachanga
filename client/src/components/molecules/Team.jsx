@@ -21,9 +21,9 @@ export default function Team() {
                     API.get('/leagues/get/' + participation.league_id)
                 )
                 const leagueArray = await Promise.all(leaguePromises)
-                
+
                 setLeagues(leagueArray);
-                
+
                 if (leagueArray.length > 0) {
                     if (selectedLeague === null) {
                         setSelectedLeague(leagueArray[0].id);
@@ -109,8 +109,11 @@ export default function Team() {
                                     style={{
                                         width: '100px',
                                         height: '100px',
-                                        objectFit: 'contain'
+                                        objectFit: 'contain',
+                                        cursor: 'pointer'
                                     }}
+                                    preview={false}
+                                    onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
                                 />
                             </div>
                             <div style={{
