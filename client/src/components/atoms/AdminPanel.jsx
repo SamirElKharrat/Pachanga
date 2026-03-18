@@ -1,346 +1,315 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { API } from '../../services/api';
-import { Table, Button, Space, Row, Col } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, SearchOutlined, UndoOutlined } from '@ant-design/icons';
-import Search from 'antd/es/input/Search';
+import { Table, Button, Space, Row, Col, Input, Card, Divider, Typography, Popconfirm, Tag } from 'antd';
+import {
+    EditOutlined,
+    DeleteOutlined,
+    PlusOutlined,
+    SearchOutlined,
+    UndoOutlined,
+    TableOutlined
+} from '@ant-design/icons';
 import ModalInfo from './ModalInfo';
 import BasicForm from './BasicForm';
-import { useNavigate } from 'react-router-dom';
 import { showAlert } from './AlertInfo';
-
 import dayjs from 'dayjs';
 
+const { Search } = Input;
+const { Text } = Typography;
 
+// ── Column renderer helpers ───────────────────────────────────────────────────
+const renderCell = (key, text) => {
+    if (key === 'logo_url' && text) {
+        return <img src={text} alt="logo" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 4 }} />;
+    }
+    // Any array of objects → join readable labels
+    if (Array.isArray(text)) {
+        if (text.length === 0) return '-';
+        return text.map(t => t.name || t.label || t.username || t.toString()).join(', ');
+    }
+    // Single objects → extract readable label
+    if (typeof text === 'object' && text !== null) {
+        return text.name || text.username || '-';
+    }
+    if (text === null || text === undefined || text === '') return '-';
+    return <Text ellipsis>{text.toString()}</Text>;
+};
+
+/**
+ * A generic data management component for administrative tasks.
+ */
 const AdminPanel = ({ table, names, fields, relation }) => {
-    const [data, setData] = useState([]);
-    const [searchText, setSearchText] = useState('');
-    const [openModal, setOpenModal] = useState(false);
-    const [filteredData, setFilteredData] = useState([]);
-    const [record, setRecord] = useState(null);
-    const [selectData, setSelectData] = useState([]);
-    const nav = useNavigate();
-    const [maxTagCount, setMaxTagCount] = useState(0);
+    const [data, setData]                   = useState([]);
+    const [filteredData, setFilteredData]   = useState([]);
+    const [openDeleteModal, setOpenDeleteModal] = useState(false);
+    const [recordToProcess, setRecordToProcess] = useState(null);
+    const [selectData, setSelectData]       = useState([]);
+    const [viewMode, setViewMode]           = useState('TABLE');
+    const [maxTagCount, setMaxTagCount]     = useState(0);
+    const [loading, setLoading]             = useState(false);
+
+    // ── Fetch main data ───────────────────────────────────────────────────────
     const fetchData = useCallback(async () => {
         try {
+            setLoading(true);
             const response = await API.get(`/${table}/get`);
 
-            const filterResponse = (item) => Object.fromEntries(
-                Object.entries(item).map(([key, value]) => {
-                    if (key.endsWith('_date') || key.includes('date')) {
-                        // Si el valor ya esta en el formato correcto, usarlo directamente
-                        if (typeof value === 'string' && value.match(/\d{2}-\d{2}-\d{4} \d{2}:\d{2}/)) {
-                            return [key, value];
-                        }
-                        // Convertir a dayjs y formatear
-                        const dayjsDate = dayjs(value);
-                        return [key, dayjsDate];
-                    }
-                    if (typeof value === 'object' && value !== null) {
-                        return null;
-                    }
-                    return [key, value];
-                }).filter(Boolean)
-            );
+            const processed = response.map(item => {
+                const entry = { ...item };
 
-            setFilteredData(response.map(filterResponse));
-            setData(response.map(filterResponse));
+                // ── Pre-extract readable labels before cleanup ──────────────
+                // 1. Role name (users tab)
+                if (entry.Role?.name) {
+                    entry.roles = entry.Role.name;
+                }
+
+                // 2. League name instead of league_id (matches tab)
+                if (entry.League?.name) {
+                    entry._leagueName = entry.League.name;
+                }
+
+                // 3. Match label (results + predictions)
+                if (entry.Match?.Teams?.length) {
+                    entry._matchLabel = entry.Match.Teams.map(t => t.name).join(' vs ');
+                }
+
+                // 4. Winner team name (results + predictions)
+                if (entry.Winner?.name) {
+                    entry._winnerName = entry.Winner.name;
+                } else if (entry.WinnerTeam?.name) {
+                    entry._winnerName = entry.WinnerTeam.name;
+                }
+
+                // ── Cleanup: dates + nested objects ────────────────────────
+                Object.keys(entry).forEach(key => {
+                    if (key.startsWith('_')) return; // keep our helpers
+                    if (key.endsWith('_date') || key.includes('date')) {
+                        if (entry[key]) entry[key] = dayjs(entry[key]).format('DD-MM-YYYY HH:mm');
+                    }
+                    if (typeof entry[key] === 'object' && entry[key] !== null && !Array.isArray(entry[key])) {
+                        delete entry[key];
+                    }
+                });
+
+                return entry;
+            });
+
+            setData(processed);
+            setFilteredData(processed);
         } catch (err) {
-            showAlert('error', `Error fetching ${table}: ${err.message}`);
-            setData([]);
+            showAlert('error', `Error al cargar ${table}: ${err.message}`);
+        } finally {
+            setLoading(false);
         }
-    }, [table, setFilteredData, setData]);
+    }, [table]);
 
     useEffect(() => {
         fetchData();
-        if (table === 'matches') {
-            setMaxTagCount(2);
-        }
+        if (table === 'matches') setMaxTagCount(2);
     }, [table, fetchData]);
 
-    //Funcion que recoge los datos de las relations para poblar los select en los formularios
-    const relationData = async (method) => {
-        if (!relation) return;
+    // ── Load relational data for selects ──────────────────────────────────────
+    const loadRelations = async () => {
+        if (!relation) return [];
+        const finalData = [];
 
-        const dataMap = {};
-
-        // Fetch data for each relation
         for (const item of relation) {
             try {
-                if(item == "matches"){
-                    const response = await API.get(`/matches/getWithoutResult`);
-                    const processedData = response.map(item => ({
-                        value: item.id,
-                        label: item.name
-                    }));
-                    dataMap[item] = processedData;
-                }
-                else{
-                    const response = await API.get(`/${item}/get`);
-                    const processedData = response.map(item => ({
-                        value: item.id,
-                        label: item.name
-                    }));
-                    dataMap[item] = processedData;
-                }
+                const endpoint = item === 'matches' ? '/matches/getWithoutResult' : `/${item}/get`;
+                const response = await API.get(endpoint);
+                finalData.push({
+                    name: item,
+                    data: response.map(res => {
+                        let label = res.name || res.username;
+                        if (!label && res.Teams) label = res.Teams.map(t => t.name).join(' vs ');
+                        return { value: res.id, label: label || `ID: ${res.id}`, format: res.format };
+                    })
+                });
             } catch (err) {
-                showAlert('error', `Error fetching ${item}: ${err.message}`);
+                console.error(`Error fetching relation ${item}:`, err);
             }
         }
-
-        // Create namesMap with names that match relation values
-        fields
-            .map((field, index) => {
-                if (field === 'select' || field === 'multiselect') {
-                    const relationName = names[index];
-                    return relation.includes(relationName) ? relationName : null;
-                }
-                return null;
-            })
-            .filter(Boolean);
-
-
-        // Create finalData with matching relation names
-        const finalData = Object.entries(dataMap).map(([relationName, data]) => ({
-            name: relationName,
-            data
-        }));
-        console.log(finalData)
-        if (method === 'POST' || method === 'PUT') {
-            setSelectData(finalData);
-        }
+        setSelectData(finalData);
         return finalData;
     };
 
-    // Generador de las columnas con las key de los objetos
-    const generateColumns = () => {
-        if (!data || data.length === 0) return [];
+    // ── Build columns from data ───────────────────────────────────────────────
+    const getColumns = () => {
+        if (data.length === 0) return [];
 
-        const firstItem = data[0];
-        const dataColumns = Object.keys(firstItem).map(key => ({
-            title: key
-                .split('_')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' '),
-            dataIndex: key,
-            key: key,
-            width: key === 'logo_url' ? 80 : 150, // Asigna ancho fijo
-            render: (text) => {
-                if (key === 'logo_url' && text) {
-                    const url = Array.isArray(text) ? text[0]?.url : text;
-                    return (
-                        <img
-                            src={url}
-                            alt="logo"
-                            style={{ width: 50, height: 50, objectFit: 'contain', borderRadius: 4 }}
-                        />
-                    );
-                }
-                return text?.toString() || '-';
+        // Collect display keys: replace league_id / match_id / winner with friendly versions
+        const allKeys = Object.keys(data[0]).filter(k => !k.startsWith('_'));
+
+        const columns = allKeys.map(key => {
+            let title = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            let dataIndex = key;
+
+            // Override league_id → show league name
+            if (key === 'league_id') {
+                title = 'Liga';
+                return {
+                    title, key, dataIndex: key, ellipsis: true,
+                    render: (_, record) => <Text ellipsis>{record._leagueName || record[key]}</Text>
+                };
             }
-        }));
+            // Override match_id → show "TeamA vs TeamB"
+            if (key === 'match_id') {
+                title = 'Partido';
+                return {
+                    title, key, dataIndex: key, ellipsis: true,
+                    render: (_, record) => <Text ellipsis>{record._matchLabel || record[key]}</Text>
+                };
+            }
+            // Override winner → show team name
+            if (key === 'winner') {
+                title = 'Ganador';
+                return {
+                    title, key, dataIndex: key, ellipsis: true,
+                    render: (_, record) => <Text ellipsis>{record._winnerName || record[key]}</Text>
+                };
+            }
 
-        // Columna de acciones
-        const actionsColumn = {
+            return {
+                title,
+                dataIndex,
+                key,
+                ellipsis: true,
+                render: (text) => renderCell(key, text),
+            };
+        });
+
+        // Actions column
+        columns.push({
             title: 'Acciones',
             key: 'actions',
-            width: 120,
+            width: 130,
+            fixed: 'right',
             render: (_, record) => (
-                <Space size="middle">
+                <Space size="small">
                     <Button
                         type="text"
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            const recordToEdit = { ...record };
-                            if (recordToEdit.logo_url) {
-                                recordToEdit.logo_url = [
-                                    {
-                                        uid: '-1',
-                                        name: recordToEdit.logo_url.split('/').pop(),
-                                        status: 'done',
-                                        url: recordToEdit.logo_url
-                                    }
-                                ];
-                            }
-                            setRecord([recordToEdit]);
-                            setMethod('PUT');
-                            relationData('PUT');
-                        }}
-                    />
-                    <Button
-                        type="text"
-                        icon={<DeleteOutlined />}
-                        onClick={() => {
-                            setOpenModal(true);
-                            setRecord(record);
-                        }}
-                        title="Eliminar"
-                    />
-                    {table == "users" ? 
-                    <Button
-                        type="text"
-                        icon={<UndoOutlined/>}
+                        size="small"
+                        icon={<EditOutlined className="text-primary" />}
                         onClick={async () => {
-                            await API.put(`/users/resetPassword/${record.id}`);
-                            localStorage.removeItem('token');
-                            nav('/login');
+                            setLoading(true);
+                            await loadRelations();
+                            setRecordToProcess([record]);
+                            setViewMode('EDIT');
+                            setLoading(false);
                         }}
-                        title="Reestablecer contraseña"
-                    /> : ""}
+                    />
+                    <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => { setRecordToProcess(record); setOpenDeleteModal(true); }}
+                    />
+                    {table === 'users' && (
+                        <Popconfirm
+                            title="¿Restablecer contraseña?"
+                            onConfirm={async () => {
+                                await API.put(`/users/resetPassword/${record.id}`);
+                                showAlert('success', 'Contraseña restablecida');
+                            }}
+                        >
+                            <Button type="text" size="small" icon={<UndoOutlined className="text-warning" />} />
+                        </Popconfirm>
+                    )}
                 </Space>
             ),
-        };
+        });
 
-        return [...dataColumns, actionsColumn];
+        return columns;
     };
 
-    // Configuración de la paginación
-    const pagination = {
-        pageSize: 5,
-    };
-
-    // Función para manejar la búsqueda
+    // ── Search ────────────────────────────────────────────────────────────────
     const handleSearch = (value) => {
-        setSearchText(value);
-        if (!value) {
-            setFilteredData(data);
-            return;
-        }
+        const lower = value.toLowerCase();
         const filtered = data.filter(item =>
-            Object.values(item).some(
-                val => val && val.toString().toLowerCase().includes(value.toLowerCase())
-            )
+            Object.values(item).some(val => val?.toString().toLowerCase().includes(lower))
         );
         setFilteredData(filtered);
     };
 
-    const [method, setMethod] = useState('GET');
+    const handleActionSuccess = () => { setViewMode('TABLE'); fetchData(); };
 
-    const renderContent = () => {
-        switch (method) {
-            case 'POST':
-                return (
-                    <BasicForm
-                        fields={fields}
-                        names={names}
-                        method="post"
-                        record={null}
-                        table={table}
-                        selectData={selectData}
-                        maxTagCount={maxTagCount}
-                        onCancel={() => {
-                            setMethod('GET');
-                        }}
-                        onSuccess={() => {
-                            setMethod('GET');
-                            fetchData();
-                            nav('/admin')
-                        }}
-                    />
-                );
-            case 'PUT':
-                return (
-                    <BasicForm
-                        fields={fields}
-                        names={names}
-                        method="put"
-                        record={record}
-                        table={table}
-                        selectData={selectData}
-                        maxTagCount={maxTagCount}
-                        onCancel={() => {
-                            setMethod('GET');
-                            setRecord(null);
-                        }}
-                        onSuccess={() => {
-                            setMethod('GET');
-                            setRecord(null);
-                            fetchData();
-                            nav('/admin')
-                        }}
-                    />
-                );
-            default:
-                return (
-                    <div style={{ padding: '16px' }}>
-                        <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
-                            <Col xs={24} md={12}>
-                                <Button
-                                    type="primary"
-                                    icon={<PlusOutlined />}
-                                    onClick={() => {
-                                        setRecord(null);
-                                        relationData('POST');
-                                        setMethod('POST');
-                                    }}
-                                >
-                                    Crear nuevo
-                                </Button>
-                            </Col>
-                            <Col xs={24} md={7} style={{ textAlign: 'right' }}>
-                                <Search
-                                    placeholder={`Buscar en ${table}...`}
-                                    allowClear
-                                    enterButton={
-                                        <Button type="primary" icon={<SearchOutlined />} />
-                                    }
-                                    size="large"
-                                    value={searchText}
-                                    onChange={(e) => handleSearch(e.target.value)}
-                                    onSearch={handleSearch}
-                                    style={{ width: '100%' }}
-                                />
-                            </Col>
-                        </Row>
-                        <Table
-                            rowKey="id"
-                            dataSource={filteredData}
-                            columns={generateColumns()}
-                            pagination={{
-                                ...pagination,
-                                position: ['bottomCenter'],
-                                showSizeChanger: false,
-                            }}
-                            size="middle"
-                            scroll={{ x: 'max-content' }}
-                            className="custom-admin-table"
-                            locale={{
-                                emptyText: 'No se encontraron resultados.',
-                            }}
-                        />
-
-                        <ModalInfo
-                            open={openModal}
-                            title="Eliminar"
-                            description="¿Estás seguro de eliminar este registro?"
-                            okText="Eliminar"
-                            cancelText="Cancelar"
-                            onSuccess={() => {
-                                API.delete(`/${table}/delete/${record.id}`)
-                                    .then(() => {
-                                        setOpenModal(false);
-                                        setData(data.filter(item => item.id !== record.id));
-                                        setFilteredData(filteredData.filter(item => item.id !== record.id));
-                                        nav('/admin')
-                                        showAlert('success', `Registro eliminado correctamente`);
-                                    })
-                                    .catch((err) => {
-                                        console.error(`Error deleting ${table}:`, err);
-                                        showAlert('error', `Error deleting ${table}: ${err.message}`);
-                                    });
-                            }}
-                            onClose={() => {
-                                setOpenModal(false);
-                            }}
-                        />
-                    </div>
-                );
-        }
-    };
+    // ── Render ────────────────────────────────────────────────────────────────
+    if (viewMode === 'CREATE' || viewMode === 'EDIT') {
+        return (
+            <Card title={<Space><TableOutlined />{viewMode === 'CREATE' ? 'Nuevo Registro' : 'Editar Registro'}</Space>} className="border-0 shadow-sm">
+                <BasicForm
+                    fields={fields}
+                    names={names}
+                    record={recordToProcess}
+                    table={table}
+                    selectData={selectData}
+                    maxTagCount={maxTagCount}
+                    onCancel={() => setViewMode('TABLE')}
+                    onSuccess={handleActionSuccess}
+                />
+            </Card>
+        );
+    }
 
     return (
-        <>
-            {renderContent()}
-        </>
+        <div>
+            <Row justify="space-between" align="middle" gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                <Col xs={24} sm={12}>
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={async () => {
+                            setLoading(true);
+                            await loadRelations();
+                            setRecordToProcess(null);
+                            setViewMode('CREATE');
+                            setLoading(false);
+                        }}
+                    >
+                        Crear
+                    </Button>
+                </Col>
+                <Col xs={24} sm={12} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Search
+                        placeholder="Buscar..."
+                        allowClear
+                        onSearch={handleSearch}
+                        onChange={e => handleSearch(e.target.value)}
+                        style={{ width: '100%', maxWidth: 280 }}
+                    />
+                </Col>
+            </Row>
+
+            <Table
+                rowKey="id"
+                loading={loading}
+                dataSource={filteredData}
+                columns={getColumns()}
+                pagination={{ pageSize: 8, position: ['bottomCenter'], size: 'small' }}
+                scroll={{ x: 'max-content' }}
+                size="small"
+            />
+
+            <ModalInfo
+                open={openDeleteModal}
+                title="Confirmar Eliminación"
+                description={`¿Eliminar este registro de ${table}? Esta acción no se puede deshacer.`}
+                okText="Eliminar"
+                cancelText="Cancelar"
+                onSuccess={async () => {
+                    try {
+                        await API.delete(`/${table}/delete/${recordToProcess.id}`);
+                        showAlert('success', 'Registro eliminado');
+                        setOpenDeleteModal(false);
+                        fetchData();
+                    } catch {
+                        showAlert('error', 'No se pudo eliminar el registro');
+                    }
+                }}
+                onClose={() => setOpenDeleteModal(false)}
+            />
+        </div>
     );
 };
 

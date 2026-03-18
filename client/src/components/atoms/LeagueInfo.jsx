@@ -1,129 +1,159 @@
 import React, { useEffect, useState } from 'react';
-import { Image } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Card, Row, Col, Image, Typography, Space, Button, Avatar, List, Tag, Divider, Skeleton } from 'antd';
+import { ArrowLeftOutlined, TeamOutlined, UserOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
+import { useTheme as useAppTheme } from '../../context/ThemeContext';
 
+const { Title, Text } = Typography;
+
+/**
+ * Component for viewing detailed information about a specific league.
+ * 
+ * @param {Object} props - Component props.
+ * @param {string|number} props.leagueId - The ID of the league to display.
+ * @returns {React.ReactElement} The LeagueInfo component.
+ */
 const LeagueInfo = ({ leagueId }) => {
     const [league, setLeague] = useState(null);
     const [teams, setTeams] = useState([]);
     const [players, setPlayers] = useState([]);
+    const [loading, setLoading] = useState(true);
     const nav = useNavigate();
+    const { getAvatarSrc } = useAppTheme();
 
+    /**
+     * Fetches all data related to the league.
+     */
     useEffect(() => {
         const fetchLeagueData = async () => {
             try {
+                setLoading(true);
                 const leagueRes = await API.get(`/leagues/get/${leagueId}`);
                 setLeague(leagueRes);
 
-                const teamsRes = await API.get(`/leagues/getTeams/${leagueId}`);
-                const teamPromises = teamsRes.Teams.map(team =>
-                    API.get(`/teams/get/${team.value}`)
-                );
+                const [teamsRes, playersRes] = await Promise.all([
+                    API.get(`/leagues/getTeams/${leagueId}`),
+                    API.get(`/leagueParticipations/get/participants/${leagueId}`)
+                ]);
+
+                const teamPromises = teamsRes.Teams.map(team => API.get(`/teams/get/${team.value}`));
                 const teamsData = await Promise.all(teamPromises);
                 setTeams(teamsData);
 
-                const playersRes = await API.get(`/leagueParticipations/get/participants/${leagueId}`);
-                const playerPromises = playersRes.map(participation =>
-                    API.get(`/users/get/${participation.user_id}`)
-                );
+                const playerPromises = playersRes.map(participation => API.get(`/users/get/${participation.user_id}`));
                 const playersData = await Promise.all(playerPromises);
                 setPlayers(playersData);
             } catch (error) {
-                console.error(error);
-                showAlert('error', "Error al cargar los datos de la liga");
+                console.error("Error loading league details:", error);
+                showAlert('error', "No se pudieron cargar los detalles de la liga");
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchLeagueData();
     }, [leagueId]);
 
-    if (!league) return <div className="text-center mt-5">Loading...</div>;
+    if (loading && !league) {
+        return <div className="p-3"><Skeleton active avatar paragraph={{ rows: 10 }} /></div>;
+    }
+
+    if (!league) return <div className="p-3 text-center"><Text type="secondary">Liga no encontrada.</Text></div>;
 
     return (
-        <div className="container my-5">
-
-            {/* Botón flotante para volver */}
-            <button
-                type="button"
-                className="btn btn-primary rounded-circle position-fixed"
-                style={{ bottom: '24px', right: '24px', width: '56px', height: '56px', zIndex: 1050 }}
-                onClick={() => nav('/leagues')}
-                aria-label="Volver"
-            >
-                <ArrowLeftOutlined style={{ fontSize: '24px' }} />
-            </button>
-
-            {/* Card principal */}
-            <div className="card shadow rounded-3 p-4">
-
-                {/* Header: logo + nombre */}
-                <div className="d-flex align-items-center mb-4">
-                    <Image
-                        src={league.logo_url}
-                        alt={league.name}
-                        preview={false}
-                        style={{ width: '100px', height: 'auto', objectFit: 'contain' }}
-                        className="me-4"
-                    />
-                    <h2 className="mb-0">{league.name}</h2>
-                </div>
-
-                <hr />
-
-                {/* Contenido en dos columnas responsive */}
-                <div className="row gy-4">
-                    {/* Equipos */}
-                    <div className="col-12 col-md-6">
-                        <h4>Equipos Participantes</h4>
-                        <div className="row g-3 mt-2">
-                            {teams.map((team) => (
-                                <div key={team.id} className="col-6 col-sm-4 col-lg-3">
-                                    <div
-                                        className="card h-100 border-0 shadow-sm text-center p-3"
-                                        style={{ borderRadius: '12px', cursor: 'default' }}
-                                        title={team.name}
-                                    >
-                                        <Image
-                                            src={team.logo_url}
-                                            alt={team.name}
-                                            preview={false}
-                                            style={{ width: '60px', height: '60px', objectFit: 'contain', margin: '0 auto 0.5rem', cursor: 'pointer' }}
-                                            onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
-                                        />
-                                        <div className="text-truncate" style={{ fontWeight: '600' }}>{team.name}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    {/* Jugadores */}
-                    <div className="col-12 col-md-6">
-                        <h4>Jugadores</h4>
-                        <div className="row g-3 mt-2">
-                            {players.map((player) => (
-                                <div key={player.id} className="col-6 col-sm-4 col-lg-3">
-                                    <div
-                                        className="card h-100 border-0 shadow-sm text-center p-3"
-                                        style={{ borderRadius: '12px', cursor: 'default' }}
-                                        title={player.username}
-                                    >
-                                        <Image
-                                            src={player.logo_url}
-                                            alt={player.username}
-                                            preview={false}
-                                            style={{ width: '60px', height: '60px', objectFit: 'cover', margin: '0 auto 0.5rem', borderRadius: '50%' }}
-                                        />
-                                        <div className="text-truncate" style={{ fontWeight: '600' }}>{player.username}</div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
+        <div className="p-3">
+            <div className="d-flex align-items-center mb-4 gap-3">
+                <Button 
+                    shape="circle" 
+                    icon={<ArrowLeftOutlined />} 
+                    onClick={() => nav('/leagues')} 
+                />
+                <Title level={2} className="m-0">Detalles de la Liga</Title>
             </div>
+
+            <Card className="shadow-sm mb-4">
+                <Row gutter={[32, 32]} align="middle">
+                    <Col xs={24} md={6} className="text-center text-md-start">
+                        <Image
+                            src={league.logo_url}
+                            alt={league.name}
+                            preview={false}
+                            style={{ maxWidth: 150, height: 'auto', objectFit: 'contain' }}
+                        />
+                    </Col>
+                    <Col xs={24} md={18}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <Title level={3}>{league.name}</Title>
+                            <Space>
+                                <Button size="small">Reglas</Button>
+                                <Button size="small">Estadísticas</Button>
+                            </Space>
+                        </div>
+                        <Space direction="vertical" size="small">
+                            <Space>
+                                <CalendarOutlined className="text-primary d-none d-sm-inline" />
+                                <Text strong className="d-none d-sm-inline">Duración:</Text>
+                                <Tag color="blue" bordered={false}>{new Date(league.start_date).toLocaleDateString()}</Tag>
+                                <Text type="secondary">-</Text>
+                                <Tag color="blue" bordered={false}>{new Date(league.end_date).toLocaleDateString()}</Tag>
+                            </Space>
+                            <Space className="mt-2">
+                                <TeamOutlined className="text-success" />
+                                <Text strong>{teams.length} Equipos Participantes</Text>
+                            </Space>
+                            <Space>
+                                <UserOutlined className="text-warning" />
+                                <Text strong>{players.length} Jugadores Unidos</Text>
+                            </Space>
+                        </Space>
+                    </Col>
+                </Row>
+            </Card>
+
+            <Row gutter={[24, 24]}>
+                <Col xs={24} lg={12}>
+                    <Card title={<Space><TeamOutlined /><span>Equipos</span></Space>} className="shadow-sm">
+                        <List
+                            grid={{ gutter: 16, xs: 2, sm: 3, md: 4, lg: 3, xl: 4 }}
+                            dataSource={teams}
+                            renderItem={team => (
+                                <List.Item>
+                                    <Card 
+                                        hoverable 
+                                        size="small" 
+                                        className="text-center"
+                                        onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
+                                    >
+                                        <Avatar src={team.logo_url} shape="square" size={48} className="mb-2" />
+                                        <div className="text-truncate" style={{ fontSize: 12, fontWeight: 600 }}>{team.name}</div>
+                                    </Card>
+                                </List.Item>
+                            )}
+                        />
+                    </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                    <Card title={<Space><UserOutlined /><span>Jugadores</span></Space>} className="shadow-sm">
+                        <List
+                            grid={{ gutter: 16, xs: 2, sm: 3, md: 4, lg: 3, xl: 4 }}
+                            dataSource={players}
+                            renderItem={player => (
+                                <List.Item>
+                                    <div 
+                                        className="text-center p-2 rounded hover-bg-light transition-all" 
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <Avatar src={getAvatarSrc(player.logo_url)} icon={<UserOutlined />} size={64} className="mb-2 shadow-sm" />
+                                        <div className="text-truncate" style={{ fontWeight: 600 }}>{player.username}</div>
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    </Card>
+                </Col>
+            </Row>
         </div>
     );
 };

@@ -1,209 +1,185 @@
-import { Card, Form, Input, Button, Typography, Image } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Button, Typography, Image, Space, theme } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
 import { useNavigate } from 'react-router-dom';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
+/**
+ * Authentication form component for Login and Registration.
+ * Handles user input, validation, and API communication.
+ * 
+ * @param {Object} props - Component props.
+ * @param {'login'|'register'} props.method - The authentication mode.
+ * @returns {React.ReactElement} The AuthForm component.
+ */
 const AuthForm = ({ method }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const nav = useNavigate();
+    const { token } = theme.useToken();
 
     const isRegister = method === 'register';
 
-    const onFinish = (values) => {
+    /**
+     * Handles form submission.
+     * @param {Object} values - The validated form values.
+     */
+    const onFinish = async (values) => {
         const endpoint = isRegister ? 'users/register' : 'users/login';
-        values.username = values.username.charAt(0).toUpperCase() + values.username.slice(1);
-        setLoading(true);
-        API.post(`/${endpoint}`, values)
-            .then((data) => {
-                if (data.error) {
-                    setLoading(false);
-                    showAlert('error', data.error);
-                }
-                API.setToken(data.token);
-                nav(isRegister ? '/login' : '/');
-                setLoading(false);
-                showAlert('success', isRegister ? 'Registrado correctamente' : 'Iniciado sesión correctamente');
-            })
-            .catch(() => {
-                setLoading(false);
-                showAlert('error', isRegister ? 'Error al registrar' : 'Error al iniciar sesión');
-            });
+
+        // Capitalize username
+        if (values.username) {
+            values.username = values.username.charAt(0).toUpperCase() + values.username.slice(1);
+        }
+
+        try {
+            setLoading(true);
+            const data = await API.post(`/${endpoint}`, values);
+
+            if (data.error) {
+                showAlert('error', data.error);
+                return;
+            }
+
+            API.setToken(data.token);
+
+            if (isRegister) {
+                showAlert('success', '¡Registro completado! Ahora puedes iniciar sesión.');
+                nav('/login');
+            } else {
+                showAlert('success', 'Sesión iniciada con éxito.');
+                nav('/');
+            }
+        } catch (error) {
+            console.error("Auth error:", error);
+            showAlert('error', isRegister ? 'Error al crear la cuenta' : 'Error al iniciar sesión. Revisa tus credenciales.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div
+        <div className="auth-page-container d-flex flex-column align-items-center justify-content-center"
             style={{
                 minHeight: '100vh',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: '#f0f2f5',
-                padding: '16px',
-                boxSizing: 'border-box'
-            }}
-        >
-            <div style={{
-                textAlign: 'center',
-                marginBottom: '24px',
-                width: '100%',
-                maxWidth: '200px'
+                background: token.colorBgBase,
+                padding: '20px'
             }}>
-                <Image 
-                    preview={false} 
-                    src="../pachanga_logo.png" 
-                    className="rounded-circle"
-                    style={{
-                        width: '100%',
-                        height: 'auto',
-                        maxHeight: '120px',
-                        objectFit: 'contain'
+
+            <div className="mb-5 text-center">
+                <Image
+                    preview={false}
+                    src="/pachanga_logo_blanco.webp"
+                    width={180}
+                    style={{ 
+                        cursor: 'pointer',
+                        filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none'
                     }}
+                    onClick={() => nav('/')}
                 />
             </div>
 
-
             <Card
-                title={
-                    <Title 
-                        level={3} 
-                        style={{ 
-                            margin: 0, 
-                            textAlign: 'center',
-                            fontSize: 'clamp(1.25rem, 5vw, 1.5rem)'
-                        }}
-                    >
-                        {isRegister ? 'Registrarse' : 'Iniciar Sesión'}
-                    </Title>
-                }
-                size='default'
+                className="auth-card shadow border-0"
                 style={{
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
                     width: '100%',
-                    maxWidth: isRegister ? '500px' : '400px',
-                    boxSizing: 'border-box',
-                    margin: '0 auto 40px',
-                    borderRadius: '8px',
-                    overflow: 'hidden'
-                }}
-                bodyStyle={{
-                    padding: 'clamp(16px, 3vw, 24px)'
+                    maxWidth: 420,
+                    borderRadius: 20,
+                    background: token.colorBgContainer,
+                    border: `1px solid ${token.colorBorder}`,
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)'
                 }}
             >
+                <div className="text-center mb-4">
+                    <Title level={2} style={{ margin: 0 }}>
+                        {isRegister ? 'Crear Cuenta' : 'Bienvenido'}
+                    </Title>
+                    <Text type="secondary">
+                        {isRegister ? 'Únete a la mejor comunidad de Esports' : 'Ingresa para gestionar tus predicciones'}
+                    </Text>
+                </div>
+
                 <Form
                     form={form}
-                    name={method.toLowerCase()}
+                    name="auth"
                     onFinish={onFinish}
                     layout="vertical"
+                    size="large"
                 >
+                    <Form.Item
+                        name="username"
+                        label="Nombre de Usuario"
+                        rules={[{ required: true, message: 'Ingresa tu nombre de usuario' }]}
+                    >
+                        <Input
+                            prefix={<UserOutlined className="text-secondary" />}
+                            placeholder="Ej: Faker123"
+                        />
+                    </Form.Item>
 
-                    <div style={{ marginBottom: '16px' }}>
+                    {isRegister && (
                         <Form.Item
-                            name="username"
-                            label="Usuario"
-                            rules={[{ required: true, message: 'Por favor ingresa un usuario' }]}
-                            style={{ marginBottom: '16px' }}
-                        >
-                            <Input 
-                                prefix={<UserOutlined style={{ color: 'rgba(0, 0, 0, 0.25)' }} />} 
-                                placeholder="Usuario"
-                                size="large"
-                                style={{ width: '100%' }}
-                            />
-                        </Form.Item>
-
-                        {isRegister && (
-                            <Form.Item
-                                name="email"
-                                label="Email"
-                                rules={[
-                                    { 
-                                        required: true, 
-                                        message: 'Por favor ingresa un email' 
-                                    },
-                                    {
-                                        type: 'email',
-                                        message: 'Por favor ingresa un email válido'
-                                    }
-                                ]}
-                                style={{ marginBottom: '16px' }}
-                            >
-                                <Input 
-                                    prefix={<MailOutlined style={{ color: 'rgba(0, 0, 0, 0.25)' }} />} 
-                                    placeholder="Email" 
-                                    type="email"
-                                    size="large"
-                                />
-                            </Form.Item>
-                        )}
-
-                        <Form.Item
-                            name="password"
-                            label="Contraseña"
+                            name="email"
+                            label="Correo Electrónico"
                             rules={[
-                                { required: true, message: 'Por favor ingresa una contraseña' }
+                                { required: true, message: 'Ingresa tu correo' },
+                                { type: 'email', message: 'Ingresa un correo válido' }
                             ]}
                         >
-                            <Input.Password 
-                                prefix={<LockOutlined style={{ color: 'rgba(0, 0, 0, 0.25)' }} />} 
-                                placeholder="Contraseña"
-                                size="large"
+                            <Input
+                                prefix={<MailOutlined className="text-secondary" />}
+                                placeholder="tu@email.com"
                             />
                         </Form.Item>
-                    </div>
+                    )}
 
-                    <div style={{ marginTop: '24px' }}>
-                        <Form.Item style={{ marginBottom: '16px' }}>
-                            <Button
-                                type="primary"
-                                htmlType="submit"
-                                size="large"
-                                block
-                                loading={loading}
-                                style={{
-                                    height: '48px',
-                                    fontSize: '16px',
-                                    fontWeight: 500
-                                }}
-                            >
-                                {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
-                            </Button>
-                        </Form.Item>
+                    <Form.Item
+                        name="password"
+                        label="Contraseña"
+                        rules={[{ required: true, message: 'Ingresa tu contraseña' }]}
+                    >
+                        <Input.Password
+                            prefix={<LockOutlined className="text-secondary" />}
+                            placeholder="••••••••"
+                        />
+                    </Form.Item>
 
-                        <div style={{ textAlign: 'center' }}>
-                            {!isRegister ? (
-                                <Button 
-                                    type="link" 
-                                    onClick={() => nav('/register')} 
-                                    style={{ 
-                                        padding: '8px',
-                                        height: 'auto',
-                                        fontSize: '14px'
-                                    }}
-                                >
-                                    ¿No tienes cuenta? <span style={{ fontWeight: 500 }}>Regístrate</span>
-                                </Button>
-                            ) : (
-                                <Button 
-                                    type="link" 
-                                    onClick={() => nav('/login')}
-                                    style={{ 
-                                        padding: '8px',
-                                        height: 'auto',
-                                        fontSize: '14px'
-                                    }}
-                                >
-                                    ¿Ya tienes cuenta? <span style={{ fontWeight: 500 }}>Inicia sesión</span>
-                                </Button>
-                            )}
-                        </div>
-                    </div>
+                    <Form.Item className="mt-4">
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            block
+                            loading={loading}
+                            icon={<ArrowRightOutlined />}
+                            style={{ height: 50, borderRadius: 12, fontWeight: 600, fontSize: 16 }}
+                        >
+                            {isRegister ? 'Registrarse' : 'Entrar'}
+                        </Button>
+                    </Form.Item>
                 </Form>
+
+                {!isRegister && (
+                    <div className="text-center pt-2">
+                        <Text type="secondary" style={{ fontStyle: 'italic', opacity: 0.5 }}>
+                            Los registros están cerrados actualmente. contacta con un administrador.
+                        </Text>
+                    </div>
+                )}
+                {isRegister && (
+                    <div className="text-center pt-2">
+                         <Button
+                            type="link"
+                            onClick={() => nav('/login')}
+                            className="p-0"
+                            style={{ fontWeight: 600 }}
+                        >
+                            Volver al Inicio de Sesión
+                        </Button>
+                    </div>
+                )}
             </Card>
         </div>
     );

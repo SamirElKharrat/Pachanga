@@ -59,7 +59,7 @@ exports.getCurrentWeekMatches = async (req, res) => {
             },
             include: [{
                 model: Team,
-                attributes: ['id', 'name', 'logo_url'],
+                attributes: ['id', 'name', 'logo_url', 'acronym'],
                 through: { attributes: [] }
             }],
             order: [['date', 'ASC']] // Ordenar por fecha ascendente

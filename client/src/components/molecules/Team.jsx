@@ -1,140 +1,138 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
-import { Card, Row, Col, Image, Select, Button, Typography } from 'antd';
+import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Space, Divider } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { TrophyOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons';
 
+const { Title, Text } = Typography;
+
+/**
+ * Team component for viewing available teams within a selected league.
+ * 
+ * @returns {React.ReactElement} The Team page component.
+ */
 export default function Team() {
     const [teams, setTeams] = useState([]);
     const [leagues, setLeagues] = useState([]);
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const { Title, Text } = Typography;
 
+    /**
+     * Fetches leagues and teams data.
+     */
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                //Todas las ligas en las que el usuario esta unido
-                const response = await API.get('/leagueParticipations/get/')
+                const response = await API.get('/leagueParticipations/get/');
                 const leaguePromises = response.map(participation =>
                     API.get('/leagues/get/' + participation.league_id)
-                )
-                const leagueArray = await Promise.all(leaguePromises)
+                );
+                const leagueArray = await Promise.all(leaguePromises);
+                const sortedLeagues = leagueArray.sort((a, b) => b.id - a.id);
+                setLeagues(sortedLeagues);
 
-                setLeagues(leagueArray);
+                if (sortedLeagues.length > 0) {
+                    const leagueId = selectedLeague || sortedLeagues[0].id;
+                    if (!selectedLeague) setSelectedLeague(leagueId);
 
-                if (leagueArray.length > 0) {
-                    if (selectedLeague === null) {
-                        setSelectedLeague(leagueArray[0].id);
-                    } else {
-                        const currentLeague = leagueArray.find(league => league.id == selectedLeague);
-                        if (currentLeague) {
-                            setTeams(currentLeague.Teams || []);
-                        }
+                    const currentLeague = leagueArray.find(l => l.id == leagueId);
+                    if (currentLeague) {
+                        setTeams(currentLeague.Teams || []);
                     }
                 }
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error('Error fetching team data:', error);
             } finally {
                 setLoading(false);
             }
-        }
+        };
 
-        fetchData()
+        fetchData();
     }, [selectedLeague]);
 
-    if (leagues.length === 0 && !loading) {
+    if (!loading && leagues.length === 0) {
         return (
-            <div style={{
-                padding: '24px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '60vh',
-                textAlign: 'center'
-            }}>
-                <Title level={3} className='noContent'>No estás unido a ninguna liga</Title>
-                <Text className='noContent' style={{ marginTop: '16px', fontSize: '16px' }}>
-                    Únete a una liga existente para ver los equipos.
-                </Text>
-                <Button type="primary" onClick={() => navigate('/leagues/')} style={{ marginTop: '16px' }}>
-                    Ver Ligas
-                </Button>
+            <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+                <Empty
+                    description={
+                        <Space direction="vertical">
+                            <Title level={3}>No estás en ninguna liga</Title>
+                            <Text type="secondary">Únete a una liga para ver los equipos participantes.</Text>
+                        </Space>
+                    }
+                >
+                    <Button type="primary" size="large" onClick={() => navigate('/leagues/')}>
+                        Buscar Ligas
+                    </Button>
+                </Empty>
             </div>
         );
     }
 
     return (
-        <div className='container mt-5'>
-            <Row justify='center' align='middle' gutter={[16, 16]}>
-                <Col xs={24} sm={12} md={8} lg={6} className='mb-2'>
-                    <p style={{ fontWeight: 'bold', fontSize: '1.2rem', textAlign: 'center' }}>Seleccione una Liga</p>
-                </Col>
-                <Col xs={24} sm={12} md={8} lg={6} className='mb-2'>
-                    <Select
-                        placeholder={selectedLeague ? <b>{leagues.find(league => league.id === selectedLeague)?.name}</b> : "Seleccione una liga"}
-                        options={leagues.map(league => ({
-                            label: league.name,
-                            value: league.id,
-                        }))}
-                        style={{ width: '100%', maxWidth: '300px' }}
-                        onChange={(value) => setSelectedLeague(value)}
-                    />
-                </Col>
-            </Row>
-            <Row gutter={[16, 16]}>
-                {teams.map((team) => (
-                    <Col key={team.id} xs={24} sm={12} md={8} lg={6}>
-                        <Card
-                            style={{
-                                width: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: '1rem'
-                            }}
-                        >
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                marginBottom: '1rem'
-                            }}>
-                                <Image
-                                    src={team.logo_url}
-                                    alt={team.name}
-                                    style={{
-                                        width: '100px',
-                                        height: '100px',
-                                        objectFit: 'contain',
-                                        cursor: 'pointer'
-                                    }}
-                                    preview={false}
-                                    onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
+        <div className="p-3">
+            <Title level={2} className="mb-4">Equipos de la Liga</Title>
+
+            <Select
+                placeholder="Selecciona una liga"
+                options={leagues.map(l => ({ label: l.name, value: l.id }))}
+                value={selectedLeague}
+                onChange={setSelectedLeague}
+                style={{ width: '100%', maxWidth: 300, marginBottom: 24 }}
+            />
+
+            <Divider />
+
+            {loading ? (
+                <Row gutter={[24, 24]}>
+                    {[1, 2, 3, 4].map(i => (
+                        <Col key={i} xs={24} sm={12} md={8} lg={6}>
+                            <Card className="shadow-sm">
+                                <Skeleton active avatar paragraph={{ rows: 1 }} />
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            ) : teams.length > 0 ? (
+                <Row gutter={[24, 24]}>
+                    {teams.map((team) => (
+                        <Col key={team.id} xs={24} sm={12} md={8} lg={6}>
+                            <Card
+                                hoverable
+                                className="shadow-sm h-100 text-center"
+                                cover={
+                                    <div className="p-4 d-flex justify-content-center align-items-center" style={{ height: 160, background: 'rgba(255,255,255,0.02)' }}>
+                                        <Image
+                                            src={team.logo_url}
+                                            alt={team.name}
+                                            style={{ maxWidth: 120, maxHeight: 120, objectFit: 'contain' }}
+                                            preview={false}
+                                            onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
+                                        />
+                                    </div>
+                                }
+                            >
+                                <Card.Meta 
+                                    title={<Title level={4} className="m-0">{team.name}</Title>}
+                                    description={
+                                        <Button 
+                                            type="link" 
+                                            icon={<TeamOutlined />} 
+                                            onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
+                                        >
+                                            Ver detalles
+                                        </Button>
+                                    }
                                 />
-                            </div>
-                            <div style={{
-                                textAlign: 'center',
-                                width: '100%',
-                                padding: '0 1rem'
-                            }}>
-                                <h2
-                                    style={{
-                                        textAlign: 'center',
-                                        margin: 0,
-                                        fontSize: '1.2rem'
-                                    }}
-                                >
-                                    {team.name}
-                                </h2>
-                            </div>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            ) : (
+                <Empty description="No se encontraron equipos para esta liga." />
+            )}
         </div>
-    )
+    );
 }
