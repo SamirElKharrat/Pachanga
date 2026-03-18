@@ -7,7 +7,7 @@ import { TrophyOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons'
 const { Title, Text } = Typography;
 
 /**
- * Team component for viewing available teams within a selected league.
+ * Team component for viewing available teams within a selected league. a
  * 
  * @returns {React.ReactElement} The Team page component.
  */
@@ -114,12 +114,12 @@ export default function Team() {
                                     </div>
                                 }
                             >
-                                <Card.Meta 
+                                <Card.Meta
                                     title={<Title level={4} className="m-0">{team.name}</Title>}
                                     description={
-                                        <Button 
-                                            type="link" 
-                                            icon={<TeamOutlined />} 
+                                        <Button
+                                            type="link"
+                                            icon={<TeamOutlined />}
                                             onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
                                         >
                                             Ver detalles
