@@ -150,7 +150,7 @@ function Home() {
                 if (weeks.length > 0 && selectedWeek) {
                     const weekData = weeks.find(w => w.id === selectedWeek) || weeks[0];
                     if (weekData) {
-                        const matchesResponse = await API.get(`/matches/getByWeek/${leagueId}/${weekData.start}/${weekData.end}`);
+                        const matchesResponse = await API.get(`/matches/getByWeek/${leagueId}/${weekData.start}T00:00:00/${weekData.end}T23:59:59`);
                         setMatches(matchesResponse);
                         const sortedMatches = [...matchesResponse].sort((a, b) => new Date(a.date) - new Date(b.date));
                         setSortedMatches(sortedMatches);
