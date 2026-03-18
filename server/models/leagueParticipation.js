@@ -23,6 +23,11 @@ const LeagueParticipation = sequelize.define('LeagueParticipation', {
             key: 'id'
         }
     },
+    week: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
     points: {
         type: DataTypes.INTEGER,
         allowNull: false,

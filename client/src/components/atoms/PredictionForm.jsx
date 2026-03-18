@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Select, Avatar, Tooltip, Button, Skeleton, Card, Space, Typography, Divider, theme } from 'antd';
 import { API } from '../../services/api';
 import Coin from './Coin';
@@ -156,7 +157,7 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
                             </Col>
                             
                             <Col xs={24} md={14} lg={16}>
-                                <Space className="w-100 justify-content-end" size="middle">
+                                <Space className="w-100 justify-content-start ps-md-4" size="large">
                                     <Coin
                                         teams={match.Teams}
                                         onSuccess={(sideName) => {
@@ -166,12 +167,12 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
                                     />
                                     {match.format !== 'BO1' && (
                                         <Select
-                                            placeholder="Res"
-                                            size="small"
+                                            placeholder="Resultado"
+                                            size="middle"
                                             value={selectedResults[match.id]}
                                             onChange={(val) => setSelectedResults(prev => ({ ...prev, [match.id]: val }))}
                                             options={getBOOptions(match.format)}
-                                            style={{ width: 80 }}
+                                            style={{ minWidth: 120 }}
                                         />
                                     )}
                                 </Space>

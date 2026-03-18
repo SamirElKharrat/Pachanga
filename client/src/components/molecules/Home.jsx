@@ -75,32 +75,32 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                 </Text>
             </div>
 
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
-                            gap: 10
-                        }}>
-                            {matchGroup.map(match => {
-                                const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
-                                const c = STATUS_COLORS[status];
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
+                gap: 10
+            }}>
+                {matchGroup.map(match => {
+                    const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
+                    const c = STATUS_COLORS[status];
 
-                                return (
-                                    <div key={match.id}
-                                        style={{
-                                            background: c.bg,
-                                            border: `1px solid ${c.border}`,
-                                            borderRadius: 10,
-                                            padding: '8px 4px',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 4,
-                                            transition: 'all 0.2s ease',
-                                            minHeight: 100,
-                                            boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                        }}
-                                    >
+                    return (
+                        <div key={match.id}
+                            style={{
+                                background: c.bg,
+                                border: `1px solid ${c.border}`,
+                                borderRadius: 10,
+                                padding: '8px 4px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 4,
+                                transition: 'all 0.2s ease',
+                                minHeight: 100,
+                                boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                            }}
+                        >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
                                 <Avatar src={match.Teams?.[0]?.logo_url} shape="square" size={12} style={{ borderRadius: 2 }} />
                                 <Text type="secondary" style={{ fontSize: 7, fontWeight: 800, opacity: 0.5 }}>VS</Text>
@@ -211,6 +211,8 @@ function Home() {
     const [selectedLeague, setSelectedLeague] = useState(location.state?.leagueId || null);
     const [selectedWeek, setSelectedWeek] = useState(null);
     const [filteredParticipants, setFilteredParticipants] = useState(null);
+    // Ref to track which league the current `weeks` array belongs to
+    const weeksLeagueRef = React.useRef(null);
 
     const {
         leagues,
@@ -231,12 +233,25 @@ function Home() {
         }
     }, [leagues]);
 
+    // Cuando cambie la liga, resetear la semana inmediatamente
+    const handleLeagueChange = (val) => {
+        setSelectedLeague(val);
+        setSelectedWeek(null);
+        setFilteredParticipants(null);
+        weeksLeagueRef.current = null; // invalidate
+    };
+
+    // Auto-seleccionar semana cuando llegan las semanas de la liga activa
     useEffect(() => {
-        if (weeks.length > 0 && selectedWeek === null) {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const currentWeek = weeks.find(w => todayStr >= w.start && todayStr <= w.end);
-            setSelectedWeek(currentWeek ? currentWeek.id : weeks[0].id);
-        }
+        if (weeks.length === 0) return;
+        // Solo actuar si las semanas pertenecen a la liga seleccionada actualmente
+        if (weeksLeagueRef.current === selectedLeague && selectedWeek !== null) return;
+
+        weeksLeagueRef.current = selectedLeague;
+        const todayStr = new Date().toISOString().split('T')[0];
+        const currentWeek = weeks.find(w => todayStr >= w.start && todayStr <= w.end);
+        // Si hay semana actual -> esa. Si no -> la última semana disponible
+        setSelectedWeek(currentWeek ? currentWeek.id : weeks[weeks.length - 1].id);
     }, [weeks]);
 
     useEffect(() => {
@@ -296,7 +311,7 @@ function Home() {
                         size="large"
                         placeholder="Elige una liga"
                         value={selectedLeague}
-                        onChange={setSelectedLeague}
+                        onChange={handleLeagueChange}
                         loading={loading && leagues.length === 0}
                     >
                         {leagues.map(league => (
@@ -345,18 +360,29 @@ function Home() {
                             <Skeleton active style={{ padding: 16 }} />
                         ) : (
                             <List
-                                dataSource={[...participants].sort((a, b) => b.points - a.points)}
-                                renderItem={(item, index) => {
+                                dataSource={[...participants].sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))}
+                                renderItem={(item) => {
                                     const favTeam = favoriteTeams.find(f => f.user_id === item.User.id)?.team;
                                     const isCurrent = currentUser?.id === item.id;
+                                    const rank = item.rank ?? 999;
                                     const rankColor =
-                                        index === 0 ? '#fbbf24' :
-                                            index === 1 ? '#94a3b8' :
-                                                index === 2 ? '#b45309' : '#334155';
+                                        rank === 1 ? '#fbbf24' :
+                                            rank === 2 ? '#94a3b8' :
+                                                rank === 3 ? '#b45309' : '#334155';
+
+                                    // Movement indicator
+                                    const movement = item.movement;
+                                    const movementEl = movement === 'up'
+                                        ? <span style={{ color: '#10b981', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▲</span>
+                                        : movement === 'down'
+                                            ? <span style={{ color: '#ef4444', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▼</span>
+                                            : movement === 'same'
+                                                ? <span style={{ color: '#64748b', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>—</span>
+                                                : null; // first week or no data
 
                                     return (
                                         <List.Item
-                                            key={item.id}
+                                            key={item.user_id}
                                             onClick={() => handleParticipantFilter(item)}
                                             style={{
                                                 padding: '10px 12px',
@@ -367,6 +393,7 @@ function Home() {
                                             }}
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 8 }}>
+                                                {/* Rank badge */}
                                                 <div
                                                     style={{
                                                         width: 26, height: 26,
@@ -374,12 +401,16 @@ function Home() {
                                                         borderRadius: 6,
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                         fontWeight: 800, fontSize: 11,
-                                                        color: index < 3 ? '#000' : '#fff',
-                                                        boxShadow: index < 3 ? `0 0 8px ${rankColor}55` : 'none',
+                                                        color: rank <= 3 ? '#000' : '#fff',
+                                                        boxShadow: rank <= 3 ? `0 0 8px ${rankColor}55` : 'none',
                                                         flexShrink: 0,
                                                     }}
                                                 >
-                                                    {index + 1}
+                                                    {rank}
+                                                </div>
+                                                {/* Movement arrow */}
+                                                <div style={{ width: 14, textAlign: 'center', flexShrink: 0 }}>
+                                                    {movementEl}
                                                 </div>
                                                 <Avatar src={getAvatarSrc(item.User.logo_url)} icon={<UserOutlined />} size={32} />
                                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -399,6 +430,7 @@ function Home() {
                                 }}
                             />
                         )}
+
                     </Card>
                 </Col>
 

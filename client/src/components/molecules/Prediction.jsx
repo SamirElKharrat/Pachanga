@@ -76,7 +76,7 @@ const Prediction = () => {
         if (computed.length > 0) {
             const todayStr = new Date().toISOString().split('T')[0];
             const currentWeek = computed.find(w => todayStr >= w.start && todayStr <= w.end);
-            setSelectedWeek(currentWeek ? currentWeek.id : computed[0].id);
+            setSelectedWeek(currentWeek ? currentWeek.id : computed[computed.length - 1].id);
         }
     }, [selectedLeague, leagues, selectedWeek]);
 

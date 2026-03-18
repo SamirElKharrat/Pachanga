@@ -46,8 +46,12 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                 
                 // 3. Current User & Participants
                 const currentUserInfo = await API.getUserByToken();
-                const participantsResponse = await API.get('/leagueParticipations/get/participants/' + leagueId);
+                // Pass selectedWeek so backend returns points for that week + movement indicators
+                const weekParam = selectedWeek ? `?week=${selectedWeek}` : '';
+                const participantsResponse = await API.get(`/leagueParticipations/get/participants/${leagueId}${weekParam}`);
                 
+                // Backend already returns them sorted by rank.
+                // Bubble current user to top but keep the ranking data intact.
                 const currentUserParticipant = participantsResponse.find(p => p.user_id === currentUserInfo.id);
                 const otherParticipants = participantsResponse.filter(p => p.user_id !== currentUserInfo.id);
                 const sortedParticipants = currentUserParticipant 
