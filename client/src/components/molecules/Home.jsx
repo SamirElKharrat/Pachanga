@@ -99,7 +99,8 @@ function Home() {
                             id: weekNumber,
                             name: `Semana ${weekNumber}`,
                             start: currentWeekStart.toISOString().split('T')[0],
-                            end: currentWeekEnd.toISOString().split('T')[0]
+                            end: new Date(currentWeekEnd.getTime() + 24 * 60 * 60 * 1000 - 1).toISOString().split('T')[0]
+
                         });
                     }
 
