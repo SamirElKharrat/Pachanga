@@ -117,7 +117,7 @@ const Prediction = () => {
         );
     }
 
-    const currentWeek = weeks.find(w => w.id === selectedWeek);
+    // const currentWeek = weeks.find(w => w.id === selectedWeek);
 
     return (
         <div style={{ padding: '12px 12px 40px' }}>

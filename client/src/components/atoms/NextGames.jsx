@@ -51,7 +51,7 @@ const NextGames = () => {
                         try {
                             await API.put('/matches/update/' + game.id, { status: 'live' });
                             return { ...game, status: 'live' }; 
-                        } catch (e) {
+                        } catch {
                             return game;
                         }
                     }

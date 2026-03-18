@@ -23,6 +23,8 @@ const PredictionTable = ({ result, matches }) => {
         };
     });
 
+    console.log(dataSource);
+
     const columns = [
         {
             title: 'Apuesta',
