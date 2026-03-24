@@ -161,31 +161,7 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
                                     </Text>
                                 </div>
 
-                                {/* User's prediction row */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 2 }}>
-                                    {cfg.icon}
-                                    <Text style={{ fontSize: 11 }}>
-                                        {row.predictedTeam ? (
-                                            <>
-                                                Votaste:{' '}
-                                                <Avatar
-                                                    src={row.predictedTeam.logo_url}
-                                                    shape="square"
-                                                    size={16}
-                                                    style={{ marginRight: 3, verticalAlign: 'middle' }}
-                                                />
-                                                <Text strong style={{ fontSize: 11 }}>{row.predictedTeam.name}</Text>
-                                                {row.pred?.description && (
-                                                    <Text type="secondary" style={{ fontSize: 10 }}>
-                                                        {' '}({row.pred.description})
-                                                    </Text>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <Text type="secondary" style={{ fontSize: 11 }}>Sin predicción</Text>
-                                        )}
-                                    </Text>
-                                </div>
+
                             </div>
 
                             {/* Right: tag + points */}

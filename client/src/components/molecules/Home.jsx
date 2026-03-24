@@ -348,11 +348,13 @@ function Home() {
                     <Card
                         title="Clasificación"
                         extra={
-                            <Button
-                                type="text"
-                                icon={<FilterOutlined />}
-                                onClick={() => setFilteredParticipants(participants)}
-                            />
+                            <Tooltip title="Filtro para eliminar las selecciones">
+                                <Button
+                                    type="text"
+                                    icon={<FilterOutlined />}
+                                    onClick={() => setFilteredParticipants(participants)}
+                                />
+                            </Tooltip>
                         }
                         styles={{ body: { padding: 0 } }}
                     >
@@ -448,7 +450,7 @@ function Home() {
                                 ) : (
                                     <Space direction="vertical" align="center">
                                         <Text type="secondary">
-                                            Aún no has completado tus predicciones para esta semana.
+                                            Haz las predicciones cochino.
                                         </Text>
                                         <Button
                                             type="primary"
@@ -456,7 +458,7 @@ function Home() {
                                             onClick={() => nav('/predictions/')}
                                             style={{ marginTop: 12 }}
                                         >
-                                            Hacer predicciones ahora
+                                            Haz las predicciones cochino
                                         </Button>
                                     </Space>
                                 )}
