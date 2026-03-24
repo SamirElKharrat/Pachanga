@@ -10,8 +10,8 @@ const { calculatePredictionPoints } = require('../utils/pointsCalculator');
 const Team = require('../models/team');
 
 // Relaciones
-User.belongsToMany(League, { through: 'LeagueParticipation' });
-League.belongsToMany(User, { through: 'LeagueParticipation' });
+User.belongsToMany(League, { through: { model: LeagueParticipation, unique: false } });
+League.belongsToMany(User, { through: { model: LeagueParticipation, unique: false } });
 Team.belongsToMany(Match, { through: 'TeamMatches' });
 Match.belongsToMany(Team, { through: 'TeamMatches' });
 Result.belongsTo(Match, { foreignKey: 'match_id', as: 'Match' });

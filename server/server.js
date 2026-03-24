@@ -36,8 +36,9 @@ app.use(express.json());
 // Relaciones
 User.belongsToMany(Role, { through: 'UserRoles' });
 Role.belongsToMany(User, { through: 'UserRoles' });
-User.belongsToMany(League, { through: 'LeagueParticipation' });
-League.belongsToMany(User, { through: 'LeagueParticipation' });
+const LeagueParticipation = require('./models/leagueParticipation');
+User.belongsToMany(League, { through: { model: LeagueParticipation, unique: false } });
+League.belongsToMany(User, { through: { model: LeagueParticipation, unique: false } });
 Team.belongsToMany(League, { through: 'TeamLeagues' });
 League.belongsToMany(Team, { through: 'TeamLeagues' });
 Team.belongsToMany(Match, { through: 'TeamMatches' });
