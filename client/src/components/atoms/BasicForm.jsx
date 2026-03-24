@@ -1,304 +1,272 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Select, Upload, DatePicker, Switch, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Select, Upload, DatePicker, Switch, Space, Typography, Divider } from 'antd';
+import { PlusOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { Card } from 'antd';
 import { showAlert } from './AlertInfo';
 import { API } from '../../services/api';
 
-const format = [{ value: 'BO1', label: 'BO1' }, { value: 'BO3', label: 'BO3' }, { value: 'BO5', label: 'BO5' }]
-const status = [{ value: 'scheduled', label: 'Programado' }, { value: 'live', label: 'En vivo' }, { value: 'finished', label: 'Finalizado' }]
-const type = [{ value: 'question', label: 'Pregunta' }, { value: 'score', label: 'Puntuación' }]
+const { Text } = Typography;
+const { TextArea } = Input;
 
+// Static options for selects
+const FORMAT_OPTIONS  = [{ value: 'BO1', label: 'BO1' }, { value: 'BO3', label: 'BO3' }, { value: 'BO5', label: 'BO5' }];
+const STATUS_OPTIONS  = [{ value: 'scheduled', label: 'Programado' }, { value: 'live', label: 'En vivo' }, { value: 'finished', label: 'Finalizado' }];
+const TYPE_OPTIONS    = [{ value: 'question', label: 'Pregunta' }, { value: 'score', label: 'Puntuación' }];
 
+// Result options per match format
+const RESULT_OPTIONS = {
+    BO1: [{ value: '1-0', label: '1-0' }],
+    BO3: [{ value: '2-0', label: '2-0' }, { value: '2-1', label: '2-1' }],
+    BO5: [{ value: '3-0', label: '3-0' }, { value: '3-1', label: '3-1' }, { value: '3-2', label: '3-2' }],
+};
+
+/**
+ * A dynamic form for admin CRUD operations.
+ */
 const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCount, selectData }) => {
+    const [form]           = Form.useForm();
+    const [fileList, setFileList]           = useState([]);
+    const [relationData, setRelationData]   = useState([]);
+    const [loading, setLoading]             = useState(false);
+    const [selectedFormat, setSelectedFormat] = useState(null); // for result_select
 
-    const [form] = Form.useForm();
-    const [fileList, setFileList] = useState([]);
-    const [relationData, setRelationData] = useState([]);
-    const [loading, setLoading] = useState(false);
-
+    // ── Pre-fill form when editing ────────────────────────────────────────────
     useEffect(() => {
         if (record) {
             const formattedRecord = { ...record[0] };
             Object.keys(formattedRecord).forEach(key => {
                 if (key.endsWith('_date') || key.includes('date')) {
-                    formattedRecord[key] = formattedRecord[key] ? dayjs(formattedRecord[key], "YYYY-MM-DDTHH:mm:ss") : null;
+                    formattedRecord[key] = formattedRecord[key] ? dayjs(formattedRecord[key]) : null;
                 }
             });
-
             form.setFieldsValue(formattedRecord);
         }
     }, [record, form]);
 
+    const normFile = (e) => (Array.isArray(e) ? e : e?.fileList);
 
-    const normFile = (e) => {
-        return e?.fileList;
+    // ── Handle dynamic dependent selects ─────────────────────────────────────
+    const handleSelect = async (option) => {
+        const url = option.name === 'match_id' ? '/matches/getTeams' : '/leagues/getTeams';
+        try {
+            const response = await API.get(`${url}/${option.value}`);
+            setRelationData(response.Teams || []);
+
+            if (option.name === 'match_id') {
+                const matchRes = await API.get(`/matches/get/${option.value}`);
+                const fmt = matchRes[0]?.format || matchRes?.format || 'BO1';
+                setSelectedFormat(fmt);
+                // Clear result field when match changes
+                form.setFieldValue('result', undefined);
+            }
+        } catch {
+            showAlert('error', 'Error al cargar datos relacionados');
+        }
     };
 
-    const handleSelect = (option) => {
-        const url = option.name == "match_id" ? "/matches/getTeams" : "/leagues/getTeams";
-        API.get(`${url}/${option.value}`)
-            .then((response) => {
-                setRelationData(response.Teams)
-            })
-            .catch((error) => {
-                showAlert('error', error.message);
-            });
-    }
-
+    // ── Submit ────────────────────────────────────────────────────────────────
     const onFinish = async (values) => {
         setLoading(true);
         try {
-            const endpoint = record ? record[0] ? `/${table}/update/${record[0].id}` : table === 'users' ? `/${table}/register` : `/${table}/set` : `/${table}/set`;
-            if (values.logo_url && values.logo_url.length > 0) {
-                if (record && JSON.stringify(values.logo_url) == JSON.stringify(record[0].logo_url)) {
-                    values.logo_url = record[0].logo_url.url;
-                }
-                else {
+            const endpoint = record
+                ? `/${table}/update/${record[0].id}`
+                : (table === 'users' ? `/${table}/register` : `/${table}/set`);
+
+            // File upload
+            if (values.logo_url?.length > 0) {
+                if (record && values.logo_url[0].url === record[0].logo_url) {
+                    values.logo_url = record[0].logo_url;
+                } else {
                     const formData = new FormData();
                     formData.append('file', values.logo_url[0].originFileObj);
-                    try {
-                        const response = await API.post(`/upload/`, formData);
-                        values.logo_url = response.url;
-                    } catch (error) {
-                        showAlert('error', error.message);
-                        return;
-                    }
+                    const response = await API.post('/upload/', formData);
+                    values.logo_url = response.url;
                 }
             }
 
+            // Date formatting
+            if (values.date)       values.date       = dayjs(values.date).format('YYYY-MM-DDTHH:mm:ss');
+            if (values.start_date) values.start_date = dayjs(values.start_date).format('YYYY-MM-DDTHH:mm:ss');
+            if (values.end_date)   values.end_date   = dayjs(values.end_date).format('YYYY-MM-DDTHH:mm:ss');
 
+            // leagues → league_id
+            if (values.leagues) { values.league_id = values.leagues; delete values.leagues; }
 
-            if (values.date) {
-                values.date = dayjs(values.date).format('YYYY-MM-DDTHH:mm:ss');
-            }
-            if (Object.keys(values).includes('leagues')) {
-                values.league_id = values.leagues;
-                delete values.leagues;
-            }
-            if (table == "predictions") {
-                try {
-                    const response = await API.getUserByToken();
-                    values.user_id = response.id;
-                } catch (error) {
-                    showAlert('error', error.message);
-                    return;
-                }
+            // roles → role (backend reads req.body.role)
+            if (values.roles) { values.role = values.roles; delete values.roles; }
+
+            // Predictions need current user
+            if (table === 'predictions') {
+                const user = await API.getUserByToken();
+                values.user_id = user.id;
             }
 
             if (record) {
-                //Solo tener las keys que tienen data 
                 const updatedValues = Object.fromEntries(
-                    Object.entries(values).filter(([, value]) => value !== undefined)
+                    Object.entries(values).filter(([, v]) => v !== undefined)
                 );
-                await API.put(endpoint, updatedValues)
-                    .then(() => {
-                        onCancel?.();
-                        if (onSuccess) {
-                            onSuccess();
-                            showAlert('success', 'Actualizado correctamente');
-                        }
-                    })
-                    .catch(() => {
-                        showAlert('error', "Error al Actualizar");
-                    });
+                await API.put(endpoint, updatedValues);
+                showAlert('success', 'Actualizado correctamente');
             } else {
-                console.log(values)
-                await API.post(endpoint, values)
-                    .then(() => {
-                        onCancel?.();
-                        if (onSuccess) {
-                            onSuccess();
-                            showAlert('success', 'Guardado correctamente');
-                        }
-                    })
-                    .catch(() => {
-                        showAlert('error', "Error al Crear");
-                    });
+                await API.post(endpoint, values);
+                showAlert('success', 'Creado correctamente');
             }
+
+            onSuccess?.();
+            onCancel?.();
         } catch (error) {
-            showAlert('error', error.message);
+            console.error('Form submission error:', error);
+            showAlert('error', 'Hubo un problema al procesar la solicitud');
         } finally {
             setLoading(false);
         }
     };
 
+    // ── Dynamic field renderer ────────────────────────────────────────────────
     const renderFormItem = (field, index) => {
-        const values = record ? Object.values(record[0]).slice(1) : [];
-        // Solo requerir validación cuando se está creando (no hay record)
-        const rules = !record
-            ? [{ required: true, message: `Por favor ingrese ${names[index].toLowerCase()}` }]
-            : [];
-
+        const name  = names[index];
+        const label = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         const commonProps = {
-            key: `${names[index]}-${index}`,
-            name: names[index],
-            label: names[index].charAt(0).toUpperCase() + names[index].slice(1),
-            rules: rules
+            key: name, name, label,
+            rules: !record ? [{ required: true, message: `${label} es obligatorio` }] : [],
         };
 
         switch (field) {
             case 'text':
                 return (
                     <Form.Item {...commonProps}>
-                        <Input
-                            placeholder={`Ingrese ${names[index].toLowerCase()}`}
-                            defaultValue={values[index]}
-                        />
+                        <Input placeholder={`Ingresar ${label.toLowerCase()}`} style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
+
             case 'password':
                 return (
                     <Form.Item {...commonProps}>
-                        <Input.Password placeholder={`Ingrese su nueva contraseña`} />
+                        <Input.Password placeholder="Ingresar nueva contraseña" style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
+
             case 'boolean':
                 return (
                     <Form.Item {...commonProps} valuePropName="checked">
-                        <Switch checkedChildren="Sí" unCheckedChildren="No" defaultValue={values[index]} />
+                        <Switch checkedChildren="ON" unCheckedChildren="OFF" />
                     </Form.Item>
                 );
+
             case 'number':
                 return (
                     <Form.Item {...commonProps}>
-                        <Input
-                            type="number"
-                            placeholder={`Ingrese ${names[index].toLowerCase()}`}
-                            value={values[index]}
-                            onChange={(e) => form.setFieldsValue({ [names[index]]: e.target.value ? Number(e.target.value) : null })}
-                        />
+                        <Input type="number" placeholder={`Ingresar ${label.toLowerCase()}`} style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
+
             case 'date':
                 return (
                     <Form.Item {...commonProps}>
-                        <DatePicker
-                            className="custom-dark-datepicker"
-                            style={{ width: '100%' }}
-                            showTime
-                            format="DD-MM-YYYY HH:mm"
-                            defaultValue={values[index]}
-                        />
+                        <DatePicker showTime format="DD-MM-YYYY HH:mm" style={{ width: '100%', maxWidth: 400 }} />
                     </Form.Item>
                 );
+
             case 'textarea':
                 return (
                     <Form.Item {...commonProps}>
-                        <TextArea
-                            rows={4}
-                            placeholder={`Ingrese ${names[index].toLowerCase()}`}
-                            defaultValue={values[index]}
-                        />
+                        <TextArea rows={4} placeholder={`Ingresar ${label.toLowerCase()}`} style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
+
             case 'file':
                 return (
-                    <Form.Item
-                        {...commonProps}
-                        valuePropName="fileList"
-                        getValueFromEvent={normFile}
-                        rules={[{ required: false }]}
-                    >
-                        <Upload
-                            listType="picture-card"
-                            fileList={fileList}
-                            onChange={({ fileList }) => setFileList(fileList)}
-                            beforeUpload={(file) => {
-                                const isImage = file.type.startsWith('image/');
-                                if (!isImage) {
-                                    message.error('Solo se permiten archivos de imagen (JPEG, PNG, GIF, etc.)');
-                                    return Upload.LIST_IGNORE;
-                                }
-                                return false;
-                            }}
-
-                            accept="image/*"
-                            maxCount={1}
-                        >
-
-                            {fileList.length === 1 ? null : (
-                                <div>
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8 }}>Subir</div>
-                                </div>
+                    <Form.Item {...commonProps} valuePropName="fileList" getValueFromEvent={normFile}>
+                        <Upload listType="picture-card" maxCount={1} beforeUpload={() => false} accept="image/*">
+                            {fileList.length < 1 && (
+                                <div><PlusOutlined /><div style={{ marginTop: 8 }}>Subir</div></div>
                             )}
                         </Upload>
                     </Form.Item>
                 );
-            case 'select':
+
+            case 'select': {
+                let options = [];
+                if (name === 'format')   options = FORMAT_OPTIONS;
+                else if (name === 'status') options = STATUS_OPTIONS;
+                else if (name === 'type')   options = TYPE_OPTIONS;
+                else if (name === 'winner') options = relationData.map(t => ({ value: t.id ?? t.value, label: t.name ?? t.label }));
+                else {
+                    const relName = name === 'match_id' ? 'matches' : (name === 'leagues' ? 'leagues' : name);
+                    const matchData = selectData.find(d => d.name === relName);
+                    if (matchData) options = matchData.data;
+                }
+
                 return (
                     <Form.Item {...commonProps}>
                         <Select
-                            placeholder={`Seleccione ${names[index].toLowerCase()}`}
-                            onSelect={(value) => handleSelect({ value: value, name: names[index] })}
-                            options={selectData.map((data) => {
-                                if (data.name === names[index]) {
-                                    return data.data;
-                                }
-                                else if (names[index] === 'format') {
-                                    return format;
-                                }
-                                else if (names[index] === 'status') {
-                                    return status;
-                                }
-                                else if (names[index] === 'type') {
-                                    return type;
-                                }
-                                else if (relationData.length > 0 && names[index] === 'winner') {
-                                    return relationData;
-                                }
-                                else if (names[index] === 'match_id') {
-                                    return data.data;
-                                }
-                            })[0]}
+                            placeholder={`Seleccionar ${label.toLowerCase()}`}
+                            onSelect={(val) => handleSelect({ value: val, name })}
+                            options={options}
+                            showSearch
+                            optionFilterProp="label"
+                            style={{ width: '100%', maxWidth: 400 }}
                         />
                     </Form.Item>
                 );
+            }
+
             case 'multiselect':
                 return (
                     <Form.Item {...commonProps}>
                         <Select
                             mode="multiple"
-                            placeholder={`Seleccione ${names[index].toLowerCase()}`}
-                            maxCount={maxTagCount ? maxTagCount : 1000}
+                            placeholder={`Seleccionar ${label.toLowerCase()}`}
+                            maxCount={maxTagCount}
                             options={
-                                names[index] === 'teams' && relationData.length > 0
-                                    ? relationData
-                                    : selectData.map((data) => {
-                                        if (data.name === names[index]) {
-                                            return data.data;
-                                        }
-                                    })[0]
+                                name === 'teams' && relationData.length > 0
+                                    ? relationData.map(t => ({ value: t.id ?? t.value, label: t.name ?? t.label }))
+                                    : (selectData.find(d => d.name === name)?.data || [])
                             }
+                            style={{ width: '100%', maxWidth: 400 }}
                         />
                     </Form.Item>
                 );
+
+            // ── NEW: Smart result select based on match format ────────────────
+            case 'result_select': {
+                const resultOptions = RESULT_OPTIONS[selectedFormat] || [];
+                return (
+                    <Form.Item
+                        {...commonProps}
+                        help={!selectedFormat ? 'Selecciona un partido primero para ver las opciones' : undefined}
+                    >
+                        <Select
+                            placeholder={selectedFormat ? `Resultado (${selectedFormat})` : 'Selecciona un partido primero'}
+                            options={resultOptions}
+                            disabled={!selectedFormat || resultOptions.length === 0}
+                            style={{ width: '100%', maxWidth: 400 }}
+                        />
+                    </Form.Item>
+                );
+            }
+
             default:
                 return null;
         }
     };
 
     return (
-        <div style={{ maxWidth: 300 }}>
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={onFinish}
-                initialValues={record ? record[0] : {}}
-            >
+        <Card className="border-0 bg-transparent" styles={{ body: { padding: 0 } }}>
+            <Form form={form} layout="vertical" onFinish={onFinish}>
                 {fields.map((field, index) => renderFormItem(field, index))}
 
-                <Form.Item style={{ marginTop: 16, textAlign: 'left' }}>
-                    <Button onClick={onCancel} type='info' style={{ marginRight: 8 }}>
-                        Cancelar
-                    </Button>
-                    <Button type="primary" htmlType="submit" loading={loading}>
+                <Divider className="my-4" />
+
+                <Space className="w-100 justify-content-end">
+                    <Button onClick={onCancel} icon={<CloseOutlined />}>Cancelar</Button>
+                    <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
                         {record ? 'Actualizar' : 'Guardar'}
                     </Button>
-                </Form.Item>
+                </Space>
             </Form>
-        </div>
+        </Card>
     );
 };
 

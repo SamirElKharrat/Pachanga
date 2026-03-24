@@ -64,7 +64,7 @@ exports.createUser = async (req, res) => {
     const hashedPass = await bcrypt.hash(password, 10);
 
     const user = await User.create({ username, email, password: hashedPass, logo_url });
-    const roleId = req.body.role ? req.body.role : 2;
+    const roleId = req.body.role ? req.body.role : 8;
     const role = await Role.findByPk(roleId);
     await user.addRole(role);
     res.status(201).json(user);

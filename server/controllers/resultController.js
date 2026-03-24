@@ -5,12 +5,28 @@ const LeagueParticipation = require('../models/leagueParticipation');
 const Team = require('../models/team');
 const User = require('../models/user');
 const FavoriteTeam = require('../models/favoriteTeam');
-const { startOfWeek, endOfWeek } = require('./weekController');
+const League = require('../models/league');
+const { startOfWeek, endOfWeek, getLeagueWeekNumber } = require('./weekController'); // Make sure getting a week number is possible
+const { calculatePredictionPoints } = require('../utils/pointsCalculator');
+const { Op } = require('sequelize');
 
 // Get all results
 exports.getAllResults = async (req, res) => {
     try {
-        const results = await Result.findAll();
+        const results = await Result.findAll({
+            include: [
+                {
+                    model: Match,
+                    as: 'Match',
+                    include: [{ model: Team, as: 'Teams', through: { attributes: [] } }]
+                },
+                {
+                    model: Team,
+                    as: 'Winner',
+                    foreignKey: 'winner'
+                }
+            ]
+        });
         res.json(results);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -64,54 +80,80 @@ exports.createResult = async (req, res) => {
         });
 
         if (predictions.length > 0) {
-            const leagueParticipationsPromises = predictions.map(async prediction => {
-                let points = 0;
-                const favoriteTeam = await FavoriteTeam.findOne({
-                    where: {
-                        user_id: prediction.user_id,
-                        league_id: match.league_id,
-                        team_id: prediction.winner
+            // Configuración para los plenos: Obtener los partidos de la semana
+            const weekStart = startOfWeek(match.date);
+            const weekEnd = endOfWeek(match.date);
+
+            // Compute an actual week number for the database relative to league start date.
+            const league = await League.findByPk(match.league_id);
+            const currentWeekNumber = getLeagueWeekNumber(league.start_date, match.date);
+
+            const weekMatches = await Match.findAll({
+                where: {
+                    league_id: match.league_id,
+                    date: {
+                        [Op.between]: [weekStart, weekEnd]
                     }
-                });
+                },
+                order: [['date', 'ASC']]
+            });
 
-                const isFavoriteTeam = !!favoriteTeam;
+            const weekMatchIds = weekMatches.map(m => m.id);
+            const currentMatchIndex = weekMatchIds.indexOf(match.id);
 
-                if (prediction.winner === winner) {
-                    points += 2;
-                    switch (match.format) {
-                        case 'BO3':
-                            if (req.body.result === prediction.description) {
-                                points += 3;
-                                if (isFavoriteTeam) {
-                                    points += 1;
-                                }
-                            }
-                            break;
-                        case 'BO5':
-                            if (req.body.result === prediction.description) {
-                                points += 5;
-                                if (isFavoriteTeam) {
-                                    points += 1;
-                                }
-                            }
-                            break;
+            // Fetch de resultados de los partidos de la semana hasta el actual
+            const resultsThisWeek = await Result.findAll({
+                where: {
+                    match_id: {
+                        [Op.in]: weekMatchIds.slice(0, currentMatchIndex + 1)
                     }
                 }
+            });
 
-                await LeagueParticipation.increment('points', {
-                    by: points,
-                    where: {
-                        user_id: prediction.user_id,
-                        league_id: match.league_id
+            const resultMap = {};
+            resultsThisWeek.forEach(r => resultMap[r.match_id] = r.winner);
+            resultMap[match.id] = winner; // Añadimos el current match
+
+            // Fetch optimizado: Traer todas las predicciones de la semana para evitar peticiones en el map
+            const allWeekPredictions = await Prediction.findAll({
+                where: {
+                    match_id: {
+                        [Op.in]: weekMatchIds.slice(0, currentMatchIndex + 1)
                     }
+                }
+            });
+
+            const leagueParticipationsPromises = predictions.map(async prediction => {
+                const points = await calculatePredictionPoints({
+                    prediction,
+                    match,
+                    winner,
+                    resultStr: req.body.result,
+                    weekMatchIds,
+                    resultMap,
+                    allWeekPredictions
                 });
+
+                if (points > 0) {
+                    // Cargar o crear el LeagueParticipation de la semana correcta
+                    const [participation, created] = await LeagueParticipation.findOrCreate({
+                        where: {
+                            user_id: prediction.user_id,
+                            league_id: match.league_id,
+                            week: currentWeekNumber
+                        },
+                        defaults: {
+                            points: 0
+                        }
+                    });
+
+                    await participation.increment('points', { by: points });
+                }
 
                 await prediction.update({ points });
             });
 
-
             await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
-
 
             await Promise.all(leagueParticipationsPromises);
         }

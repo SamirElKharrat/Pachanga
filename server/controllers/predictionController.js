@@ -1,12 +1,27 @@
 const Prediction = require('../models/prediction');
 const User = require('../models/user');
 const { authenticateJwtToken } = require('../middlewares/auth');
+const Match = require('../models/match');
+const Team = require('../models/team');
 
 
 // Get all predictions
 exports.getAllPredictions = async (req, res) => {
     try {
-        const predictions = await Prediction.findAll();
+        const predictions = await Prediction.findAll({
+            include: [
+                {
+                    model: Match,
+                    as: 'Match',
+                    include: [{ model: Team, as: 'Teams', through: { attributes: [] } }]
+                },
+                {
+                    model: Team,
+                    as: 'Winner',
+                    foreignKey: 'winner'
+                }
+            ]
+        });
         res.json(predictions);
     } catch (error) {
         res.status(500).json({ error: error.message });

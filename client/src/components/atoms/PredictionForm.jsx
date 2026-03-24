@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from 'react'
-import { Row, Col, Select, Image, Tooltip, Button, Skeleton } from 'antd'
-import { API } from '../../services/api'
+import React, { useState, useEffect } from 'react';
+import { Row, Col, Select, Avatar, Tooltip, Button, Skeleton, Card, Space, Typography, Divider, theme } from 'antd';
+import { API } from '../../services/api';
 import Coin from './Coin';
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
 import { showAlert } from './AlertInfo';
 import ModalInfo from './ModalInfo';
+import { SendOutlined } from '@ant-design/icons';
 
+const { Text } = Typography;
 
+/**
+ * Helper to get prediction options for a given match format.
+ * @param {string} format - The match format (e.g., 'BO3', 'BO5').
+ * @returns {Array<{value: string, label: string}>} The available score options.
+ */
 const getBOOptions = (format) => {
     switch (format) {
         case 'BO5':
@@ -25,146 +32,165 @@ const getBOOptions = (format) => {
     }
 };
 
+/**
+ * Component for making predictions on a list of matches.
+ * 
+ * @param {Object} props - Component props.
+ * @param {boolean} props.send - Trigger to submit the form from outside.
+ * @param {Function} props.setSend - Callback to reset the trigger.
+ * @param {Array} props.data - The list of matches to predict.
+ * @param {string|number} props.leagueId - The ID of the current league.
+ * @returns {React.ReactElement} The PredictionForm component.
+ */
 export default function PredictionForm({ send, setSend, data, leagueId }) {
-    const [selectedTeams, setSelectedTeams] = useState([])
-    const [selectedResults, setSelectedResults] = useState([])
-    const [modalOpen, setModalOpen] = useState(false)
-    const nav = useNavigate()
+    const [selectedTeams, setSelectedTeams] = useState({});
+    const [selectedResults, setSelectedResults] = useState({});
+    const [modalOpen, setModalOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const nav = useNavigate();
+    const { token } = theme.useToken();
 
+    /**
+     * Effect to detect external trigger for submission.
+     */
     useEffect(() => {
         if (send) {
-            document.getElementById('submit').click()
-            setSend(false)
+            handleSubmit();
+            setSend(false);
         }
-    }, [send, setSend])
+    }, [send]);
 
-    const handleSelected = (side, matchId) => {
-        const team = data.map((match) => match.Teams.find(t => t.name === side)).filter(Boolean).at(0)
-        const images = document.querySelector(`.image${matchId}`).querySelectorAll('img')
+    /**
+     * Handles selecting a team for a specific match.
+     * @param {number} teamId - The selected team's ID.
+     * @param {number} matchId - The match ID.
+     */
+    const handleTeamSelect = (teamId, matchId) => {
+        setSelectedTeams(prev => ({
+            ...prev,
+            [matchId]: teamId
+        }));
+    };
 
-        // Actualizar la selección existente para este partido
-        setSelectedTeams((prev) => {
-            const index = prev.findIndex(t => t.match_id === matchId)
-            if (index !== -1) {
-                // Reemplazar la selección existente
-                return [...prev.slice(0, index), { winner: team.id, match_id: matchId }, ...prev.slice(index + 1)]
-            } else {
-                // Si no existe, añadir nueva selección
-                return [...prev, { winner: team.id, match_id: matchId }]
-            }
-        })
-
-        // Actualizar opacidades de las imágenes
-        images.forEach(img => {
-            if (img.alt === team.name) {
-                img.style.opacity = '1'
-            } else {
-                img.style.opacity = '0.3'
-            }
-        })
-    }
-
+    /**
+     * Finalizes the submission of all predictions.
+     */
     const sendPredictions = async () => {
-        const user = await API.getUserByToken()
-
-        const predictions = selectedTeams.map((team) => ({
-            user_id: user.id,
-            match_id: team.match_id,
-            winner: team.winner,
-            description: (selectedResults == "BO1") ? "1-0" : selectedResults.find((result) => result.match_id === team.match_id)?.result,
-            type: 'score'
-        }))
-
         try {
-            predictions.forEach(async (prediction) => {
-                await API.post('/predictions/set', prediction)
-            })
-            showAlert('success', "Predicciones guardadas correctamente.")
-            nav('/', { state: { leagueId: leagueId } })
+            setIsSubmitting(true);
+            const user = await API.getUserByToken();
+
+            const predictionPromises = data.map(match => {
+                const winnerId = selectedTeams[match.id];
+                const result = match.format === 'BO1' ? '1-0' : selectedResults[match.id];
+                
+                return API.post('/predictions/set', {
+                    user_id: user.id,
+                    match_id: match.id,
+                    winner: winnerId,
+                    description: result,
+                    type: 'score'
+                });
+            });
+
+            await Promise.all(predictionPromises);
+            showAlert('success', "¡Predicciones enviadas con éxito!");
+            nav('/', { state: { leagueId } });
         } catch (error) {
-            console.error(error)
-            showAlert('error', "Error al guardar predicciones.")
+            console.error("Error submitting predictions:", error);
+            showAlert('error', "No se pudieron enviar las predicciones");
+        } finally {
+            setIsSubmitting(false);
+            setModalOpen(false);
         }
-    }
+    };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
+    /**
+     * Validates and initiatives the submission process.
+     */
+    const handleSubmit = (e) => {
+        if (e) e.preventDefault();
 
-        if (data[0].format === 'BO1') {
-            setSelectedResults("BO1")
-            setModalOpen(true)
-            return
-        }
+        const allTeamsSelected = data.every(match => selectedTeams[match.id]);
+        const allResultsSelected = data.every(match => match.format === 'BO1' || selectedResults[match.id]);
 
-
-        //Si falta equipos por seleccionar o poner resulados no se manda y suelta error
-        if (selectedTeams.length !== data.length || selectedResults.length !== data.length) {
-            e.preventDefault()
-            showAlert('error', "Por favor, seleccione equipos y resultados para todos los partidos.")
+        if (!allTeamsSelected || !allResultsSelected) {
+            showAlert('error', "Debes completar todas las predicciones antes de enviar.");
             return;
         }
 
-        //Preguntar si mandarlos antes de hacerlo
-        if (!modalOpen) {
-            setModalOpen(true)
-            return
-        }
-    }
+        setModalOpen(true);
+    };
+
     return (
         <Skeleton loading={data.length === 0} active>
-            <form onSubmit={handleSubmit} >
+            <div className="prediction-form">
                 {data.map((match) => (
-                    <Row key={match.id} className='m-4' gutter={[0, 16]}>
-                        <Col xs={24} sm={24} md={12} lg={12} xl={8}>
-                            <div className={`image${match.id}`} >
-                                {match.Teams.map((team, index) => (
-                                    <>
-                                        <Tooltip title={team.name} placement='topRight'>
-                                            <Image id={team.id} src={team.logo_url} alt={team.name} width={window.innerWidth < 768 ? 40 : 50} preview={false} style={{ marginLeft: '1rem' }} onClick={() => handleSelected(team.name, match.id)} />
-                                        </Tooltip>
-                                        {index === 0 ? <span style={{ marginLeft: '2rem' }}>vs</span> : null}
-                                    </>
-                                ))}
-                            </div>
-                        </Col>
-                        <Col xs={24} sm={24} md={12} lg={12} xl={12} className='d-flex flex-row align-items-center'>
-                            <Coin
-                                teams={[
-                                    match.Teams[0],
-                                    match.Teams[1]
-                                ]}
-                                onSuccess={(side) => handleSelected(side, match.id)}
-                            />
-                            {match.format !== 'BO1' && (
-                                <Select
-                                    onChange={(value) => {
-                                        setSelectedResults((prev) => {
-                                            const index = prev.findIndex(r => r.match_id === match.id);
-                                            if (index !== -1) {
-                                                return [...prev.slice(0, index), { match_id: match.id, result: value }, ...prev.slice(index + 1)];
-                                            } else {
-                                                return [...prev, { match_id: match.id, result: value }];
-                                            }
-                                        });
-                                    }}
-                                    options={getBOOptions(match.format)}
-                                    style={{ width: '100%' }}
-                                />
-                            )}
-                        </Col>
-                    </Row>
+                    <Card key={match.id} className="mb-2 border-0 bg-transparent" styles={{ body: { padding: '4px 8px' } }}>
+                        <Row align="middle" gutter={[12, 12]}>
+                            <Col xs={24} md={10} lg={8}>
+                                <div className="d-flex align-items-center justify-content-between">
+                                    {match.Teams.map((team, index) => (
+                                        <React.Fragment key={team.id}>
+                                            <div 
+                                                className="p-1 rounded cursor-pointer transition-all"
+                                                style={{
+                                                    borderRadius: 6,
+                                                    boxShadow: selectedTeams[match.id] === team.id ? `0 0 10px ${token.colorPrimary}40` : 'none',
+                                                    background: selectedTeams[match.id] === team.id ? `${token.colorPrimary}1a` : token.colorFillTertiary,
+                                                    border: selectedTeams[match.id] === team.id ? `1px solid ${token.colorPrimary}` : '1px solid transparent'
+                                                }}
+                                                onClick={() => handleTeamSelect(team.id, match.id)}
+                                            >
+                                                <Avatar
+                                                    src={team.logo_url}
+                                                    alt={team.name}
+                                                    shape="square"
+                                                    size={window.innerWidth < 768 ? 32 : 40}
+                                                    style={{ pointerEvents: 'none' }}
+                                                />
+                                            </div>
+                                            {index === 0 && <Text strong className="mx-2 text-secondary" style={{ minWidth: 24, textAlign: 'center', fontSize: 10 }}>VS</Text>}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            </Col>
+                            
+                            <Col xs={24} md={14} lg={16}>
+                                <Space className="w-100 justify-content-start ps-md-4" size="large">
+                                    <Coin
+                                        teams={match.Teams}
+                                        onSuccess={(sideName) => {
+                                            const team = match.Teams.find(t => t.name === sideName);
+                                            if (team) handleTeamSelect(team.id, match.id);
+                                        }}
+                                    />
+                                    {match.format !== 'BO1' && (
+                                        <Select
+                                            placeholder="Resultado"
+                                            size="middle"
+                                            value={selectedResults[match.id]}
+                                            onChange={(val) => setSelectedResults(prev => ({ ...prev, [match.id]: val }))}
+                                            options={getBOOptions(match.format)}
+                                            style={{ minWidth: 120 }}
+                                        />
+                                    )}
+                                </Space>
+                            </Col>
+                        </Row>
+                    </Card>
                 ))}
-                <Button hidden id='submit' type="primary" htmlType="submit">Enviar</Button>
-            </form>
-            <ModalInfo
-                title="Confirmar"
-                description="¿Estás seguro de enviar tus predicciones?"
-                open={modalOpen}
-                onSuccess={() => { sendPredictions() }}
-                onClose={() => { setModalOpen(false) }}
-                okText="Enviar"
-                cancelText="Cancelar"
-            />
+
+                <ModalInfo
+                    title="Confirmar Envío"
+                    description="¿Estás listo para enviar tus predicciones? No podrás cambiarlas una vez enviadas."
+                    open={modalOpen}
+                    onSuccess={sendPredictions}
+                    onClose={() => setModalOpen(false)}
+                    okText="Confirmar"
+                    cancelText="Cancelar"
+                />
+            </div>
         </Skeleton>
     );
 }

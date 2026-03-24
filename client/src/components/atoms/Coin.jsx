@@ -1,37 +1,49 @@
 import React, { useState } from "react";
 import "./css/Coin.css";
 
+/**
+ * A interactive coin flip component for making random predictions between two teams.
+ * 
+ * @param {Object} props - Component props.
+ * @param {Array<Object>} props.teams - The two teams to flip between.
+ * @param {Function} props.onSuccess - Callback with the name of the winning team side.
+ * @returns {React.ReactElement} The Coin component.
+ */
 export default function Coin({ teams, onSuccess }) {
-    const [side, setSide] = useState(teams[0].name); // Estado de la cara
+    const [side, setSide] = useState(teams[0].name);
     const [flip, setFlip] = useState(0);
     const [isFlipping, setIsFlipping] = useState(false);
 
+    /**
+     * Triggers the coin flip animation and logic.
+     */
     const flipCoin = () => {
-        if (isFlipping) return; // Evita clics repetidos
+        if (isFlipping) return;
 
         setIsFlipping(true);
 
         const newSide = Math.random() > 0.5 ? teams[0].name : teams[1].name;
 
-        // Rotación: 3 vueltas completas + 180 extra si cambia la cara
+        // Rotation: 3 full turns + 180 extra if side changes
         const extraRotation = side === newSide ? 0 : 180;
-        setFlip((prevFlip) => prevFlip + 360 * 3 + extraRotation);
+        setFlip((prevFlip) => prevFlip + (360 * 3) + extraRotation);
 
         setSide(newSide);
-        setIsFlipping(false);
 
+        // Wait for animation completion (1s in CSS) before trigger
         setTimeout(() => {
-            onSuccess(newSide)
+            setIsFlipping(false);
+            onSuccess(newSide);
         }, 1000);
     };
 
     return (
-        <div className="coin-container" onClick={flipCoin}>
+        <div className="coin-container" onClick={flipCoin} title="¡Lanza una moneda para elegir!">
             <div className="coin" style={{ transform: `rotateY(${flip}deg)` }}>
-                <div className="side heads" key={side === teams[0].name ? "visible" : "hidden"}>
+                <div className="side heads" key={`heads-${teams[0].id}`}>
                     <img className="symbol" src={teams[0].logo_url} alt={teams[0].name} />
                 </div>
-                <div className="side tails" key={side === teams[1].name ? "visible" : "hidden"}>
+                <div className="side tails" key={`tails-${teams[1].id}`}>
                     <img className="symbol" src={teams[1].logo_url} alt={teams[1].name} />
                 </div>
             </div>

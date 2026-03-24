@@ -17,7 +17,18 @@ const endOfWeek = (date = new Date()) => {
 };
 
 
+const getLeagueWeekNumber = (leagueStartDate, matchDate) => {
+    const startOfLeagueWeek = startOfWeek(new Date(leagueStartDate)).getTime();
+    const matchTime = new Date(matchDate).getTime();
+    const diffTime = matchTime - startOfLeagueWeek;
+    
+    // Math.floor of positive days will give the week index (0 for first week, 1 for second week, etc)
+    const weekIndex = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
+    return weekIndex + 1; // 1-based index
+};
+
 module.exports = {
     startOfWeek,
-    endOfWeek
+    endOfWeek,
+    getLeagueWeekNumber
 }

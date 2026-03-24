@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import CardInfo from './CardInfo';
 import { API } from '../../services/api';
-import { Card } from 'antd';
-import { Row, Col, Tooltip } from 'antd';
+import { Row, Col, Tooltip, Typography, Image, Skeleton, Space, Empty } from 'antd';
 import ModalInfo from './ModalInfo';
-import { Image } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { showAlert } from './AlertInfo';
+import { Card } from 'antd';
+import { GlobalOutlined } from '@ant-design/icons';
 
+const { Title, Text } = Typography;
+
+/**
+ * Component for exploring available leagues and joining them.
+ * 
+ * @returns {React.ReactElement} The LeagueHome component.
+ */
 const LeagueHome = () => {
     const [leagues, setLeagues] = useState([]);
     const [openModal, setOpenModal] = useState(false);
@@ -16,147 +23,165 @@ const LeagueHome = () => {
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [user, setUser] = useState(null);
     const [joinedLeagues, setJoinedLeagues] = useState([]);
+    const [loading, setLoading] = useState(true);
     const nav = useNavigate();
 
+    /**
+     * Loads initial data for leagues and user participation.
+     */
     useEffect(() => {
-        API.getUserByToken().then(res => {
-            setUser(res);
-            API.get(`/leagueParticipations/get/`).then(res => {
-                setJoinedLeagues(res);
-            }).catch(() => {
-                showAlert('error', "Error al cargar las ligas");
-            })
-        }).catch(() => {
-            showAlert('error', "Error al cargar los datos del usuario");
-        })
-        API.get('/leagues/get').then(res => {
-            setLeagues(res);
-        }).catch(() => {
-            showAlert('error', "Error al cargar las ligas");
-        })
+        const fetchInitialData = async () => {
+            try {
+                setLoading(true);
+                const currentUser = await API.getUserByToken();
+                setUser(currentUser);
 
+                const [participations, allLeagues] = await Promise.all([
+                    API.get('/leagueParticipations/get/'),
+                    API.get('/leagues/get')
+                ]);
+
+                setJoinedLeagues(participations);
+                setLeagues(allLeagues);
+            } catch (error) {
+                console.error("Error loading leagues:", error);
+                showAlert('error', "No se pudieron cargar las ligas");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInitialData();
     }, []);
 
+    /**
+     * Handles the logic for a user wanting to join a league.
+     * @param {Object} league - The league object to join.
+     */
     const handleJoinLeague = async (league) => {
         try {
             const res = await API.get(`/leagues/getTeams/${league.id}`);
-            const teamPromises = res.Teams.map(team =>
-                API.get(`/teams/get/${team.value}`)
-            );
+            const teamPromises = res.Teams.map(team => API.get(`/teams/get/${team.value}`));
             const resTeams = await Promise.all(teamPromises);
-            setOpenModal(true);
+
             setTeams(resTeams);
             setSelectedLeague(league);
+            setOpenModal(true);
         } catch (e) {
             console.error(e);
-            showAlert('error', "Error al cargar los equipos");
+            showAlert('error', "Error al cargar los equipos de la liga");
         }
-    }
+    };
 
-    const handleSuccess = () => {
+    /**
+     * Finalizes the league joining process.
+     */
+    const handleSuccess = async () => {
         if (!selectedTeam) {
-            showAlert('error', "Debes seleccionar un equipo");
+            showAlert('error', "Debes seleccionar un equipo favorito");
             return;
         }
-        API.post('/favoriteTeams/set', {
-            user_id: user.id,
-            team_id: selectedTeam,
-            league_id: selectedLeague.id
-        }).then(() => {
-            showAlert('success', "Unido a la Liga");
-        }).catch(() => {
-            showAlert('error', "Error al unirte a la liga");
-        })
 
-        API.post('/leagueParticipations/join', {
-            user_id: user.id,
-            league_id: selectedLeague.id,
-        }).then(() => {
+        try {
+            await Promise.all([
+                API.post('/favoriteTeams/set', {
+                    user_id: user.id,
+                    team_id: selectedTeam,
+                    league_id: selectedLeague.id
+                }),
+                API.post('/leagueParticipations/join', {
+                    user_id: user.id,
+                    league_id: selectedLeague.id,
+                })
+            ]);
+
+            showAlert('success', "¡Bienvenido a la liga!");
             setOpenModal(false);
             nav(`/`, { state: { leagueId: selectedLeague.id } });
-        }).catch(() => {
-            showAlert('error', "Error al unirte a la liga");
-        })
-    }
+        } catch (error) {
+            console.error("Error joining league:", error);
+            showAlert('error', "Hubo un problema al unirte a la liga");
+        }
+    };
 
     return (
-        <div className='container mt-5'>
+        <div className="p-3">
+            <Title level={2} className="mb-4">Explorar Ligas</Title>
 
-            <Row gutter={[16, 16]}>
-                {leagues.map((league, index) => (
-                    <Col key={index} xs={24} md={8}>
-                        <CardInfo
-                            title={league.name}
-                            image={league.logo_url}
-                            date={{
-                                count: 2,
-                                dates: [league.start_date, league.end_date]
-                            }}
-                            onAction={() => {
-                                if (joinedLeagues.some(participation => participation.league_id === league.id)) {
-                                    nav(`/leagues/${league.id}`);
-                                } else {
-                                    handleJoinLeague(league);
-                                }
-                            }}
-                            actionText={joinedLeagues.some(participation => participation.league_id === league.id) ? "Ver la Liga" : "Unirse a la Liga"}
-                        />
-                    </Col>
-                ))}
-            </Row>
+            {loading ? (
+                <Row gutter={[24, 24]}>
+                    {[1, 2, 3].map(i => (
+                        <Col key={i} xs={24} md={8}>
+                            <Card className="shadow-sm">
+                                <Skeleton active avatar paragraph={{ rows: 3 }} />
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            ) : leagues.length > 0 ? (
+                <Row gutter={[24, 24]}>
+                    {leagues.map((league) => {
+                        const isJoined = joinedLeagues.some(p => p.league_id === league.id);
+                        return (
+                            <Col key={league.id} xs={24} md={8}>
+                                <CardInfo
+                                    title={league.name}
+                                    image={league.logo_url}
+                                    date={{
+                                        dates: [league.start_date, league.end_date]
+                                    }}
+                                    onAction={() => isJoined ? nav(`/leagues/${league.id}`) : handleJoinLeague(league)}
+                                    actionText={isJoined ? "Ver Liga" : "Unirse ahora"}
+                                />
+                            </Col>
+                        );
+                    })}
+                </Row>
+            ) : (
+                <Empty description="No hay ligas disponibles en este momento." />
+            )}
 
             <ModalInfo
                 open={openModal}
-                okText="Unirse"
+                okText="Unirse ahora"
                 cancelText="Cancelar"
-                title="Elige un equipo favorito antes de unirte a la liga"
+                title="Selecciona tu equipo favorito"
                 description={
-                    teams.length > 0 ? (
-                        <Row gutter={[16, 0]}>
-                            {teams.map((team, index) => (
-                                <Col key={index} xs={24} sm={12} md={8} lg={6}>
-                                    <div className="team-container" style={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        padding: '8px'
-                                    }}>
-                                        <Tooltip title={team.name} placement="bottom">
+                    <div>
+                        <Text type="secondary" className="mb-4 d-block">
+                            Para unirte a <strong>{selectedLeague?.name}</strong>, elige el equipo al que apoyarás.
+                        </Text>
+                        <Row gutter={[16, 16]} className="justify-content-center">
+                            {teams.map((team) => (
+                                <Col key={team.id} xs={8} sm={6} md={4}>
+                                    <Tooltip title={team.name}>
+                                        <div
+                                            className="text-center p-2 rounded cursor-pointer transition-all"
+                                            style={{
+                                                borderRadius: 8,
+                                                boxShadow: selectedTeam === team.id ? '0 0 15px rgba(59, 130, 246, 0.4)' : 'none',
+                                                background: selectedTeam === team.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                                                border: selectedTeam === team.id ? '1px solid #3b82f6' : '1px solid transparent'
+                                            }}
+                                            onClick={() => setSelectedTeam(selectedTeam === team.id ? null : team.id)}
+                                        >
                                             <Image
-                                                height={50}
-                                                width={50}
                                                 src={team.logo_url}
                                                 alt={team.name}
                                                 preview={false}
-                                                value={team.id}
-                                                style={{
-                                                    border: selectedTeam === team.id ? '3px solid black' : 'none',
-                                                    borderRadius: '5px',
-                                                    padding: '5px',
-                                                }}
-                                                onClick={() => {
-                                                    if (selectedTeam === team.id) {
-                                                        setSelectedTeam(null);
-                                                    } else {
-                                                        setSelectedTeam(team.id);
-                                                    }
-                                                }}
+                                                width={60}
+                                                height={60}
+                                                style={{ objectFit: 'contain', pointerEvents: 'none' }}
                                             />
-                                        </Tooltip>
-                                    </div>
+                                        </div>
+                                    </Tooltip>
                                 </Col>
                             ))}
                         </Row>
-                    ) : (
-                        "No hay equipos"
-                    )
+                    </div>
                 }
-                onSuccess={() => {
-                    handleSuccess();
-                }}
-                onClose={() => {
-                    setOpenModal(false);
-                }}
+                onSuccess={handleSuccess}
+                onClose={() => setOpenModal(false)}
             />
         </div>
     );

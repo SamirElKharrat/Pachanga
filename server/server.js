@@ -10,6 +10,7 @@ const League = require('./models/league');
 const Team = require('./models/team');
 const Match = require('./models/match');
 const Prediction = require('./models/prediction');
+const Result = require('./models/result');
 
 const app = express();
 const PORT = 3001;
@@ -41,6 +42,18 @@ Team.belongsToMany(League, { through: 'TeamLeagues' });
 League.belongsToMany(Team, { through: 'TeamLeagues' });
 Team.belongsToMany(Match, { through: 'TeamMatches' });
 Match.belongsToMany(Team, { through: 'TeamMatches' });
+
+// Prediction relations
+Prediction.belongsTo(Match, { as: 'Match', foreignKey: 'match_id' });
+Match.hasMany(Prediction, { foreignKey: 'match_id' });
+Prediction.belongsTo(Team, { as: 'Winner', foreignKey: 'winner' });
+Prediction.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
+User.hasMany(Prediction, { foreignKey: 'user_id' });
+
+// Result relations
+Result.belongsTo(Match, { as: 'Match', foreignKey: 'match_id' });
+Match.hasOne(Result, { foreignKey: 'match_id' });
+Result.belongsTo(Team, { as: 'Winner', foreignKey: 'winner' });
 
 
 // Routes

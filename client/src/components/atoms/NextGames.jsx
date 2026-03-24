@@ -1,19 +1,17 @@
-import { Carousel, Image, Skeleton, Typography } from 'antd'
-import React, { useEffect, useState } from 'react'
-import { API } from '../../services/api'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Carousel, Skeleton, Typography, Tag, Col, Row, Avatar, Card, theme } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { API } from '../../services/api';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { showAlert } from './AlertInfo';
-import { Tooltip } from 'antd';
 
 const { Text } = Typography;
 
-const status = {
-    scheduled: <span className='badge rounded-pill bg-info'>Programado</span>,
-    live: <span className='badge rounded-pill bg-danger'>En vivo</span>,
-    finished: <span className='badge rounded-pill bg-success'>Finalizado</span>
-}
-
-// Función para agrupar partidos en grupos de 3
+/**
+ * Groups an array of matches into chunks for display in the carousel slides.
+ * 
+ * @param {Array} matches - The matches to group.
+ * @returns {Array<Array>} An array of match groups.
+ */
 const groupMatches = (matches) => {
     const isMobile = window.innerWidth <= 768;
     const chunkSize = isMobile ? 1 : 6;
@@ -24,56 +22,57 @@ const groupMatches = (matches) => {
     return result;
 };
 
+/**
+ * Component that displays a scrollable carousel of upcoming and live matches.
+ * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
+ * 
+ * @returns {React.ReactElement|null} The NextGames carousel or null if no games.
+ */
 const NextGames = () => {
     const [loading, setLoading] = useState(false);
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
+    const { token } = theme.useToken();
 
+    /**
+     * Fetches and filters matches for the current user's leagues.
+     */
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
                 const response = await API.get('/matches/getByWeek/');
                 const now = new Date();
-                const updatePromises = response.map(async game => {
+                
+                const updatedGames = await Promise.all(response.map(async game => {
                     const matchDate = new Date(game.date);
                     if (matchDate <= now && game.status === 'scheduled') {
-                        await API.put('/matches/update/' + game.id, { status: 'live' });
-                        return { ...game, status: 'live' }; 
+                        try {
+                            await API.put('/matches/update/' + game.id, { status: 'live' });
+                            return { ...game, status: 'live' }; 
+                        } catch {
+                            return game;
+                        }
                     }
                     return game; 
-                });
-
-                const updatedGames = await Promise.all(updatePromises);
-
-                const filterDate = updatedGames.map(match => ({
-                    ...match,
-                    rawDate: new Date(match.date), // Para ordenar
-                    formattedDate: new Intl.DateTimeFormat('es-ES', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false
-                    }).format(new Date(match.date))
                 }));
 
-                //Filter matches without finished status
-                const filterFinished = filterDate.filter(match => match.status !== 'finished')
+                const participations = await API.get('/leagueParticipations/get/');
+                const leagueIds = participations.map(p => p.league_id);
 
-                //All user participations in leagues
-                const responseLeagueParticipation = await API.get('/leagueParticipations/get/').then(response => response.map(participation => participation.league_id))
+                const filtered = updatedGames
+                    .filter(g => g.status !== 'finished' && leagueIds.includes(g.league_id))
+                    .sort((a, b) => {
+                        if (a.status === 'live' && b.status !== 'live') return -1;
+                        if (a.status !== 'live' && b.status === 'live') return 1;
+                        return new Date(a.date) - new Date(b.date);
+                    });
 
-                //Filter matches by user participations
-                const filterResponse = filterFinished.filter(match => responseLeagueParticipation.includes(match.league_id))
-
-                setNextGames(filterResponse)
-
+                setNextGames(filtered);
             } catch (error) {
-                console.error(error);
-                showAlert('error', "Error al cargar los partidos");
+                console.error("Error fetching carousel games:", error);
+                showAlert('error', "No se pudieron cargar los próximos partidos");
             } finally {
                 setLoading(false);
             }
@@ -81,71 +80,65 @@ const NextGames = () => {
         fetchData();
     }, [location.key]);
 
-    if (loading) {
-        return <Skeleton className='container mt-5' />;
-    }
+    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 120, borderRadius: 12 }} /></div>;
+    if (nextGames.length === 0) return null;
 
-    if (nextGames.length === 0) {
-        return (
-            <div style={{
-                padding: '2rem',
-                textAlign: 'center',
-                backgroundColor: 'var(--bg-secondary)',
-                borderRadius: '8px',
-                margin: '1rem 0'
-            }}>
-                <Text style={{ fontSize: '1.2rem', margin: 0 }}>
-                    No hay partidos disponibles esta semana
-                </Text>
-            </div>
-        );
-    }
+    const grouped = groupMatches(nextGames);
 
     return (
-        <Carousel
-            style={{ padding: '20px' }}
-            dots={false}
-            arrows={true}
-            slidesToShow={1}
-            slidesToScroll={1}
-        >
-            {groupMatches([...nextGames].sort((a, b) => {
-                // Primero ordenar por estado (live primero, luego scheduled)
-                if (a.status === 'live' && b.status !== 'live') return -1;
-                if (a.status !== 'live' && b.status === 'live') return 1;
+        <div className="next-games-carousel px-3 mb-4">
+            <Carousel
+                autoplay
+                autoplaySpeed={5000}
+                dots={{ className: 'custom-dots' }}
+                infinite
+                style={{ 
+                    background: token.colorFillTertiary, 
+                    borderRadius: 16, 
+                    padding: '20px 0',
+                    border: `1px solid ${token.colorBorder}`
+                }}
+            >
+                {grouped.map((group, i) => (
+                    <div key={i}>
+                        <Row gutter={[12, 12]} justify="center" className="px-4">
+                            {group.map((match) => (
+                                <Col key={match.id} xs={24} sm={12} md={8} lg={4}>
+                                    <Card 
+                                        hoverable
+                                        size="small"
+                                        className="text-center match-card-item border-0"
+                                        style={{ background: token.colorBgContainer, borderRadius: 12 }}
+                                        onClick={() => nav('/predictions/')}
+                                    >
+                                        <div className="d-flex flex-column align-items-center">
+                                            <div className="d-flex align-items-center gap-2 mb-2">
+                                                <Avatar src={match.Teams[0]?.logo_url} size={32} shape="square" className="bg-transparent" />
+                                                <Text strong className="text-secondary" style={{ fontSize: 12 }}>VS</Text>
+                                                <Avatar src={match.Teams[1]?.logo_url} size={32} shape="square" className="bg-transparent" />
+                                            </div>
+                                            <Tag 
+                                                color={match.status === 'live' ? 'error' : 'processing'} 
+                                                className="m-0 border-0" 
+                                                style={{ fontSize: 10, fontWeight: 700 }}
+                                            >
+                                                {match.status === 'live' ? 'LIVE' : 'UPCOMING'}
+                                            </Tag>
+                                            <Text type="secondary" style={{ fontSize: 10, marginTop: 4 }}>
+                                                {new Intl.DateTimeFormat('es-ES', {
+                                                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                                                }).format(new Date(match.date))}
+                                            </Text>
+                                        </div>
+                                    </Card>
+                                </Col>
+                            ))}
+                        </Row>
+                    </div>
+                ))}
+            </Carousel>
+        </div>
+    );
+};
 
-                // Luego por fecha y hora (más cercano primero)
-                return new Date(a.rawDate) - new Date(b.rawDate);
-            })).map((group, i) => (
-                <div key={i} className='d-flex justify-content-around align-items-center'>
-                    {group.map((match) => (
-                        <div
-                            key={match.id}
-                            className="d-flex flex-column align-items-center"
-                            style={{ minWidth: '160px', userSelect: 'none' }}
-                        >
-                            <div className="d-flex align-items-center gap-3">
-                                <Image preview={false} height={45} width={45} src={match.Teams[0]?.logo_url} />
-                                <span className="text-light fw-bold fs-5 user-select-none">vs</span>
-                                <Image preview={false} height={45} width={45} src={match.Teams[1]?.logo_url} />
-                            </div>
-
-                            <div className="d-flex flex-column align-items-center text-center mt-3 gap-2">
-                                <span className="badge rounded-pill fw-semibold fs-6 user-select-none px-3 py-1">
-                                    {match.formattedDate}
-                                </span>
-                                {match.status === 'scheduled' ? (
-                                    <Text onClick={() => nav('/predictions/')}>{status[match.status]}</Text>
-                                ) : (
-                                    status[match.status]
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ))}
-        </Carousel>
-    )
-}
-
-export default NextGames    
+export default NextGames;

@@ -1,0 +1,88 @@
+/* Global Styles */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Compact Table Overrides for Ant Design */
+.prediction-table-compact .ant-table-cell {
+    padding: 6px 12px !important;
+    border-bottom: 1px solid rgba(128, 128, 128, 0.2) !important;
+}
+
+.prediction-table-compact .ant-table-row {
+    height: 60px !important;
+}
+
+.compact-row {
+    background: transparent !important;
+}
+
+.prediction-table-compact {
+    background: transparent !important;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.3);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.5);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                            FASE 4: MODO BIZARRO                            */
+/* -------------------------------------------------------------------------- */
+
+/* Solo utilizamos transform y opacity/filter para NO lagear el navegador */
+@keyframes crazyWobble {
+    0% { transform: rotate(-2deg) scale(0.98); }
+    50% { transform: rotate(2deg) scale(1.02); }
+    100% { transform: rotate(-2deg) scale(0.98); }
+}
+
+@keyframes colorDisco {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+.bizarre-mode {
+    font-family: "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive, sans-serif !important;
+    cursor: help !important;
+}
+
+.bizarre-mode h1, 
+.bizarre-mode h2, 
+.bizarre-mode h3, 
+.bizarre-mode h4, 
+.bizarre-mode h5, 
+.bizarre-mode .ant-typography {
+    font-family: "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive, sans-serif !important;
+    text-shadow: 2px 2px #00ff00, -2px -2px #ff00ff !important;
+    letter-spacing: 2px !important;
+}
+
+.bizarre-mode .ant-card,
+.bizarre-mode .ant-table-wrapper,
+.bizarre-mode .ant-btn {
+    animation: crazyWobble 0.8s infinite alternate ease-in-out, colorDisco 4s infinite linear;
+    border-radius: 40px !important;
+    box-shadow: 10px 10px 0px #ff00ff !important;
+}
+
+.bizarre-mode .pachanga-logo-img {
+    animation: crazyWobble 0.2s infinite alternate ease-in-out;
+    filter: invert(1) drop-shadow(5px 5px 0px #00ff00) !important;
+}
+

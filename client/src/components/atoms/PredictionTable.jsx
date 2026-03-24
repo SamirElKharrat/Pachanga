@@ -1,80 +1,95 @@
-import React from 'react'
-import { Image, Tooltip } from 'antd'
+import { Table, Typography, Avatar, theme } from 'antd';
+import { CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
+const { Text } = Typography;
+
+/**
+ * Component for displaying a table of user predictions for a set of matches.
+ * 
+ * @param {Object} props - Component props.
+ * @param {Array} props.result - User predictions array.
+ * @param {Array} props.matches - List of matches involved.
+ * @returns {React.ReactElement} The PredictionTable component.
+ */
 const PredictionTable = ({ result, matches }) => {
-    // Check if there are no predictions
-    const hasNoPredictions = matches.every(match =>
-        !result?.some(pred => pred.match_id === match.id)
-    )
+    const { token } = theme.useToken();
 
-    if (hasNoPredictions) {
-        return (
-            <div style={{ textAlign: 'center', padding: '1rem' }}>
-                <span style={{ fontSize: '1.5rem' }}>No hay predicciones disponibles</span>
-            </div>
-        )
-    }
+    const dataSource = matches.map(match => {
+        const prediction = result?.find(pred => pred.match_id === match.id);
+        return {
+            key: match.id,
+            match,
+            prediction
+        };
+    });
+
+    console.log(dataSource);
+
+    const columns = [
+        {
+            title: 'Apuesta',
+            key: 'bet',
+            render: (_, record) => {
+                const team1 = record.match.Teams[0];
+                const team2 = record.match.Teams[1];
+                const winnerId = record.prediction?.winner;
+
+                return (
+                    <div className="d-flex align-items-center w-100 py-1">
+                        {/* Match section */}
+                        <div className="d-flex align-items-center justify-content-center flex-grow-1" style={{ gap: '20px' }}>
+                            <Avatar
+                                src={team1?.logo_url}
+                                shape="square"
+                                size={44}
+                                style={{ 
+                                    opacity: winnerId === team1?.id ? 1 : 0.25,
+                                    border: winnerId === team1?.id ? '2px solid rgba(59, 130, 246, 0.6)' : 'none',
+                                    padding: 2,
+                                    background: token.colorFillAlter
+                                }}
+                            />
+                            <Text type="secondary" style={{ fontSize: 13, fontWeight: 'bold', width: 30, textAlign: 'center' }}>VS</Text>
+                            <Avatar
+                                src={team2?.logo_url}
+                                shape="square"
+                                size={44}
+                                style={{ 
+                                    opacity: winnerId === team2?.id ? 1 : 0.25,
+                                    border: winnerId === team2?.id ? '2px solid rgba(59, 130, 246, 0.6)' : 'none',
+                                    padding: 2,
+                                    background: token.colorFillAlter
+                                }}
+                            />
+                        </div>
+                        
+                        {/* Result section */}
+                        <div className="ms-auto" style={{ minWidth: 60, textAlign: 'right' }}>
+                            {record.prediction?.description && (
+                                <Text strong style={{ fontSize: 18, color: '#3b82f6', letterSpacing: '1px' }}>
+                                    {record.prediction.description}
+                                </Text>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+        }
+    ];
 
     return (
-        <table className="container">
-            <tbody>
-                {matches.map(match => {
-                    const prediction = result?.find(pred => pred.match_id === match.id)
+        <Table
+            dataSource={dataSource}
+            columns={columns}
+            pagination={false}
+            size="small"
+            showHeader={false}
+            className="prediction-table-compact"
+            locale={{ emptyText: "No hay predicciones para mostrar." }}
+            rowClassName={() => 'compact-row'}
+            style={{ marginTop: -8 }}
+        />
+    );
+};
 
-                    return (
-                        <tr key={match.id}>
-                            <td style={{ textAlign: 'center' }}>
-                                <div className="team-info">
-                                    <Tooltip title={match.Teams[0]?.name}>
-                                        <Image
-                                            preview={false}
-                                            src={match.Teams[0]?.logo_url}
-                                            alt={match.Teams[0]?.name}
-                                            style={{
-                                                width: window.innerWidth < 768 ? '2rem' : '4rem',
-                                                height: window.innerWidth < 768 ? '2rem' : '4rem',
-                                                objectFit: 'cover',
-                                                margin: '0 10px',
-                                                opacity: match.Teams[0]?.id === prediction?.winner ? 1 : 0.3
-                                            }}
-                                        />
-                                    </Tooltip>
-                                </div>
-                            </td>
-                            <td>
-                                <span style={{ fontSize: window.innerWidth < 768 ? '1rem' : '1.5rem' }}>vs</span>
-                            </td>
-                            <td style={{ padding: window.innerWidth < 768 ? '0.5rem 0 0 0' : '1rem 0 0 0', textAlign: 'center' }}>
-                                <div className="team-info">
-                                    <Tooltip title={match.Teams[1]?.name}>
-                                        <Image
-                                            preview={false}
-                                            src={match.Teams[1]?.logo_url}
-                                            alt={match.Teams[1]?.name}
-                                            style={{
-                                                width: window.innerWidth < 768 ? '2rem' : '4rem',
-                                                height: window.innerWidth < 768 ? '2rem' : '4rem',
-                                                objectFit: 'cover',
-                                                margin: '0 10px',
-                                                opacity: match.Teams[1]?.id === prediction?.winner ? 1 : 0.3
-                                            }}
-                                        />
-                                    </Tooltip>
-                                </div>
-                            </td>
-                            <td style={{ paddingRight: '1rem', fontWeight: 'bold', fontSize: window.innerWidth < 768 ? '1rem' : '1.2rem' }}>
-                                <div>
-                                    <span>
-                                        {prediction?.description || prediction?.result}
-                                    </span>
-                                </div>
-                            </td>
-                        </tr>
-                    )
-                })}
-            </tbody>
-        </table>
-    )
-}
-
-export default PredictionTable
+export default PredictionTable;
