@@ -218,7 +218,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                         <Select
                             mode="multiple"
                             placeholder={`Seleccionar ${label.toLowerCase()}`}
-                            maxCount={maxTagCount}
+                            maxCount={maxTagCount > 0 ? maxTagCount : undefined}
                             options={
                                 name === 'teams' && relationData.length > 0
                                     ? relationData.map(t => ({ value: t.id ?? t.value, label: t.name ?? t.label }))
