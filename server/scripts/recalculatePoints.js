@@ -23,6 +23,10 @@ const runMigration = async () => {
 
         await sequelize.authenticate();
         console.log("Database connection successful.");
+        
+        console.log("Syncing database schema...");
+        await sequelize.sync({ alter: true });
+        console.log("Database sync completed.");
 
         // 1. Limpiar toda la tabla
         console.log("Clearing all existing LeagueParticipation rows...");
