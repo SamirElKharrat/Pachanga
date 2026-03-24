@@ -61,15 +61,15 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
                 const pred = userPredictions.find(p => p.match_id === match.id);
 
                 const winnerTeam = match.Teams.find(t => t.id === result.winner);
-                const loserTeam  = match.Teams.find(t => t.id !== result.winner);
+                const loserTeam = match.Teams.find(t => t.id !== result.winner);
 
                 let outcome = 'nopred';
                 if (pred) {
                     const correctWinner = result.winner === pred.winner;
-                    const correctScore  = result.result === pred.description;
+                    const correctScore = result.result === pred.description;
                     if (correctWinner && correctScore) outcome = 'correct';
-                    else if (correctWinner)            outcome = 'partial';
-                    else                              outcome = 'wrong';
+                    else if (correctWinner) outcome = 'partial';
+                    else outcome = 'wrong';
                 }
 
                 const predictedTeam = pred?.winner
@@ -183,7 +183,7 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
                                     {cfg.label}
                                 </Tag>
                                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 600 }}>
-                                    {cfg.pts}
+                                    {row.outcome === 'nopred' ? '—' : `+${row.pred?.points || 0} pts`}
                                 </Text>
                             </div>
                         </div>
