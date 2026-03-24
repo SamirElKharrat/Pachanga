@@ -458,7 +458,7 @@ function Home() {
                                             onClick={() => nav('/predictions/')}
                                             style={{ marginTop: 12 }}
                                         >
-                                            Haz las predicciones cochino
+                                            Ir a las predicciones.
                                         </Button>
                                     </Space>
                                 )}
