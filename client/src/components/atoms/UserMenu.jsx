@@ -32,7 +32,7 @@ const getMenuItems = (isAdmin, navigate) => {
         { label: 'Ligas', key: '/leagues', icon: <TrophyOutlined />, onClick: () => navigate('/leagues') },
         { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
         { label: 'Predicciones', key: '/predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
-        { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
+        // { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
         { label: '¿Esta Ganando Guille?', key: '/is-guille-winning', icon: <ThunderboltOutlined />, onClick: () => navigate('/is-guille-winning') },
     ];
 
