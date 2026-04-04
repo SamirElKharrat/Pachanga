@@ -80,24 +80,34 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
         // Usamos un Set para obtener todos los user_id únicos que están en la liga
         const uniqueUserIds = [...new Set(allParticipations.map(p => p.user_id))];
 
-        // Helper para obtener los puntos acumulados para una semana.
-        // Dado que la base de datos almacena los puntos conseguidos *en cada semana individual*,
-        // para saber los puntos totales en una semana N, debemos SUMAR los puntos de todas las
-        // filas desde la semana 1 hasta la semana N. (Ignorando week = -1 que es solo membresía vacía).
-        const getAccumulatedPointsForWeek = (userId, target) => {
-            const sum = allParticipations
-                .filter(p => p.user_id === userId && p.week <= target && p.week !== -1)
-                .reduce((acc, current) => acc + current.points, 0);
-            return sum;
+        // Helper para obtener los puntos para una semana.
+        // Si es semana 1 y no hay puntos o no existe, mostrar puntos de week = -1 (membresía)
+        // Para otras semanas: mostrar puntos de esa semana específica
+        const getPointsForWeek = (userId, target) => {
+            if (target === 1) {
+                const week1Points = allParticipations
+                    .filter(p => p.user_id === userId && p.week === 1)
+                    .reduce((acc, current) => acc + current.points, 0);
+
+                return week1Points === 0
+                    ? allParticipations
+                        .filter(p => p.user_id === userId && p.week === -1)
+                        .reduce((acc, current) => acc + current.points, 0)
+                    : week1Points;
+            } else {
+                return allParticipations
+                    .filter(p => p.user_id === userId && p.week === target)
+                    .reduce((acc, current) => acc + current.points, 0);
+            }
         };
 
-        // 2. Obtener los datos acumulados totales calculados al vuelo hasta la semana seleccionada
+        // 2. Obtener los datos de puntos para la semana seleccionada
         const currentPointsMap = {};
         uniqueUserIds.forEach(uid => {
-            currentPointsMap[uid] = getAccumulatedPointsForWeek(uid, targetWeek);
+            currentPointsMap[uid] = getPointsForWeek(uid, targetWeek);
         });
 
-        // 3. Calcular ranking actual basado en la sumatoria acumulada de puntos
+        // 3. Calcular ranking actual basado en los puntos de la semana
         const rankedUsers = [...uniqueUserIds]
             .map(uid => ({ user_id: uid, points: currentPointsMap[uid] }))
             .sort((a, b) => b.points - a.points);
@@ -109,7 +119,7 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
         let prevRankMap = null;
         if (targetWeek > 1) {
             const prevRanked = [...uniqueUserIds]
-                .map(uid => ({ user_id: uid, points: getAccumulatedPointsForWeek(uid, targetWeek - 1) }))
+                .map(uid => ({ user_id: uid, points: getPointsForWeek(uid, targetWeek - 1) }))
                 .sort((a, b) => b.points - a.points);
 
             prevRankMap = {};
