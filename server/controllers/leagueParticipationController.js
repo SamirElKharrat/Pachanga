@@ -62,6 +62,7 @@ exports.getLeagueParticipations = async (req, res) => {
     }
 };
 
+//Get all participations for a league — supports optional ?week=N query param
 exports.getLeagueParticipationsByLeague = async (req, res) => {
     const { leagueId } = req.params;
     const { week } = req.query; // Optional: filter to a specific week
@@ -69,64 +70,54 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
     try {
         const targetWeek = (week !== undefined && week !== "null") ? parseInt(week, 10) : -1;
 
-        // 1. Obtener todos los miembros de la liga basándonos en el marcador de membresía (week = -1)
-        // o cualquier registro que tengan en la liga por si un usuario antiguo no tiene week=-1
-        const allParticipations = await leagueParticipation.findAll({
-            where: { league_id: leagueId }
+        // 1. Obtener los datos acumulados de la semana seleccionada
+        let currentWeekRows = await leagueParticipation.findAll({
+            where: { league_id: leagueId, week: targetWeek }
         });
 
-        if (allParticipations.length === 0) return res.json([]);
+        // Si no hay datos y no es week = -1, usar week = -1
+        if (currentWeekRows.length === 0 && targetWeek !== -1) {
+            currentWeekRows = await leagueParticipation.findAll({
+                where: { league_id: leagueId, week: -1 }
+            });
+        }
 
-        // Usamos un Set para obtener todos los user_id únicos que están en la liga
-        const uniqueUserIds = [...new Set(allParticipations.map(p => p.user_id))];
-
-        // Helper para obtener los puntos para una semana.
-        // Si la semana no tiene puntos o son cero, usar puntos de week = -1
-        // Para otras semanas: mostrar puntos de esa semana específica
-        const getPointsForWeek = (userId, target) => {
-            const weekPoints = allParticipations
-                .filter(p => p.user_id === userId && p.week === target)
-                .reduce((acc, current) => acc + current.points, 0);
-
-            // Si la semana no tiene puntos o son cero, usar puntos de week = -1
-            return weekPoints === 0
-                ? allParticipations
-                    .filter(p => p.user_id === userId && p.week === -1)
-                    .reduce((acc, current) => acc + current.points, 0)
-                : weekPoints;
-        };
-
-        // 2. Obtener los datos de puntos para la semana seleccionada
+        // Mapear user_id -> points (puntos_acumulados)
         const currentPointsMap = {};
-        uniqueUserIds.forEach(uid => {
-            currentPointsMap[uid] = getPointsForWeek(uid, targetWeek);
+        const userIds = currentWeekRows.map(r => {
+            currentPointsMap[r.user_id] = r.points;
+            return r.user_id;
         });
 
-        // 3. Calcular ranking actual basado en los puntos de la semana
-        const rankedUsers = [...uniqueUserIds]
+        // 2. Calcular ranking actual basado en esos puntos acumulados
+        const rankedUsers = [...userIds]
             .map(uid => ({ user_id: uid, points: currentPointsMap[uid] }))
             .sort((a, b) => b.points - a.points);
 
         const rankMap = {};
         rankedUsers.forEach((u, i) => { rankMap[u.user_id] = i + 1; });
 
-        // 4. Obtener datos de la semana anterior para calcular movimiento (si aplica)
+        // 3. Obtener datos de la semana anterior para calcular movimiento (si aplica)
         let prevRankMap = null;
         if (targetWeek > 1) {
-            const prevRanked = [...uniqueUserIds]
-                .map(uid => ({ user_id: uid, points: getPointsForWeek(uid, targetWeek - 1) }))
-                .sort((a, b) => b.points - a.points);
-
-            prevRankMap = {};
-            prevRanked.forEach((u, i) => { prevRankMap[u.user_id] = i + 1; });
+            const prevRows = await leagueParticipation.findAll({
+                where: { league_id: leagueId, week: targetWeek - 1 }
+            });
+            if (prevRows.length > 0) {
+                const prevRanked = prevRows
+                    .map(r => ({ user_id: r.user_id, points: r.points }))
+                    .sort((a, b) => b.points - a.points);
+                prevRankMap = {};
+                prevRanked.forEach((u, i) => { prevRankMap[u.user_id] = i + 1; });
+            }
         }
 
-        // 5. Cargar info de usuarios
-        const users = await User.findAll({ where: { id: uniqueUserIds } });
+        // 4. Cargar info de usuarios
+        const users = await User.findAll({ where: { id: userIds } });
         const userMap = {};
         users.forEach(u => { if (u) userMap[u.id] = u; });
 
-        // 6. Construir respuesta
+        // 5. Construir respuesta
         const response = rankedUsers.map(({ user_id, points }) => {
             const rank = rankMap[user_id];
             const prevRank = prevRankMap ? prevRankMap[user_id] : null;
@@ -138,16 +129,8 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
                 else movement = 'same';
             }
 
-            // Encuentra cualquier participation ID para este usuario, prefiere la de la targetWeek (o la más cercana anterior)
-            const userValidRows = allParticipations.filter(r => r.user_id === user_id && r.week <= targetWeek && r.week !== -1);
-            if (userValidRows.length > 0) {
-                userValidRows.sort((a, b) => b.week - a.week);
-            }
-            const participationRow = (userValidRows.length > 0 ? userValidRows[0] : null)
-                || allParticipations.find(r => r.user_id === user_id);
-
             return {
-                id: participationRow?.id || user_id,
+                id: currentWeekRows.find(r => r.user_id === user_id)?.id || user_id,
                 user_id,
                 league_id: parseInt(leagueId, 10),
                 points,
