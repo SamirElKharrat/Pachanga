@@ -160,7 +160,20 @@ exports.createResult = async (req, res) => {
 
                 await participation.increment('points', { by: points });
                 await prediction.update({ points });
+
+                await LeagueParticipation.increment(
+                    { points: points },
+                    {
+                        where: {
+                            user_id: prediction.user_id,
+                            league_id: match.league_id,
+                            week: -1
+                        }
+                    }
+                );
             });
+
+
 
             await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
 
