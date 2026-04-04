@@ -111,8 +111,9 @@ exports.createResult = async (req, res) => {
             });
 
             const resultMap = {};
-            resultsThisWeek.forEach(r => resultMap[r.match_id] = r.winner);
-            resultMap[match.id] = winner; // Añadimos el current match
+            resultsThisWeek.forEach(result => {
+                resultMap[result.match_id] = result.winner;
+            });
 
             // Fetch optimizado: Traer todas las predicciones de la semana para evitar peticiones en el map
             const allWeekPredictions = await Prediction.findAll({
@@ -123,22 +124,48 @@ exports.createResult = async (req, res) => {
                 }
             });
 
-            const leagueParticipationsPromises = predictions.map(async prediction => {
-                const points = await calculatePredictionPoints({
-                    prediction,
-                    match,
-                    winner,
-                    resultStr: req.body.result,
-                    weekMatchIds,
-                    resultMap,
-                    allWeekPredictions
-                });
+            // 1. Obtener TODOS los participantes de la liga (los que votaron y los que no)
+            const allParticipants = await LeagueParticipation.findAll({
+                where: {
+                    league_id: match.league_id,
+                    week: -1 // Obtener todos los usuarios de la liga
+                }
+            });
+
+            // 2. Procesar a TODOS los participantes
+            const leagueParticipationsPromises = allParticipants.map(async participant => {
+                const user_id = participant.user_id;
+
+                // Buscar si este usuario votó en este partido
+                const prediction = predictions.find(p => p.user_id === user_id);
+
+                let points = 0;
+                let predictionData = null;
+
+                if (prediction) {
+                    // Si votó, calcular sus puntos
+                    points = await calculatePredictionPoints({
+                        prediction,
+                        match,
+                        winner,
+                        resultStr: req.body.result,
+                        weekMatchIds,
+                        resultMap,
+                        allWeekPredictions
+                    });
+
+                    predictionData = prediction;
+
+                    // Actualizar los puntos de la predicción
+                    await prediction.update({ points });
+                }
+                // Si no votó, points = 0 (valor por defecto)
 
                 let lastweekPoints = 0;
                 if (currentWeekNumber > 1) {
                     const lastWeekParticipation = await LeagueParticipation.findOne({
                         where: {
-                            user_id: prediction.user_id,
+                            user_id: user_id,
                             league_id: match.league_id,
                             week: currentWeekNumber - 1
                         }
@@ -149,7 +176,7 @@ exports.createResult = async (req, res) => {
                 // Cargar o crear el LeagueParticipation de la semana correcta
                 const [participation, created] = await LeagueParticipation.findOrCreate({
                     where: {
-                        user_id: prediction.user_id,
+                        user_id: user_id,
                         league_id: match.league_id,
                         week: currentWeekNumber
                     },
@@ -159,21 +186,19 @@ exports.createResult = async (req, res) => {
                 });
 
                 await participation.increment('points', { by: points });
-                await prediction.update({ points });
 
+                // Acumular puntos en week = -1
                 await LeagueParticipation.increment(
                     { points: points },
                     {
                         where: {
-                            user_id: prediction.user_id,
+                            user_id: user_id,
                             league_id: match.league_id,
                             week: -1
                         }
                     }
                 );
             });
-
-
 
             await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
 
