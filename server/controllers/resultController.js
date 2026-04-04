@@ -134,16 +134,28 @@ exports.createResult = async (req, res) => {
                     allWeekPredictions
                 });
 
-                if (points > 0) {
+                let lastweekPoints = 0;
+                if (currentWeekNumber > 1) {
+                    const lastWeekParticipation = await LeagueParticipation.findOne({
+                        where: {
+                            user_id: prediction.user_id,
+                            league_id: match.league_id,
+                            week: currentWeekNumber - 1
+                        }
+                    });
+                    lastweekPoints = lastWeekParticipation?.points || 0;
+                }
+
+                if (points >= 0) {
                     // Cargar o crear el LeagueParticipation de la semana correcta
-                    const [participation, created] = await LeagueParticipation.findOrCreate({
+                    const [participation] = await LeagueParticipation.findOrCreate({
                         where: {
                             user_id: prediction.user_id,
                             league_id: match.league_id,
                             week: currentWeekNumber
                         },
                         defaults: {
-                            points: 0
+                            points: lastweekPoints
                         }
                     });
 
