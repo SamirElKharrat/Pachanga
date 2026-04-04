@@ -81,24 +81,19 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
         const uniqueUserIds = [...new Set(allParticipations.map(p => p.user_id))];
 
         // Helper para obtener los puntos para una semana.
-        // Si es semana 1 y no hay puntos o no existe, mostrar puntos de week = -1 (membresía)
+        // Si la semana no tiene puntos o son cero, usar puntos de week = -1
         // Para otras semanas: mostrar puntos de esa semana específica
         const getPointsForWeek = (userId, target) => {
-            if (target === 1) {
-                const week1Points = allParticipations
-                    .filter(p => p.user_id === userId && p.week === 1)
-                    .reduce((acc, current) => acc + current.points, 0);
+            const weekPoints = allParticipations
+                .filter(p => p.user_id === userId && p.week === target)
+                .reduce((acc, current) => acc + current.points, 0);
 
-                return week1Points === 0
-                    ? allParticipations
-                        .filter(p => p.user_id === userId && p.week === -1)
-                        .reduce((acc, current) => acc + current.points, 0)
-                    : week1Points;
-            } else {
-                return allParticipations
-                    .filter(p => p.user_id === userId && p.week === target)
-                    .reduce((acc, current) => acc + current.points, 0);
-            }
+            // Si la semana no tiene puntos o son cero, usar puntos de week = -1
+            return weekPoints === 0
+                ? allParticipations
+                    .filter(p => p.user_id === userId && p.week === -1)
+                    .reduce((acc, current) => acc + current.points, 0)
+                : weekPoints;
         };
 
         // 2. Obtener los datos de puntos para la semana seleccionada
