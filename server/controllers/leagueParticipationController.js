@@ -137,6 +137,7 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
                 rank,
                 prevRank,
                 movement,
+                week: targetWeek,
                 User: userMap[user_id] || null
             };
         });
