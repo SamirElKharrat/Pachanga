@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
-import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Space, Divider } from 'antd';
+import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Space, Divider, Avatar } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { TrophyOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons';
 import YearFilter from '../atoms/YearFilter';
@@ -98,13 +98,115 @@ export default function Team() {
                 onYearChange={handleYearChange}
             />
 
-            <Select
-                placeholder="Selecciona una liga"
-                options={filteredLeagues.map(l => ({ label: l.name, value: l.id }))}
-                value={selectedLeague}
-                onChange={setSelectedLeague}
-                style={{ width: '100%', maxWidth: 300, marginBottom: 24 }}
-            />
+            {/* ── Scrollbar hiding style ── */}
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                .selectors-card .ant-card-body {
+                    padding: 16px 20px;
+                }
+                @media (max-width: 576px) {
+                    .selectors-card .ant-card-body {
+                        padding: 12px 14px !important;
+                    }
+                }
+            `}</style>
+
+            <Card
+                className="selectors-card"
+                style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: 16,
+                    marginBottom: 24
+                }}
+            >
+                {/* LIGA SELECCIONADA */}
+                <div>
+                    <Text strong style={{
+                        display: 'block',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        letterSpacing: '0.08em',
+                        marginBottom: 10
+                    }}>
+                        Liga Seleccionada
+                    </Text>
+                    <div style={{
+                        display: 'flex',
+                        background: 'rgba(0, 0, 0, 0.25)',
+                        borderRadius: '10px',
+                        padding: '4px',
+                        gap: '4px',
+                        width: 'fit-content',
+                        maxWidth: '100%',
+                        overflowX: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                    }} className="hide-scrollbar">
+                        {loading && leagues.length === 0 ? (
+                            <Skeleton.Button active style={{ height: 32, width: 120, borderRadius: 8 }} />
+                        ) : (
+                            filteredLeagues.map(league => {
+                                const isActive = league.id === selectedLeague;
+                                return (
+                                    <button
+                                        key={league.id}
+                                        onClick={() => setSelectedLeague(league.id)}
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 8,
+                                            padding: '6px 14px',
+                                            borderRadius: 8,
+                                            border: 'none',
+                                            background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
+                                            color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                                            fontSize: 13,
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
+                                            whiteSpace: 'nowrap',
+                                            flexShrink: 0
+                                        }}
+                                        onMouseEnter={e => {
+                                            if (!isActive) {
+                                                e.currentTarget.style.color = '#fff';
+                                            }
+                                        }}
+                                        onMouseLeave={e => {
+                                            if (!isActive) {
+                                                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                                            }
+                                        }}
+                                    >
+                                        {league.logo_url && (
+                                            <Avatar
+                                                src={league.logo_url}
+                                                size={18}
+                                                shape="square"
+                                                style={{
+                                                    borderRadius: 4,
+                                                    background: 'transparent',
+                                                    filter: isActive ? 'brightness(1.2)' : 'none'
+                                                }}
+                                            />
+                                        )}
+                                        {league.name}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            </Card>
 
             <Divider />
 

@@ -325,6 +325,14 @@ function Home() {
                     -ms-overflow-style: none;
                     scrollbar-width: none;
                 }
+                .selectors-card .ant-card-body {
+                    padding: 16px 20px;
+                }
+                @media (max-width: 576px) {
+                    .selectors-card .ant-card-body {
+                        padding: 12px 14px !important;
+                    }
+                }
             `}</style>
 
             {/* ── Selectors ── */}
@@ -338,13 +346,13 @@ function Home() {
                 </Col>
                 <Col xs={24}>
                     <Card
+                        className="selectors-card"
                         style={{
                             background: 'rgba(255, 255, 255, 0.02)',
                             border: '1px solid rgba(255, 255, 255, 0.06)',
                             borderRadius: 16,
                             marginBottom: 0
                         }}
-                        styles={{ body: { padding: '16px 20px' } }}
                     >
                         {/* LIGA SELECCIONADA */}
                         <div style={{ marginBottom: 20 }}>
@@ -361,15 +369,17 @@ function Home() {
                             </Text>
                             <div style={{
                                 display: 'flex',
-                                gap: 8,
-                                flexWrap: 'nowrap',
+                                background: 'rgba(0, 0, 0, 0.25)',
+                                borderRadius: '10px',
+                                padding: '4px',
+                                gap: '4px',
+                                width: 'fit-content',
+                                maxWidth: '100%',
                                 overflowX: 'auto',
-                                paddingBottom: 6,
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none'
+                                WebkitOverflowScrolling: 'touch',
                             }} className="hide-scrollbar">
                                 {loading && leagues.length === 0 ? (
-                                    <Skeleton.Button active style={{ height: 35, width: 120, borderRadius: 10 }} />
+                                    <Skeleton.Button active style={{ height: 32, width: 120, borderRadius: 8 }} />
                                 ) : (
                                     filteredLeagues.map(league => {
                                         const isActive = league.id === selectedLeague;
@@ -381,31 +391,27 @@ function Home() {
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
                                                     gap: 8,
-                                                    padding: '8px 16px',
-                                                    borderRadius: 10,
-                                                    border: isActive ? '1px solid #60a5fa' : '1px solid rgba(255, 255, 255, 0.08)',
-                                                    background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255, 255, 255, 0.04)',
-                                                    color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.65)',
+                                                    padding: '6px 14px',
+                                                    borderRadius: 8,
+                                                    border: 'none',
+                                                    background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
+                                                    color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
                                                     fontSize: 13,
                                                     fontWeight: 600,
                                                     cursor: 'pointer',
                                                     transition: 'all 0.2s ease',
-                                                    boxShadow: isActive ? '0 4px 12px rgba(37, 99, 235, 0.3)' : 'none',
+                                                    boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
                                                     whiteSpace: 'nowrap',
                                                     flexShrink: 0
                                                 }}
                                                 onMouseEnter={e => {
                                                     if (!isActive) {
-                                                        e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)';
                                                         e.currentTarget.style.color = '#fff';
-                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                                                     }
                                                 }}
                                                 onMouseLeave={e => {
                                                     if (!isActive) {
-                                                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
-                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
                                                     }
                                                 }}
                                             >
@@ -444,18 +450,19 @@ function Home() {
                             </Text>
                             <div style={{
                                 display: 'flex',
-                                gap: 8,
-                                flexWrap: 'nowrap',
+                                background: 'rgba(0, 0, 0, 0.25)',
+                                borderRadius: '10px',
+                                padding: '4px',
+                                gap: '4px',
+                                width: 'fit-content',
+                                maxWidth: '100%',
                                 overflowX: 'auto',
-                                paddingBottom: 6,
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none'
+                                WebkitOverflowScrolling: 'touch',
                             }} className="hide-scrollbar">
                                 {loading && weeks.length === 0 ? (
-                                    <Space>
-                                        <Skeleton.Button active style={{ height: 35, width: 60, borderRadius: 10 }} />
-                                        <Skeleton.Button active style={{ height: 35, width: 60, borderRadius: 10 }} />
-                                        <Skeleton.Button active style={{ height: 35, width: 60, borderRadius: 10 }} />
+                                    <Space size={4}>
+                                        <Skeleton.Button active style={{ height: 32, width: 60, borderRadius: 8 }} />
+                                        <Skeleton.Button active style={{ height: 32, width: 60, borderRadius: 8 }} />
                                     </Space>
                                 ) : (
                                     weeks.map(week => {
@@ -470,31 +477,27 @@ function Home() {
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    padding: '8px 16px',
-                                                    borderRadius: 10,
-                                                    border: isActive ? '1px solid #60a5fa' : '1px solid rgba(255, 255, 255, 0.08)',
-                                                    background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255, 255, 255, 0.04)',
-                                                    color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.65)',
+                                                    padding: '6px 14px',
+                                                    borderRadius: 8,
+                                                    border: 'none',
+                                                    background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
+                                                    color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
                                                     fontSize: 13,
                                                     fontWeight: 600,
                                                     cursor: 'pointer',
                                                     transition: 'all 0.2s ease',
-                                                    boxShadow: isActive ? '0 4px 12px rgba(37, 99, 235, 0.3)' : 'none',
+                                                    boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
                                                     whiteSpace: 'nowrap',
                                                     flexShrink: 0
                                                 }}
                                                 onMouseEnter={e => {
                                                     if (!isActive) {
-                                                        e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)';
                                                         e.currentTarget.style.color = '#fff';
-                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
                                                     }
                                                 }}
                                                 onMouseLeave={e => {
                                                     if (!isActive) {
-                                                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.65)';
-                                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                                                        e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
                                                     }
                                                 }}
                                             >
