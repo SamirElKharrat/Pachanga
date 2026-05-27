@@ -8,6 +8,7 @@ import PredictionForm from '../atoms/PredictionForm';
 import PredictionTable from '../atoms/PredictionTable';
 import ResultTable from '../atoms/ResultTable';
 import YearFilter from '../atoms/YearFilter';
+import SegmentedControl from '../atoms/SegmentedControl';
 import { HistoryOutlined, FormOutlined, CalendarOutlined, TrophyOutlined } from '@ant-design/icons';
 import { usePredictionData } from '../../hooks/usePredictionData';
 
@@ -141,34 +142,31 @@ const Prediction = () => {
                         onYearChange={handleYearChange}
                     />
                 </Col>
-                <Col xs={24} sm={12}>
-                    <Text strong style={{ display: 'block', marginBottom: 6 }}>Liga</Text>
-                    <Select
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="Selecciona una liga"
-                        value={selectedLeague}
-                        onChange={handleLeagueChange}
-                        loading={loading && leagues.length === 0}
-                        options={filteredLeagues.map(l => ({ label: l.name, value: l.id }))}
-                    />
+                <Col xs={24}>
+                    <Text strong style={{ display: 'block', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Liga</Text>
+                    {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
+                        <SegmentedControl 
+                            options={filteredLeagues.map(l => ({ value: l.id, label: l.name, logo: l.logo_url }))}
+                            value={selectedLeague}
+                            onChange={handleLeagueChange}
+                            disabled={loading && leagues.length === 0}
+                        />
+                    )}
                 </Col>
 
-                <Col xs={24} sm={12}>
-                    <Text strong style={{ display: 'block', marginBottom: 6 }}>
+                <Col xs={24}>
+                    <Text strong style={{ display: 'flex', alignItems: 'center', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>
                         <CalendarOutlined style={{ marginRight: 6 }} />
                         Semana
                     </Text>
-                    <Select
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="Selecciona una semana"
-                        value={selectedWeek}
-                        onChange={setSelectedWeek}
-                        loading={loading && weeks.length === 0}
-                        disabled={weeks.length === 0 && !loading}
-                        options={weeks.map(w => ({ label: w.name, value: w.id }))}
-                    />
+                    {loading && weeks.length === 0 ? <Skeleton.Button active /> : (
+                        <SegmentedControl 
+                            options={weeks.map(w => ({ value: w.id, label: w.name }))}
+                            value={selectedWeek}
+                            onChange={setSelectedWeek}
+                            disabled={(weeks.length === 0 && !loading) || loading}
+                        />
+                    )}
                 </Col>
             </Row>
 

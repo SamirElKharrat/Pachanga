@@ -4,6 +4,7 @@ import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Spa
 import { useNavigate } from 'react-router-dom';
 import { TrophyOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons';
 import YearFilter from '../atoms/YearFilter';
+import SegmentedControl from '../atoms/SegmentedControl';
 
 const { Title, Text } = Typography;
 
@@ -98,13 +99,14 @@ export default function Team() {
                 onYearChange={handleYearChange}
             />
 
-            <Select
-                placeholder="Selecciona una liga"
-                options={filteredLeagues.map(l => ({ label: l.name, value: l.id }))}
-                value={selectedLeague}
-                onChange={setSelectedLeague}
-                style={{ width: '100%', maxWidth: 300, marginBottom: 24 }}
-            />
+            <div style={{ marginBottom: 24, marginTop: 16 }}>
+                <Text strong style={{ display: 'block', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Liga</Text>
+                <SegmentedControl 
+                    options={filteredLeagues.map(l => ({ value: l.id, label: l.name, logo: l.logo_url }))}
+                    value={selectedLeague}
+                    onChange={setSelectedLeague}
+                />
+            </div>
 
             <Divider />
 

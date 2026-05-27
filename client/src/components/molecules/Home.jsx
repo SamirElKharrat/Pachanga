@@ -7,6 +7,7 @@ import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import YearFilter from '../atoms/YearFilter';
 import WinnerCelebration from '../atoms/WinnerCelebration';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
+import SegmentedControl from '../atoms/SegmentedControl';
 
 const { Text } = Typography;
 
@@ -325,39 +326,27 @@ function Home() {
                         onYearChange={handleYearChange}
                     />
                 </Col>
-                <Col xs={24} sm={12}>
-                    <Text strong style={{ display: 'block', marginBottom: 6 }}>Liga</Text>
-                    <Select
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="Elige una liga"
-                        value={selectedLeague}
-                        onChange={handleLeagueChange}
-                        loading={loading && leagues.length === 0}
-                    >
-                        {filteredLeagues.map(league => (
-                            <Select.Option key={league.id} value={league.id}>
-                                {league.name}
-                            </Select.Option>
-                        ))}
-                    </Select>
+                <Col xs={24}>
+                    <Text strong style={{ display: 'block', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Liga</Text>
+                    {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
+                        <SegmentedControl 
+                            options={filteredLeagues.map(l => ({ value: l.id, label: l.name, logo: l.logo_url }))}
+                            value={selectedLeague}
+                            onChange={handleLeagueChange}
+                            disabled={loading && leagues.length === 0}
+                        />
+                    )}
                 </Col>
-                <Col xs={24} sm={12}>
-                    <Text strong style={{ display: 'block', marginBottom: 6 }}>Semana</Text>
-                    <Select
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="Elige una semana"
-                        value={selectedWeek}
-                        onChange={setSelectedWeek}
-                        loading={loading && weeks.length === 0}
-                    >
-                        {weeks.map(week => (
-                            <Select.Option key={week.id} value={week.id}>
-                                {week.name}
-                            </Select.Option>
-                        ))}
-                    </Select>
+                <Col xs={24}>
+                    <Text strong style={{ display: 'block', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Semana</Text>
+                    {loading && weeks.length === 0 ? <Skeleton.Button active /> : (
+                        <SegmentedControl 
+                            options={weeks.map(w => ({ value: w.id, label: w.name }))}
+                            value={selectedWeek}
+                            onChange={setSelectedWeek}
+                            disabled={loading && weeks.length === 0}
+                        />
+                    )}
                 </Col>
             </Row>
 
@@ -523,15 +512,18 @@ function Home() {
             {/* ── Winner Celebration ── */}
             {(() => {
                 const currentLeague = leagues.find(l => l.id === selectedLeague);
-                const isWinner = currentLeague?.status === 'finished' && currentUser?.rank === 1;
-                return isWinner ? (
+                const winner = participants.find(p => p.rank === 1);
+                const showWinner = currentLeague?.status === 'finished' && winner;
+                
+                return showWinner ? (
                     <WinnerCelebration
                         visible={showCelebration}
                         onClose={() => setShowCelebration(false)}
                         leagueName={currentLeague.name}
-                        username={currentUser?.User?.username}
-                        points={currentUser?.points}
-                        avatarUrl={getAvatarSrc(currentUser?.User?.logo_url)}
+                        username={winner.User?.username}
+                        points={winner.points}
+                        avatarUrl={getAvatarSrc(winner.User?.logo_url)}
+                        isCurrentUserWinner={currentUser?.id === winner.id}
                     />
                 ) : null;
             })()}

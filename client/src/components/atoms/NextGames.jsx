@@ -1,4 +1,4 @@
-import { Carousel, Skeleton, Typography, Tag, Col, Row, Avatar, Card, theme } from 'antd';
+import { Skeleton, Typography, Avatar } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -7,37 +7,17 @@ import { showAlert } from './AlertInfo';
 const { Text } = Typography;
 
 /**
- * Groups an array of matches into chunks for display in the carousel slides.
- * 
- * @param {Array} matches - The matches to group.
- * @returns {Array<Array>} An array of match groups.
- */
-const groupMatches = (matches) => {
-    const isMobile = window.innerWidth <= 768;
-    const chunkSize = isMobile ? 1 : 6;
-    const result = [];
-    for (let i = 0; i < matches.length; i += chunkSize) {
-        result.push(matches.slice(i, i + chunkSize));
-    }
-    return result;
-};
-
-/**
- * Component that displays a scrollable carousel of upcoming and live matches.
+ * Component that displays a compact list of upcoming and live matches.
  * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
  * 
- * @returns {React.ReactElement|null} The NextGames carousel or null if no games.
+ * @returns {React.ReactElement|null} The NextGames list or null if no games.
  */
 const NextGames = () => {
     const [loading, setLoading] = useState(false);
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
-    const { token } = theme.useToken();
 
-    /**
-     * Fetches and filters matches for the current user's leagues.
-     */
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -69,9 +49,10 @@ const NextGames = () => {
                         return new Date(a.date) - new Date(b.date);
                     });
 
-                setNextGames(filtered);
+                // Get only up to 6 games to prevent huge lists
+                setNextGames(filtered.slice(0, 6));
             } catch (error) {
-                console.error("Error fetching carousel games:", error);
+                console.error("Error fetching next games:", error);
                 showAlert('error', "No se pudieron cargar los próximos partidos");
             } finally {
                 setLoading(false);
@@ -80,63 +61,95 @@ const NextGames = () => {
         fetchData();
     }, [location.key]);
 
-    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 120, borderRadius: 12 }} /></div>;
+    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 80, borderRadius: 12 }} /></div>;
     if (nextGames.length === 0) return null;
 
-    const grouped = groupMatches(nextGames);
-
     return (
-        <div className="next-games-carousel px-3 mb-4">
-            <Carousel
-                autoplay
-                autoplaySpeed={5000}
-                dots={{ className: 'custom-dots' }}
-                infinite
-                style={{ 
-                    background: token.colorFillTertiary, 
-                    borderRadius: 16, 
-                    padding: '20px 0',
-                    border: `1px solid ${token.colorBorder}`
-                }}
-            >
-                {grouped.map((group, i) => (
-                    <div key={i}>
-                        <Row gutter={[12, 12]} justify="center" className="px-4">
-                            {group.map((match) => (
-                                <Col key={match.id} xs={24} sm={12} md={8} lg={4}>
-                                    <Card 
-                                        hoverable
-                                        size="small"
-                                        className="text-center match-card-item border-0"
-                                        style={{ background: token.colorBgContainer, borderRadius: 12 }}
-                                        onClick={() => nav('/predictions/')}
-                                    >
-                                        <div className="d-flex flex-column align-items-center">
-                                            <div className="d-flex align-items-center gap-2 mb-2">
-                                                <Avatar src={match.Teams[0]?.logo_url} size={32} shape="square" className="bg-transparent" />
-                                                <Text strong className="text-secondary" style={{ fontSize: 12 }}>VS</Text>
-                                                <Avatar src={match.Teams[1]?.logo_url} size={32} shape="square" className="bg-transparent" />
-                                            </div>
-                                            <Tag 
-                                                color={match.status === 'live' ? 'error' : 'processing'} 
-                                                className="m-0 border-0" 
-                                                style={{ fontSize: 10, fontWeight: 700 }}
-                                            >
-                                                {match.status === 'live' ? 'LIVE' : 'UPCOMING'}
-                                            </Tag>
-                                            <Text type="secondary" style={{ fontSize: 10, marginTop: 4 }}>
-                                                {new Intl.DateTimeFormat('es-ES', {
-                                                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                                                }).format(new Date(match.date))}
-                                            </Text>
-                                        </div>
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                    </div>
-                ))}
-            </Carousel>
+        <div className="next-games-container px-3 mb-4">
+            <style>{`
+                .d2-container {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 12px;
+                }
+                .d2-item {
+                    display: flex;
+                    align-items: center;
+                    background: #1e293b;
+                    border-radius: 12px;
+                    padding: 12px 16px;
+                    border-left: 4px solid #3b82f6;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                }
+                .d2-item:hover {
+                    transform: translateY(-2px);
+                }
+                .d2-item.live {
+                    border-left-color: #10b981;
+                    background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), #1e293b);
+                }
+                .d2-timebox {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    min-width: 60px;
+                    padding-right: 16px;
+                    border-right: 1px solid #334155;
+                    margin-right: 16px;
+                }
+                .d2-day { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
+                .d2-hour { font-size: 16px; font-weight: 800; color: #e2e8f0; }
+                .d2-match {
+                    display: flex;
+                    align-items: center;
+                    flex: 1;
+                    gap: 12px;
+                }
+                .d2-team { font-weight: 600; font-size: 14px; color: #f8fafc; }
+                .d2-vs { font-size: 11px; color: #64748b; font-weight: 800; }
+            `}</style>
+            
+            <div className="d2-container">
+                {nextGames.map((match) => {
+                    const isLive = match.status === 'live';
+                    const dateObj = new Date(match.date);
+                    
+                    const isToday = new Date().toDateString() === dateObj.toDateString();
+                    const isTomorrow = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString() === dateObj.toDateString();
+                    
+                    let dayText = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(dateObj);
+                    if (isLive) dayText = 'EN VIVO';
+                    
+                    const hourText = isLive ? '--:--' : new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(dateObj);
+                    
+                    return (
+                        <div 
+                            key={match.id} 
+                            className={`d2-item ${isLive ? 'live' : ''}`}
+                            onClick={() => nav('/predictions/')}
+                        >
+                            <div className="d2-timebox">
+                                <span className="d2-day" style={{ color: isLive ? '#10b981' : undefined }}>{dayText}</span>
+                                <span className="d2-hour" style={{ color: isLive ? '#10b981' : undefined }}>{hourText}</span>
+                            </div>
+                            <div className="d2-match">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
+                                    <span className="d2-team" style={{ textAlign: 'right' }}>{match.Teams[0]?.name || 'TBD'}</span>
+                                    <Avatar src={match.Teams[0]?.logo_url} size={24} shape="square" className="bg-transparent" />
+                                </div>
+                                
+                                <span className="d2-vs">VS</span>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-start' }}>
+                                    <Avatar src={match.Teams[1]?.logo_url} size={24} shape="square" className="bg-transparent" />
+                                    <span className="d2-team">{match.Teams[1]?.name || 'TBD'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 };

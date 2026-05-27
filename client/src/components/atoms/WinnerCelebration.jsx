@@ -39,8 +39,9 @@ function useConfettiPieces() {
  * @param {string}   props.username   - Winner username
  * @param {number}   props.points     - Total points
  * @param {string}   props.avatarUrl  - Winner's avatar URL
+ * @param {boolean}  props.isCurrentUserWinner - If true, displays 'Has ganado', else 'Ganador de'
  */
-function WinnerCelebration({ visible, onClose, leagueName, username, points, avatarUrl }) {
+function WinnerCelebration({ visible, onClose, leagueName, username, points, avatarUrl, isCurrentUserWinner }) {
     const confettiPieces = useConfettiPieces();
     const [styleSheet, setStyleSheet] = useState(null);
 
@@ -152,24 +153,23 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             padding: '0 16px',
                         }}
                     >
-                        ¡ENHORABUENA!
+                        {isCurrentUserWinner ? '¡ENHORABUENA!' : '¡TENEMOS GANADOR!'}
                     </motion.div>
 
-                    {/* ── Subtitle ── */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.4 }}
+                        transition={{ delay: 0.6, duration: 0.6 }}
                         style={{
                             fontSize: 20,
-                            color: 'rgba(255,255,255,0.75)',
                             fontWeight: 500,
-                            marginBottom: 32,
+                            color: '#cbd5e1',
+                            marginBottom: 48,
                             textAlign: 'center',
-                            padding: '0 16px',
                         }}
                     >
-                        Has ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span>
+                        {isCurrentUserWinner ? 'Has ganado ' : 'Ganador de '}
+                        <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span>
                     </motion.div>
 
                     {/* ── User info pill ── */}
