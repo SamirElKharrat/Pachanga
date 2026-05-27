@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Select } from 'antd';
 
 const LABEL_STYLE = {
     display: 'block',
@@ -23,7 +24,7 @@ const WRAPPER_STYLE = {
 };
 
 /**
- * YearFilter – Reusable segmented control year filter bar with mobile responsive styles.
+ * YearFilter – Reusable segmented control/premium select year filter bar.
  */
 export default function YearFilter({ leagues = [], selectedYear, onYearChange }) {
     const years = useMemo(() => {
@@ -64,8 +65,45 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
 
     return (
         <div style={{ marginBottom: 16 }}>
-            {/* Responsive styles for year filter */}
+            {/* CSS styles to toggle between select (mobile) and segmented (desktop) */}
             <style>{`
+                .mobile-selectors {
+                    display: none;
+                }
+                .desktop-selectors {
+                    display: block;
+                }
+                @media (max-width: 576px) {
+                    .mobile-selectors {
+                        display: block;
+                    }
+                    .desktop-selectors {
+                        display: none;
+                    }
+                }
+                .premium-select .ant-select-selector {
+                    background: rgba(0, 0, 0, 0.25) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 10px !important;
+                    color: #fff !important;
+                    height: 42px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    padding: 0 12px !important;
+                    transition: all 0.2s ease !important;
+                }
+                .premium-select:hover .ant-select-selector {
+                    border-color: rgba(59, 130, 246, 0.5) !important;
+                    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important;
+                }
+                .premium-select .ant-select-selection-item {
+                    color: #fff !important;
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                }
+                .premium-select .ant-select-arrow {
+                    color: rgba(255, 255, 255, 0.4) !important;
+                }
                 .year-segmented-container::-webkit-scrollbar {
                     display: none;
                 }
@@ -73,62 +111,67 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
                     -ms-overflow-style: none;
                     scrollbar-width: none;
                 }
-                @media (max-width: 576px) {
-                    .year-segmented-item {
-                        padding: 4px 10px !important;
-                        font-size: 11px !important;
-                        border-radius: 6px !important;
-                    }
-                    .year-segmented-container {
-                        border-radius: 8px !important;
-                        padding: 3px !important;
-                        gap: 3px !important;
-                    }
-                }
             `}</style>
 
             <span style={LABEL_STYLE}>Año</span>
-            <div style={WRAPPER_STYLE} className="year-segmented-container">
-                {/* "All" pill */}
-                <div
-                    className="year-segmented-item"
-                    style={getItemStyle(selectedYear === null)}
-                    onClick={() => handleClick(null)}
-                    onMouseEnter={e => {
-                        if (selectedYear !== null) {
-                            e.currentTarget.style.color = '#fff';
-                        }
-                    }}
-                    onMouseLeave={e => {
-                        if (selectedYear !== null) {
-                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                        }
-                    }}
-                >
-                    Todas
-                </div>
-
-                {/* Year pills */}
-                {years.map(year => (
+            
+            {/* Desktop View: Segmented Control */}
+            <div className="desktop-selectors">
+                <div style={WRAPPER_STYLE} className="year-segmented-container">
                     <div
-                        key={year}
                         className="year-segmented-item"
-                        style={getItemStyle(selectedYear === year)}
-                        onClick={() => handleClick(year)}
+                        style={getItemStyle(selectedYear === null)}
+                        onClick={() => handleClick(null)}
                         onMouseEnter={e => {
-                            if (selectedYear !== year) {
+                            if (selectedYear !== null) {
                                 e.currentTarget.style.color = '#fff';
                             }
                         }}
                         onMouseLeave={e => {
-                            if (selectedYear !== year) {
+                            if (selectedYear !== null) {
                                 e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
                             }
                         }}
                     >
-                        {year}
+                        Todas
                     </div>
-                ))}
+
+                    {years.map(year => (
+                        <div
+                            key={year}
+                            className="year-segmented-item"
+                            style={getItemStyle(selectedYear === year)}
+                            onClick={() => handleClick(year)}
+                            onMouseEnter={e => {
+                                if (selectedYear !== year) {
+                                    e.currentTarget.style.color = '#fff';
+                                }
+                            }}
+                            onMouseLeave={e => {
+                                if (selectedYear !== year) {
+                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                                }
+                            }}
+                        >
+                            {year}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Mobile View: Premium Select */}
+            <div className="mobile-selectors">
+                <Select
+                    className="premium-select"
+                    style={{ width: '100%' }}
+                    value={selectedYear}
+                    onChange={handleClick}
+                    placeholder="Elige un año"
+                    options={[
+                        { label: 'Todas las ligas (Todos los años)', value: null },
+                        ...years.map(y => ({ label: `Año ${y}`, value: y }))
+                    ]}
+                />
             </div>
         </div>
     );

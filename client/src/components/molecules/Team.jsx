@@ -109,7 +109,42 @@ export default function Team() {
                 .selectors-card .ant-card-body {
                     padding: 16px 20px;
                 }
+                .mobile-selectors {
+                    display: none;
+                }
+                .desktop-selectors {
+                    display: block;
+                }
+                .premium-select .ant-select-selector {
+                    background: rgba(0, 0, 0, 0.25) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 10px !important;
+                    color: #fff !important;
+                    height: 42px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    padding: 0 12px !important;
+                    transition: all 0.2s ease !important;
+                }
+                .premium-select:hover .ant-select-selector {
+                    border-color: rgba(59, 130, 246, 0.5) !important;
+                    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important;
+                }
+                .premium-select .ant-select-selection-item {
+                    color: #fff !important;
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                }
+                .premium-select .ant-select-arrow {
+                    color: rgba(255, 255, 255, 0.4) !important;
+                }
                 @media (max-width: 576px) {
+                    .mobile-selectors {
+                        display: block;
+                    }
+                    .desktop-selectors {
+                        display: none;
+                    }
                     .selectors-card .ant-card-body {
                         padding: 12px 14px !important;
                     }
@@ -153,72 +188,97 @@ export default function Team() {
                     }}>
                         Liga Seleccionada
                     </Text>
-                    <div style={{
-                        display: 'flex',
-                        background: 'rgba(0, 0, 0, 0.25)',
-                        borderRadius: '10px',
-                        padding: '4px',
-                        gap: '4px',
-                        width: 'fit-content',
-                        maxWidth: '100%',
-                        overflowX: 'auto',
-                        WebkitOverflowScrolling: 'touch',
-                    }} className="hide-scrollbar segmented-ctrl-container">
-                        {loading && leagues.length === 0 ? (
-                            <Skeleton.Button active style={{ height: 32, width: 120, borderRadius: 8 }} />
-                        ) : (
-                            filteredLeagues.map(league => {
-                                const isActive = league.id === selectedLeague;
-                                return (
-                                    <button
-                                        key={league.id}
-                                        className="segmented-ctrl-item"
-                                        onClick={() => setSelectedLeague(league.id)}
-                                        style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 8,
-                                            padding: '6px 14px',
-                                            borderRadius: 8,
-                                            border: 'none',
-                                            background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
-                                            color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                                            fontSize: 13,
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s ease',
-                                            boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
-                                            whiteSpace: 'nowrap',
-                                            flexShrink: 0
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.color = '#fff';
-                                            }
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                                            }
-                                        }}
-                                    >
-                                        {league.logo_url && (
-                                            <Avatar
-                                                src={league.logo_url}
-                                                size={18}
-                                                shape="square"
-                                                style={{
-                                                    borderRadius: 4,
-                                                    background: 'transparent',
-                                                    filter: isActive ? 'brightness(1.2)' : 'none'
-                                                }}
-                                            />
-                                        )}
-                                        {league.name}
-                                    </button>
-                                );
-                            })
-                        )}
+
+                    {/* Desktop: Segmented Control */}
+                    <div className="desktop-selectors">
+                        <div style={{
+                            display: 'flex',
+                            background: 'rgba(0, 0, 0, 0.25)',
+                            borderRadius: '10px',
+                            padding: '4px',
+                            gap: '4px',
+                            width: 'fit-content',
+                            maxWidth: '100%',
+                            overflowX: 'auto',
+                            WebkitOverflowScrolling: 'touch',
+                        }} className="hide-scrollbar segmented-ctrl-container">
+                            {loading && leagues.length === 0 ? (
+                                <Skeleton.Button active style={{ height: 32, width: 120, borderRadius: 8 }} />
+                            ) : (
+                                filteredLeagues.map(league => {
+                                    const isActive = league.id === selectedLeague;
+                                    return (
+                                        <button
+                                            key={league.id}
+                                            className="segmented-ctrl-item"
+                                            onClick={() => setSelectedLeague(league.id)}
+                                            style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 8,
+                                                padding: '6px 14px',
+                                                borderRadius: 8,
+                                                border: 'none',
+                                                background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
+                                                color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
+                                                fontSize: 13,
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
+                                                whiteSpace: 'nowrap',
+                                                flexShrink: 0
+                                            }}
+                                            onMouseEnter={e => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.color = '#fff';
+                                                }
+                                            }}
+                                            onMouseLeave={e => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                                                }
+                                            }}
+                                        >
+                                            {league.logo_url && (
+                                                <Avatar
+                                                    src={league.logo_url}
+                                                    size={18}
+                                                    shape="square"
+                                                    style={{
+                                                        borderRadius: 4,
+                                                        background: 'transparent',
+                                                        filter: isActive ? 'brightness(1.2)' : 'none'
+                                                    }}
+                                                />
+                                            )}
+                                            {league.name}
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Mobile: Premium Select */}
+                    <div className="mobile-selectors">
+                        <Select
+                            className="premium-select"
+                            style={{ width: '100%' }}
+                            placeholder="Elige una liga"
+                            value={selectedLeague}
+                            onChange={setSelectedLeague}
+                            loading={loading && leagues.length === 0}
+                            options={filteredLeagues.map(l => ({
+                                label: (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        {l.logo_url && <Avatar src={l.logo_url} size={16} shape="square" style={{ background: 'transparent' }} />}
+                                        {l.name}
+                                    </div>
+                                ),
+                                value: l.id
+                            }))}
+                        />
                     </div>
                 </div>
             </Card>
