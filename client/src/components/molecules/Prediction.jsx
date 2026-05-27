@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import PredictionForm from '../atoms/PredictionForm';
 import PredictionTable from '../atoms/PredictionTable';
 import ResultTable from '../atoms/ResultTable';
+import YearFilter from '../atoms/YearFilter';
 import { HistoryOutlined, FormOutlined, CalendarOutlined, TrophyOutlined } from '@ant-design/icons';
 import { usePredictionData } from '../../hooks/usePredictionData';
 
@@ -39,6 +40,7 @@ const calculateWeeks = (startDateStr, endDateStr) => {
 const Prediction = () => {
     const nav = useNavigate();
 
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [selectedWeek, setSelectedWeek]     = useState(null);
     const [send, setSend] = useState(false);
@@ -56,12 +58,20 @@ const Prediction = () => {
         loading,
     } = usePredictionData(selectedLeague, selectedWeek);
 
+    const filteredLeagues = selectedYear
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
+        : leagues;
+
     // ── Auto-select first league once leagues load ─────────────────────────────
     useEffect(() => {
-        if (leagues.length > 0 && selectedLeague === null) {
-            setSelectedLeague(leagues[0].id);
+        if (filteredLeagues.length > 0 && (selectedLeague === null || !filteredLeagues.find(l => l.id === selectedLeague))) {
+            setSelectedLeague(filteredLeagues[0].id);
         }
-    }, [leagues, selectedLeague]);
+    }, [filteredLeagues]);
+
+    const handleYearChange = (year) => {
+        setSelectedYear(year);
+    };
 
     // ── Auto-select current (last) week once league is known ───────────────────
     // We compute weeks inline from the selected league object so we don't have
@@ -124,6 +134,13 @@ const Prediction = () => {
 
             {/* ── Selectors ── */}
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                <Col xs={24}>
+                    <YearFilter
+                        leagues={leagues}
+                        selectedYear={selectedYear}
+                        onYearChange={handleYearChange}
+                    />
+                </Col>
                 <Col xs={24} sm={12}>
                     <Text strong style={{ display: 'block', marginBottom: 6 }}>Liga</Text>
                     <Select
@@ -133,7 +150,7 @@ const Prediction = () => {
                         value={selectedLeague}
                         onChange={handleLeagueChange}
                         loading={loading && leagues.length === 0}
-                        options={leagues.map(l => ({ label: l.name, value: l.id }))}
+                        options={filteredLeagues.map(l => ({ label: l.name, value: l.id }))}
                     />
                 </Col>
 

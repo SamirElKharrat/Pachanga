@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CardInfo from './CardInfo';
+import YearFilter from './YearFilter';
 import { API } from '../../services/api';
 import { Row, Col, Tooltip, Typography, Image, Skeleton, Space, Empty } from 'antd';
 import ModalInfo from './ModalInfo';
@@ -24,6 +25,7 @@ const LeagueHome = () => {
     const [user, setUser] = useState(null);
     const [joinedLeagues, setJoinedLeagues] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const nav = useNavigate();
 
     /**
@@ -104,9 +106,27 @@ const LeagueHome = () => {
         }
     };
 
+    const filteredLeagues = selectedYear
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
+        : leagues;
+
+    const handleYearChange = (year) => {
+        setSelectedYear(year);
+    };
+
     return (
         <div className="p-3">
             <Title level={2} className="mb-4">Explorar Ligas</Title>
+
+            {!loading && leagues.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                    <YearFilter
+                        leagues={leagues}
+                        selectedYear={selectedYear}
+                        onYearChange={handleYearChange}
+                    />
+                </div>
+            )}
 
             {loading ? (
                 <Row gutter={[24, 24]}>
@@ -118,9 +138,9 @@ const LeagueHome = () => {
                         </Col>
                     ))}
                 </Row>
-            ) : leagues.length > 0 ? (
+            ) : filteredLeagues.length > 0 ? (
                 <Row gutter={[24, 24]}>
-                    {leagues.map((league) => {
+                    {filteredLeagues.map((league) => {
                         const isJoined = joinedLeagues.some(p => p.league_id === league.id);
                         return (
                             <Col key={league.id} xs={24} md={8}>

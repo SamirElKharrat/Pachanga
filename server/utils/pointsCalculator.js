@@ -128,10 +128,13 @@ exports.calculatePredictionPoints = async ({
         }
     }
 
-    // Streak bonuses (based on THE NEW currentStreak)
+    // Streak bonuses — 2026 Rules:
+    // 3 consecutive perfect predictions → +1 point
+    // 5 consecutive perfect predictions → +2 points
+    // >5 consecutive perfect predictions → +3 points
     if (currentStreak === 3) points += 1; 
-    if (currentStreak === 5) points += 1; 
-    if (currentStreak === 6) points += 1; 
+    if (currentStreak === 5) points += 2; 
+    if (currentStreak > 5) points += 3; 
 
     return points;
 };

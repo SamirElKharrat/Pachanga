@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton } from 'antd';
+import { Card, Row, Col, Select, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton, Modal } from 'antd';
 import { UserOutlined, FilterOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHomeData } from '../../hooks/useHomeData';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
+import YearFilter from '../atoms/YearFilter';
+import WinnerCelebration from '../atoms/WinnerCelebration';
+import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 
 const { Text } = Typography;
 
@@ -208,9 +211,12 @@ function Home() {
     const nav = useNavigate();
     const { getAvatarSrc } = useAppTheme();
 
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(location.state?.leagueId || null);
     const [selectedWeek, setSelectedWeek] = useState(null);
     const [filteredParticipants, setFilteredParticipants] = useState(null);
+    const [showCelebration, setShowCelebration] = useState(true);
+    const [rulesModalVisible, setRulesModalVisible] = useState(false);
     // Ref to track which league the current `weeks` array belongs to
     const weeksLeagueRef = React.useRef(null);
 
@@ -227,11 +233,19 @@ function Home() {
         currentUser,
     } = useHomeData(selectedLeague, selectedWeek);
 
+    const filteredLeagues = selectedYear
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
+        : leagues;
+
     useEffect(() => {
-        if (leagues.length > 0 && selectedLeague === null) {
-            setSelectedLeague(leagues[0].id);
+        if (filteredLeagues.length > 0 && (selectedLeague === null || !filteredLeagues.find(l => l.id === selectedLeague))) {
+            setSelectedLeague(filteredLeagues[0].id);
         }
-    }, [leagues]);
+    }, [filteredLeagues]);
+
+    const handleYearChange = (year) => {
+        setSelectedYear(year);
+    };
 
     // Cuando cambie la liga, resetear la semana inmediatamente
     const handleLeagueChange = (val) => {
@@ -304,6 +318,13 @@ function Home() {
 
             {/* ── Selectors ── */}
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+                <Col xs={24}>
+                    <YearFilter
+                        leagues={leagues}
+                        selectedYear={selectedYear}
+                        onYearChange={handleYearChange}
+                    />
+                </Col>
                 <Col xs={24} sm={12}>
                     <Text strong style={{ display: 'block', marginBottom: 6 }}>Liga</Text>
                     <Select
@@ -314,7 +335,7 @@ function Home() {
                         onChange={handleLeagueChange}
                         loading={loading && leagues.length === 0}
                     >
-                        {leagues.map(league => (
+                        {filteredLeagues.map(league => (
                             <Select.Option key={league.id} value={league.id}>
                                 {league.name}
                             </Select.Option>
@@ -339,6 +360,12 @@ function Home() {
                     </Select>
                 </Col>
             </Row>
+
+            {/* ── League Info Panel ── */}
+            <LeagueInfoPanel
+                league={leagues.find(l => l.id === selectedLeague)}
+                onShowRules={() => setRulesModalVisible(true)}
+            />
 
             {/* ── Main content ── */}
             <Row gutter={[12, 16]}>
@@ -481,6 +508,33 @@ function Home() {
                     </Card>
                 </Col>
             </Row>
+
+            {/* ── Rules Modal ── */}
+            <Modal
+                title="Reglamento"
+                open={rulesModalVisible}
+                onCancel={() => setRulesModalVisible(false)}
+                footer={null}
+                styles={{ body: { maxHeight: '60vh', overflowY: 'auto', whiteSpace: 'pre-wrap' } }}
+            >
+                {leagues.find(l => l.id === selectedLeague)?.rules || 'No hay reglamento disponible.'}
+            </Modal>
+
+            {/* ── Winner Celebration ── */}
+            {(() => {
+                const currentLeague = leagues.find(l => l.id === selectedLeague);
+                const isWinner = currentLeague?.status === 'finished' && currentUser?.rank === 1;
+                return isWinner ? (
+                    <WinnerCelebration
+                        visible={showCelebration}
+                        onClose={() => setShowCelebration(false)}
+                        leagueName={currentLeague.name}
+                        username={currentUser?.User?.username}
+                        points={currentUser?.points}
+                        avatarUrl={getAvatarSrc(currentUser?.User?.logo_url)}
+                    />
+                ) : null;
+            })()}
         </div>
     );
 }

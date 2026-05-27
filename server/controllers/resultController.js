@@ -111,9 +111,11 @@ exports.createResult = async (req, res) => {
             });
 
             const resultMap = {};
-            resultsThisWeek.forEach(result => {
-                resultMap[result.match_id] = result.winner;
+            resultsThisWeek.forEach(r => {
+                resultMap[r.match_id] = { winner: r.winner, result: r.result };
             });
+            // Ensure current match result is explicitly in map
+            resultMap[match.id] = { winner, result: req.body.result };
 
             // Fetch optimizado: Traer todas las predicciones de la semana para evitar peticiones en el map
             const allWeekPredictions = await Prediction.findAll({
@@ -163,12 +165,18 @@ exports.createResult = async (req, res) => {
 
                 let lastweekPoints = 0;
                 if (currentWeekNumber > 1) {
+                    // Find the most recent week participation (not necessarily currentWeek-1,
+                    // since some weeks may have no matches and no participation row)
                     const lastWeekParticipation = await LeagueParticipation.findOne({
                         where: {
                             user_id: user_id,
                             league_id: match.league_id,
-                            week: currentWeekNumber - 1
-                        }
+                            week: {
+                                [Op.gt]: 0,
+                                [Op.lt]: currentWeekNumber
+                            }
+                        },
+                        order: [['week', 'DESC']]
                     });
                     lastweekPoints = lastWeekParticipation?.points || 0;
                 }

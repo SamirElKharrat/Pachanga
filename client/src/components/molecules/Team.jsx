@@ -3,6 +3,7 @@ import { API } from '../../services/api';
 import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Space, Divider } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { TrophyOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons';
+import YearFilter from '../atoms/YearFilter';
 
 const { Title, Text } = Typography;
 
@@ -14,6 +15,7 @@ const { Title, Text } = Typography;
 export default function Team() {
     const [teams, setTeams] = useState([]);
     const [leagues, setLeagues] = useState([]);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -52,6 +54,21 @@ export default function Team() {
         fetchData();
     }, [selectedLeague]);
 
+    const filteredLeagues = selectedYear
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
+        : leagues;
+
+    // Auto-select first league when year changes and current selection is outside filtered set
+    useEffect(() => {
+        if (filteredLeagues.length > 0 && selectedLeague && !filteredLeagues.find(l => l.id === selectedLeague)) {
+            setSelectedLeague(filteredLeagues[0].id);
+        }
+    }, [filteredLeagues]);
+
+    const handleYearChange = (year) => {
+        setSelectedYear(year);
+    };
+
     if (!loading && leagues.length === 0) {
         return (
             <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
@@ -75,9 +92,15 @@ export default function Team() {
         <div className="p-3">
             <Title level={2} className="mb-4">Equipos de la Liga</Title>
 
+            <YearFilter
+                leagues={leagues}
+                selectedYear={selectedYear}
+                onYearChange={handleYearChange}
+            />
+
             <Select
                 placeholder="Selecciona una liga"
-                options={leagues.map(l => ({ label: l.name, value: l.id }))}
+                options={filteredLeagues.map(l => ({ label: l.name, value: l.id }))}
                 value={selectedLeague}
                 onChange={setSelectedLeague}
                 style={{ width: '100%', maxWidth: 300, marginBottom: 24 }}
