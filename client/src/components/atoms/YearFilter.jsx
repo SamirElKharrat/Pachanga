@@ -23,12 +23,7 @@ const WRAPPER_STYLE = {
 };
 
 /**
- * YearFilter – Reusable segmented control year filter bar.
- *
- * Props:
- *   leagues        – Array of league objects (each must have `start_date`)
- *   selectedYear   – Currently active year (number) or null for "All"
- *   onYearChange   – Callback receiving the new year (number | null)
+ * YearFilter – Reusable segmented control year filter bar with mobile responsive styles.
  */
 export default function YearFilter({ leagues = [], selectedYear, onYearChange }) {
     const years = useMemo(() => {
@@ -69,10 +64,34 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
 
     return (
         <div style={{ marginBottom: 16 }}>
+            {/* Responsive styles for year filter */}
+            <style>{`
+                .year-segmented-container::-webkit-scrollbar {
+                    display: none;
+                }
+                .year-segmented-container {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                @media (max-width: 576px) {
+                    .year-segmented-item {
+                        padding: 4px 10px !important;
+                        font-size: 11px !important;
+                        border-radius: 6px !important;
+                    }
+                    .year-segmented-container {
+                        border-radius: 8px !important;
+                        padding: 3px !important;
+                        gap: 3px !important;
+                    }
+                }
+            `}</style>
+
             <span style={LABEL_STYLE}>Año</span>
-            <div style={WRAPPER_STYLE} className="hide-scrollbar">
+            <div style={WRAPPER_STYLE} className="year-segmented-container">
                 {/* "All" pill */}
                 <div
+                    className="year-segmented-item"
                     style={getItemStyle(selectedYear === null)}
                     onClick={() => handleClick(null)}
                     onMouseEnter={e => {
@@ -93,6 +112,7 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
                 {years.map(year => (
                     <div
                         key={year}
+                        className="year-segmented-item"
                         style={getItemStyle(selectedYear === year)}
                         onClick={() => handleClick(year)}
                         onMouseEnter={e => {

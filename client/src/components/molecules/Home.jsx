@@ -332,6 +332,21 @@ function Home() {
                     .selectors-card .ant-card-body {
                         padding: 12px 14px !important;
                     }
+                    .segmented-ctrl-item {
+                        padding: 4px 10px !important;
+                        font-size: 11px !important;
+                        border-radius: 6px !important;
+                        gap: 6px !important;
+                    }
+                    .segmented-ctrl-item .ant-avatar {
+                        width: 14px !important;
+                        height: 14px !important;
+                    }
+                    .segmented-ctrl-container {
+                        border-radius: 8px !important;
+                        padding: 3px !important;
+                        gap: 3px !important;
+                    }
                 }
             `}</style>
 
@@ -377,7 +392,7 @@ function Home() {
                                 maxWidth: '100%',
                                 overflowX: 'auto',
                                 WebkitOverflowScrolling: 'touch',
-                            }} className="hide-scrollbar">
+                            }} className="hide-scrollbar segmented-ctrl-container">
                                 {loading && leagues.length === 0 ? (
                                     <Skeleton.Button active style={{ height: 32, width: 120, borderRadius: 8 }} />
                                 ) : (
@@ -386,6 +401,7 @@ function Home() {
                                         return (
                                             <button
                                                 key={league.id}
+                                                className="segmented-ctrl-item"
                                                 onClick={() => handleLeagueChange(league.id)}
                                                 style={{
                                                     display: 'inline-flex',
@@ -458,7 +474,7 @@ function Home() {
                                 maxWidth: '100%',
                                 overflowX: 'auto',
                                 WebkitOverflowScrolling: 'touch',
-                            }} className="hide-scrollbar">
+                            }} className="hide-scrollbar segmented-ctrl-container">
                                 {loading && weeks.length === 0 ? (
                                     <Space size={4}>
                                         <Skeleton.Button active style={{ height: 32, width: 60, borderRadius: 8 }} />
@@ -472,6 +488,7 @@ function Home() {
                                         return (
                                             <button
                                                 key={week.id}
+                                                className="segmented-ctrl-item"
                                                 onClick={() => setSelectedWeek(week.id)}
                                                 style={{
                                                     display: 'inline-flex',
