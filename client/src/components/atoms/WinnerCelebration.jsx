@@ -40,7 +40,7 @@ function useConfettiPieces() {
  * @param {number}   props.points     - Total points
  * @param {string}   props.avatarUrl  - Winner's avatar URL
  */
-function WinnerCelebration({ visible, onClose, leagueName, username, points, avatarUrl }) {
+function WinnerCelebration({ visible, onClose, leagueName, username, points, avatarUrl, isCurrentUserWinner }) {
     const confettiPieces = useConfettiPieces();
     const [styleSheet, setStyleSheet] = useState(null);
 
@@ -152,7 +152,7 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             padding: '0 16px',
                         }}
                     >
-                        ¡ENHORABUENA!
+                        {isCurrentUserWinner ? '¡ENHORABUENA!' : '¡TENEMOS GANADOR!'}
                     </motion.div>
 
                     {/* ── Subtitle ── */}
@@ -169,7 +169,11 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             padding: '0 16px',
                         }}
                     >
-                        Has ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span>
+                        {isCurrentUserWinner ? (
+                            <>Has ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span></>
+                        ) : (
+                            <><span style={{ color: '#fbbf24', fontWeight: 700 }}>{username}</span> ha ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span></>
+                        )}
                     </motion.div>
 
                     {/* ── User info pill ── */}

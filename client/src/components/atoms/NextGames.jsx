@@ -1,4 +1,4 @@
-import { Carousel, Skeleton, Typography, Tag, Col, Row, Avatar, Card, theme } from 'antd';
+import { Skeleton, Typography, theme } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -7,26 +7,42 @@ import { showAlert } from './AlertInfo';
 const { Text } = Typography;
 
 /**
- * Groups an array of matches into chunks for display in the carousel slides.
+ * Formats match date into friendly labels like 'HOY', 'MAÑANA' or day/month string.
  * 
- * @param {Array} matches - The matches to group.
- * @returns {Array<Array>} An array of match groups.
+ * @param {string} dateStr - ISO date string of the match.
+ * @returns {Object} Helper object with label, time and theme color.
  */
-const groupMatches = (matches) => {
-    const isMobile = window.innerWidth <= 768;
-    const chunkSize = isMobile ? 1 : 6;
-    const result = [];
-    for (let i = 0; i < matches.length; i += chunkSize) {
-        result.push(matches.slice(i, i + chunkSize));
+const getMatchTimeInfo = (dateStr) => {
+    const matchDate = new Date(dateStr);
+    const now = new Date();
+    
+    const isToday = matchDate.getDate() === now.getDate() &&
+        matchDate.getMonth() === now.getMonth() &&
+        matchDate.getFullYear() === now.getFullYear();
+        
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    const isTomorrow = matchDate.getDate() === tomorrow.getDate() &&
+        matchDate.getMonth() === tomorrow.getMonth() &&
+        matchDate.getFullYear() === tomorrow.getFullYear();
+        
+    const timeStr = matchDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    
+    if (isToday) {
+        return { label: 'HOY', time: timeStr, color: '#3b82f6' };
+    } else if (isTomorrow) {
+        return { label: 'MAÑANA', time: timeStr, color: '#3b82f6' };
+    } else {
+        const dayStr = matchDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).toUpperCase();
+        return { label: dayStr, time: timeStr, color: 'rgba(255, 255, 255, 0.4)' };
     }
-    return result;
 };
 
 /**
- * Component that displays a scrollable carousel of upcoming and live matches.
+ * Component that displays a scrollable compact row of upcoming and live matches.
  * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
  * 
- * @returns {React.ReactElement|null} The NextGames carousel or null if no games.
+ * @returns {React.ReactElement|null} The NextGames horizontal list or null if no games.
  */
 const NextGames = () => {
     const [loading, setLoading] = useState(false);
@@ -80,63 +96,126 @@ const NextGames = () => {
         fetchData();
     }, [location.key]);
 
-    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 120, borderRadius: 12 }} /></div>;
+    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 60, borderRadius: 12 }} /></div>;
     if (nextGames.length === 0) return null;
 
-    const grouped = groupMatches(nextGames);
-
     return (
-        <div className="next-games-carousel px-3 mb-4">
-            <Carousel
-                autoplay
-                autoplaySpeed={5000}
-                dots={{ className: 'custom-dots' }}
-                infinite
-                style={{ 
-                    background: token.colorFillTertiary, 
-                    borderRadius: 16, 
-                    padding: '20px 0',
-                    border: `1px solid ${token.colorBorder}`
+        <div className="next-games-container px-3 mb-4">
+            <style>{`
+                .next-games-scroll::-webkit-scrollbar {
+                    height: 5px;
+                }
+                .next-games-scroll::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 4px;
+                }
+                .next-games-scroll::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+            `}</style>
+            
+            <Text strong style={{
+                display: 'block',
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                color: 'rgba(255, 255, 255, 0.5)',
+                letterSpacing: '0.08em',
+                marginBottom: 10
+            }}>
+                Próximos Partidos
+            </Text>
+
+            <div 
+                className="next-games-scroll"
+                style={{
+                    display: 'flex',
+                    gap: 12,
+                    overflowX: 'auto',
+                    paddingBottom: 8,
+                    scrollbarWidth: 'thin',
+                    msOverflowStyle: 'auto',
                 }}
             >
-                {grouped.map((group, i) => (
-                    <div key={i}>
-                        <Row gutter={[12, 12]} justify="center" className="px-4">
-                            {group.map((match) => (
-                                <Col key={match.id} xs={24} sm={12} md={8} lg={4}>
-                                    <Card 
-                                        hoverable
-                                        size="small"
-                                        className="text-center match-card-item border-0"
-                                        style={{ background: token.colorBgContainer, borderRadius: 12 }}
-                                        onClick={() => nav('/predictions/')}
-                                    >
-                                        <div className="d-flex flex-column align-items-center">
-                                            <div className="d-flex align-items-center gap-2 mb-2">
-                                                <Avatar src={match.Teams[0]?.logo_url} size={32} shape="square" className="bg-transparent" />
-                                                <Text strong className="text-secondary" style={{ fontSize: 12 }}>VS</Text>
-                                                <Avatar src={match.Teams[1]?.logo_url} size={32} shape="square" className="bg-transparent" />
-                                            </div>
-                                            <Tag 
-                                                color={match.status === 'live' ? 'error' : 'processing'} 
-                                                className="m-0 border-0" 
-                                                style={{ fontSize: 10, fontWeight: 700 }}
-                                            >
-                                                {match.status === 'live' ? 'LIVE' : 'UPCOMING'}
-                                            </Tag>
-                                            <Text type="secondary" style={{ fontSize: 10, marginTop: 4 }}>
-                                                {new Intl.DateTimeFormat('es-ES', {
-                                                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                                                }).format(new Date(match.date))}
-                                            </Text>
-                                        </div>
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                    </div>
-                ))}
-            </Carousel>
+                {nextGames.map((match) => {
+                    const isLive = match.status === 'live';
+                    const timeInfo = isLive 
+                        ? { label: 'EN VIVO', time: '--:--', color: '#10b981' }
+                        : getMatchTimeInfo(match.date);
+                    
+                    return (
+                        <div 
+                            key={match.id}
+                            onClick={() => nav('/predictions/')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                background: 'rgba(30, 41, 59, 0.4)',
+                                border: `1px solid ${token.colorBorder}`,
+                                borderLeft: `3px solid ${timeInfo.color}`,
+                                borderRadius: 12,
+                                padding: '8px 16px',
+                                cursor: 'pointer',
+                                transition: 'all 0.25s ease',
+                                flexShrink: 0,
+                                minWidth: 240,
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(30, 41, 59, 0.4)';
+                                e.currentTarget.style.borderColor = token.colorBorder;
+                            }}
+                        >
+                            {/* Left Col: Badge status / time */}
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                paddingRight: 14,
+                                borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+                                minWidth: 70,
+                                textAlign: 'center',
+                            }}>
+                                <span style={{
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    color: timeInfo.color,
+                                    letterSpacing: '0.05em',
+                                    marginBottom: 2
+                                }}>
+                                    {timeInfo.label}
+                                </span>
+                                <span style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: isLive ? '#10b981' : 'rgba(255, 255, 255, 0.9)'
+                                }}>
+                                    {timeInfo.time}
+                                </span>
+                            </div>
+
+                            {/* Right Col: Teams names text */}
+                            <div style={{
+                                paddingLeft: 16,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                fontWeight: 700,
+                                fontSize: 13,
+                                color: 'rgba(255, 255, 255, 0.9)',
+                            }}>
+                                <span>{match.Teams?.[0]?.name}</span>
+                                <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>vs</span>
+                                <span>{match.Teams?.[1]?.name}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 };
