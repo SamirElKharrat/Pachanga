@@ -47,22 +47,32 @@ exports.getCurrentWeekMatches = async (req, res) => {
     try {
 
         const currentStartOfWeek = startOfWeek();
-        const currentEndOfWeek = endOfWeek();
 
-        console.log("Buscando partidos entre:", currentStartOfWeek, "y", currentEndOfWeek);
+        console.log("Buscando partidos desde el inicio de la semana actual:", currentStartOfWeek);
 
         const matches = await Match.findAll({
             where: {
-                date: {
-                    [Op.between]: [currentStartOfWeek, currentEndOfWeek]
-                }
+                [Op.or]: [
+                    {
+                        status: 'live'
+                    },
+                    {
+                        date: {
+                            [Op.gte]: currentStartOfWeek
+                        },
+                        status: {
+                            [Op.ne]: 'finished'
+                        }
+                    }
+                ]
             },
             include: [{
                 model: Team,
                 attributes: ['id', 'name', 'logo_url', 'acronym'],
                 through: { attributes: [] }
             }],
-            order: [['date', 'ASC']] // Ordenar por fecha ascendente
+            order: [['date', 'ASC']], // Ordenar por fecha ascendente
+            limit: 30
         });
 
         console.log("Partidos encontrados:", matches.length);
