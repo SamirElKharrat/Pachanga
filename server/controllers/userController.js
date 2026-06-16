@@ -75,7 +75,7 @@ exports.createUser = async (req, res) => {
 
 //Login an user
 exports.loginUser = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, keepSession } = req.body;
 
   try {
     const user = await User.findOne({
@@ -92,10 +92,28 @@ exports.loginUser = async (req, res) => {
     //Generate a token infinite live for now
     const token = jwt.sign({ email: user.email, role: user.role }, process.env.SECRET_KEY);
     console.log("Usuario Logeado", token)
-    res.json({ token });
+    
+    const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    };
+
+    if (keepSession) {
+        cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    }
+
+    res.cookie('token', token, cookieOptions);
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+//Logout user
+exports.logoutUser = async (req, res) => {
+  res.clearCookie('token');
+  res.json({ success: true, message: 'Logged out successfully' });
 };
 
 //Change Password

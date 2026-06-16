@@ -36,7 +36,7 @@ function Root() {
                   <Route path='/teams/:id' element={<Team />} />
                   <Route path='/predictions' element={<Prediction />} />
                   <Route path='/user' element={<User />} />
-                  {/* <Route path='/hall-of-flame' element={<HallOfFlame />} /> */}
+                  <Route path='/hall-of-flame' element={<HallOfFlame />} />
                   <Route path='/is-guille-winning' element={<IsGuilleWinning />} />
                 </Route>
                 <Route element={<AdminRoute />}>

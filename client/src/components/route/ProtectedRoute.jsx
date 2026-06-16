@@ -13,7 +13,6 @@ const ProtectedRoute = () => {
                     setIsVerified(<Outlet />);
                 })
                 .catch(() => {
-                    API.setToken('')
                     nav('/login', { state: { error: "The Token has expired, login to get a new one" } })
                 })
         }

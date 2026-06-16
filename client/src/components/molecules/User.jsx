@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Input, Upload, Button, Spin, Avatar, Typography, Space, Divider } from 'antd';
+import { Card, Form, Input, Upload, Button, Spin, Avatar, Typography, Space, Divider, Flex } from 'antd';
 import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
 import { LoadingOutlined, UserOutlined, LockOutlined, IdcardOutlined, CameraOutlined } from '@ant-design/icons';
@@ -69,7 +69,11 @@ export default function User() {
             setLoading(true);
             await API.put('/users/changePassword/' + user.id, values);
             showAlert('success', 'Contraseña cambiada correctamente');
-            API.setToken('');
+            try {
+                await API.post('/users/logout');
+            } catch (err) {
+                console.error("Logout error", err);
+            }
             localStorage.removeItem('admin');
             nav('/login');
         } catch (error) {
@@ -81,18 +85,18 @@ export default function User() {
 
     if (loading && !user) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+            <Flex align="center" justify="center" style={{ minHeight: '60vh' }}>
                 <Spin size="large" />
-            </div>
+            </Flex>
         );
     }
 
     return (
-        <div style={{ padding: '16px 12px 40px', maxWidth: 580, margin: '0 auto' }}>
+        <Flex vertical style={{ padding: '16px 12px 40px', maxWidth: 580, margin: '0 auto' }}>
             <Title level={3} style={{ marginBottom: 20 }}>Ajustes de Cuenta</Title>
 
             {/* ── Tab switcher ── */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+            <Flex gap={8} style={{ marginBottom: 20 }}>
                 {[
                     { key: 'profile', label: 'Información Personal', icon: <IdcardOutlined /> },
                     { key: 'security', label: 'Seguridad', icon: <LockOutlined /> },
@@ -125,14 +129,14 @@ export default function User() {
                         {tab.icon} {tab.label}
                     </button>
                 ))}
-            </div>
+            </Flex>
 
             {/* ── Profile tab ── */}
             {activeTab === 'profile' && (
                 <Card>
                     {/* Avatar centered */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28 }}>
-                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <Flex vertical align="center" style={{ marginBottom: 28 }}>
+                        <Flex style={{ position: 'relative', display: 'inline-block' }}>
                             <Avatar
                                 src={getAvatarSrc(previewImage)}
                                 icon={<UserOutlined />}
@@ -172,11 +176,11 @@ export default function User() {
                                     <CameraOutlined />
                                 </button>
                             </Upload>
-                        </div>
+                        </Flex>
                         <Text type="secondary" style={{ fontSize: 11, marginTop: 8 }}>
                             JPG, PNG o GIF · Toca el icono de cámara para cambiar
                         </Text>
-                    </div>
+                    </Flex>
 
                     <Form form={form} layout="vertical" onFinish={handleProfileUpdate}>
                         <Form.Item
@@ -245,6 +249,6 @@ export default function User() {
                     </Form>
                 </Card>
             )}
-        </div>
+        </Flex>
     );
 }
