@@ -107,19 +107,21 @@ const LeagueHome = () => {
     };
 
     const filteredLeagues = selectedYear
-        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
-        : leagues;
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear).sort((a, b) => new Date(b.start_date) - new Date(a.start_date))
+        : leagues.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
 
     const handleYearChange = (year) => {
         setSelectedYear(year);
     };
 
     return (
-        <div className="p-3">
-            <Title level={2} className="mb-4">Explorar Ligas</Title>
+        <div className="p-3" style={{ width: '100%' }}>
+            <Title level={2} style={{ color: '#f8fafc', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 24 }}>
+                Explorar Ligas
+            </Title>
 
             {!loading && leagues.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
+                <div style={{ marginBottom: 24 }}>
                     <YearFilter
                         leagues={leagues}
                         selectedYear={selectedYear}
@@ -131,8 +133,8 @@ const LeagueHome = () => {
             {loading ? (
                 <Row gutter={[24, 24]}>
                     {[1, 2, 3].map(i => (
-                        <Col key={i} xs={24} md={8}>
-                            <Card className="shadow-sm">
+                        <Col key={i} xs={24} sm={12} md={12} lg={8} xl={6}>
+                            <Card className="shadow-sm" style={{ borderRadius: '16px', background: 'rgba(255,255,255,0.02)' }}>
                                 <Skeleton active avatar paragraph={{ rows: 3 }} />
                             </Card>
                         </Col>
@@ -143,7 +145,7 @@ const LeagueHome = () => {
                     {filteredLeagues.map((league) => {
                         const isJoined = joinedLeagues.some(p => p.league_id === league.id);
                         return (
-                            <Col key={league.id} xs={24} md={8}>
+                            <Col key={league.id} xs={24} sm={12} md={12} lg={8} xl={6}>
                                 <CardInfo
                                     title={league.name}
                                     image={league.logo_url}

@@ -168,16 +168,11 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             textAlign: 'center',
                         }}
                     >
-<<<<<<< HEAD
-                        {isCurrentUserWinner ? 'Has ganado ' : 'Ganador de '}
-                        <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span>
-=======
                         {isCurrentUserWinner ? (
                             <>Has ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span></>
                         ) : (
                             <><span style={{ color: '#fbbf24', fontWeight: 700 }}>{username}</span> ha ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span></>
                         )}
->>>>>>> 28e9bcfa782d3986c15edc708e9b3989feafc910
                     </motion.div>
 
                     {/* ── User info pill ── */}

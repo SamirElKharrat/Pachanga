@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     Card, Row, Col, Button, Typography, Skeleton,
-    Select, Space, Empty, Tag, Avatar,
+    Select, Space, Empty, Tag, Avatar, Flex,
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import PredictionForm from '../atoms/PredictionForm';
@@ -87,7 +87,17 @@ const Prediction = () => {
         if (computed.length > 0) {
             const todayStr = new Date().toISOString().split('T')[0];
             const currentWeek = computed.find(w => todayStr >= w.start && todayStr <= w.end);
-            setSelectedWeek(currentWeek ? currentWeek.id : computed[computed.length - 1].id);
+            if (currentWeek) {
+                setSelectedWeek(currentWeek.id);
+            } else {
+                // Si la liga no ha empezado aún (hoy es antes de la primera semana) -> Semana 1
+                if (todayStr < computed[0].start) {
+                    setSelectedWeek(computed[0].id);
+                } else {
+                    // Si la liga ya terminó (hoy es después del final) -> Última semana
+                    setSelectedWeek(computed[computed.length - 1].id);
+                }
+            }
         }
     }, [selectedLeague, leagues, selectedWeek]);
 
@@ -100,13 +110,12 @@ const Prediction = () => {
     // ── Empty state ────────────────────────────────────────────────────────────
     if (!loading && leagues.length === 0) {
         return (
-            <div
+            <Flex
+                vertical
+                align="center"
+                justify="center"
                 style={{
                     minHeight: '60vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
                     padding: 24,
                 }}
             >
@@ -124,14 +133,14 @@ const Prediction = () => {
                         Explorar Ligas
                     </Button>
                 </Empty>
-            </div>
+            </Flex>
         );
     }
 
     // const currentWeek = weeks.find(w => w.id === selectedWeek);
 
     return (
-        <div style={{ padding: '12px 12px 40px' }}>
+        <Flex vertical style={{ padding: '12px 12px 40px' }}>
 
             {/* ── Scrollbar hiding style ── */}
             <style>{`
@@ -145,59 +154,9 @@ const Prediction = () => {
                 .selectors-card .ant-card-body {
                     padding: 16px 20px;
                 }
-                .mobile-selectors {
-                    display: none;
-                }
-                .desktop-selectors {
-                    display: block;
-                }
-                .premium-select .ant-select-selector {
-                    background: rgba(0, 0, 0, 0.25) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-                    border-radius: 10px !important;
-                    color: #fff !important;
-                    height: 42px !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    padding: 0 12px !important;
-                    transition: all 0.2s ease !important;
-                }
-                .premium-select:hover .ant-select-selector {
-                    border-color: rgba(59, 130, 246, 0.5) !important;
-                    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important;
-                }
-                .premium-select .ant-select-selection-item {
-                    color: #fff !important;
-                    font-weight: 600 !important;
-                    font-size: 13px !important;
-                }
-                .premium-select .ant-select-arrow {
-                    color: rgba(255, 255, 255, 0.4) !important;
-                }
                 @media (max-width: 576px) {
-                    .mobile-selectors {
-                        display: block;
-                    }
-                    .desktop-selectors {
-                        display: none;
-                    }
                     .selectors-card .ant-card-body {
                         padding: 12px 14px !important;
-                    }
-                    .segmented-ctrl-item {
-                        padding: 4px 10px !important;
-                        font-size: 11px !important;
-                        border-radius: 6px !important;
-                        gap: 6px !important;
-                    }
-                    .segmented-ctrl-item .ant-avatar {
-                        width: 14px !important;
-                        height: 14px !important;
-                    }
-                    .segmented-ctrl-container {
-                        border-radius: 8px !important;
-                        padding: 3px !important;
-                        gap: 3px !important;
                     }
                 }
             `}</style>
@@ -212,32 +171,6 @@ const Prediction = () => {
                     />
                 </Col>
                 <Col xs={24}>
-<<<<<<< HEAD
-                    <Text strong style={{ display: 'block', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>Liga</Text>
-                    {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
-                        <SegmentedControl 
-                            options={filteredLeagues.map(l => ({ value: l.id, label: l.name, logo: l.logo_url }))}
-                            value={selectedLeague}
-                            onChange={handleLeagueChange}
-                            disabled={loading && leagues.length === 0}
-                        />
-                    )}
-                </Col>
-
-                <Col xs={24}>
-                    <Text strong style={{ display: 'flex', alignItems: 'center', marginBottom: 6, fontSize: 13, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>
-                        <CalendarOutlined style={{ marginRight: 6 }} />
-                        Semana
-                    </Text>
-                    {loading && weeks.length === 0 ? <Skeleton.Button active /> : (
-                        <SegmentedControl 
-                            options={weeks.map(w => ({ value: w.id, label: w.name }))}
-                            value={selectedWeek}
-                            onChange={setSelectedWeek}
-                            disabled={(weeks.length === 0 && !loading) || loading}
-                        />
-                    )}
-=======
                     <Card
                         className="selectors-card"
                         style={{
@@ -248,219 +181,44 @@ const Prediction = () => {
                         }}
                     >
                         {/* LIGA SELECCIONADA */}
-                        <div style={{ marginBottom: 20 }}>
-                            <Text strong style={{
-                                display: 'block',
-                                fontSize: 11,
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                color: 'rgba(255, 255, 255, 0.5)',
-                                letterSpacing: '0.08em',
-                                marginBottom: 10
-                            }}>
-                                Liga Seleccionada
-                            </Text>
-
-                            {/* Desktop: Segmented Control */}
-                            <div className="desktop-selectors">
-                                <div style={{
-                                    display: 'flex',
-                                    background: 'rgba(0, 0, 0, 0.25)',
-                                    borderRadius: '10px',
-                                    padding: '4px',
-                                    gap: '4px',
-                                    width: 'fit-content',
-                                    maxWidth: '100%',
-                                    overflowX: 'auto',
-                                    WebkitOverflowScrolling: 'touch',
-                                }} className="hide-scrollbar segmented-ctrl-container">
-                                    {loading && leagues.length === 0 ? (
-                                        <Skeleton.Button active style={{ height: 32, width: 120, borderRadius: 8 }} />
-                                    ) : (
-                                        filteredLeagues.map(league => {
-                                            const isActive = league.id === selectedLeague;
-                                            return (
-                                                <button
-                                                    key={league.id}
-                                                    className="segmented-ctrl-item"
-                                                    onClick={() => handleLeagueChange(league.id)}
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: 8,
-                                                        padding: '6px 14px',
-                                                        borderRadius: 8,
-                                                        border: 'none',
-                                                        background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
-                                                        color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                                                        fontSize: 13,
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.2s ease',
-                                                        boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
-                                                        whiteSpace: 'nowrap',
-                                                        flexShrink: 0
-                                                    }}
-                                                    onMouseEnter={e => {
-                                                        if (!isActive) {
-                                                            e.currentTarget.style.color = '#fff';
-                                                        }
-                                                    }}
-                                                    onMouseLeave={e => {
-                                                        if (!isActive) {
-                                                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                                                        }
-                                                    }}
-                                                >
-                                                    {league.logo_url && (
-                                                        <Avatar
-                                                            src={league.logo_url}
-                                                            size={18}
-                                                            shape="square"
-                                                            style={{
-                                                                borderRadius: 4,
-                                                                background: 'transparent',
-                                                                filter: isActive ? 'brightness(1.2)' : 'none'
-                                                            }}
-                                                        />
-                                                    )}
-                                                    {league.name}
-                                                </button>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Mobile: Premium Select */}
-                            <div className="mobile-selectors">
-                                <Select
-                                    className="premium-select"
-                                    style={{ width: '100%' }}
-                                    placeholder="Elige una liga"
+                        <Flex vertical style={{ marginBottom: 20 }}>
+                            <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                            {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
+                                <SegmentedControl 
+                                    options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
                                     value={selectedLeague}
                                     onChange={handleLeagueChange}
-                                    loading={loading && leagues.length === 0}
-                                    options={filteredLeagues.map(l => ({
-                                        label: (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                {l.logo_url && <Avatar src={l.logo_url} size={16} shape="square" style={{ background: 'transparent' }} />}
-                                                {l.name}
-                                            </div>
-                                        ),
-                                        value: l.id
-                                    }))}
+                                    disabled={loading && leagues.length === 0}
                                 />
-                            </div>
-                        </div>
+                            )}
+                        </Flex>
 
                         {/* SEMANA */}
-                        <div>
-                            <Text strong style={{
-                                display: 'block',
-                                fontSize: 11,
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                color: 'rgba(255, 255, 255, 0.5)',
-                                letterSpacing: '0.08em',
-                                marginBottom: 10
-                            }}>
+                        <Flex vertical>
+                            <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>
                                 <CalendarOutlined style={{ marginRight: 6 }} />
                                 Semana
                             </Text>
-
-                            {/* Desktop: Segmented Control */}
-                            <div className="desktop-selectors">
-                                <div style={{
-                                    display: 'flex',
-                                    background: 'rgba(0, 0, 0, 0.25)',
-                                    borderRadius: '10px',
-                                    padding: '4px',
-                                    gap: '4px',
-                                    width: 'fit-content',
-                                    maxWidth: '100%',
-                                    overflowX: 'auto',
-                                    WebkitOverflowScrolling: 'touch',
-                                }} className="hide-scrollbar segmented-ctrl-container">
-                                    {loading && weeks.length === 0 ? (
-                                        <Space size={4}>
-                                            <Skeleton.Button active style={{ height: 32, width: 60, borderRadius: 8 }} />
-                                            <Skeleton.Button active style={{ height: 32, width: 60, borderRadius: 8 }} />
-                                        </Space>
-                                    ) : (
-                                        weeks.map(week => {
-                                            const isActive = week.id === selectedWeek;
-                                            const todayStr = new Date().toISOString().split('T')[0];
-                                            const isCurrent = todayStr >= week.start && todayStr <= week.end;
-                                            return (
-                                                <button
-                                                    key={week.id}
-                                                    className="segmented-ctrl-item"
-                                                    onClick={() => setSelectedWeek(week.id)}
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        padding: '6px 14px',
-                                                        borderRadius: 8,
-                                                        border: 'none',
-                                                        background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
-                                                        color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-                                                        fontSize: 13,
-                                                        fontWeight: 600,
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.2s ease',
-                                                        boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
-                                                        whiteSpace: 'nowrap',
-                                                        flexShrink: 0
-                                                    }}
-                                                    onMouseEnter={e => {
-                                                        if (!isActive) {
-                                                            e.currentTarget.style.color = '#fff';
-                                                        }
-                                                    }}
-                                                    onMouseLeave={e => {
-                                                        if (!isActive) {
-                                                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                                                        }
-                                                    }}
-                                                >
-                                                    {week.name} {isCurrent && '(Actual)'}
-                                                </button>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Mobile: Premium Select */}
-                            <div className="mobile-selectors">
-                                <Select
-                                    className="premium-select"
-                                    style={{ width: '100%' }}
-                                    placeholder="Elige una semana"
-                                    value={selectedWeek}
-                                    onChange={setSelectedWeek}
-                                    loading={loading && weeks.length === 0}
+                            {loading && weeks.length === 0 ? <Skeleton.Button active /> : (
+                                <SegmentedControl 
                                     options={weeks.map(w => {
                                         const todayStr = new Date().toISOString().split('T')[0];
                                         const isCurrent = todayStr >= w.start && todayStr <= w.end;
-                                        return {
-                                            label: `${w.name} ${isCurrent ? '(Actual)' : ''}`,
-                                            value: w.id
-                                        };
+                                        return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
                                     })}
+                                    value={selectedWeek}
+                                    onChange={setSelectedWeek}
+                                    disabled={loading && weeks.length === 0}
                                 />
-                            </div>
-                        </div>
+                            )}
+                        </Flex>
                     </Card>
->>>>>>> 28e9bcfa782d3986c15edc708e9b3989feafc910
                 </Col>
             </Row>
 
             {/* Points badge */}
             {selectedLeague && !loading && (
-                <div style={{ marginBottom: 16 }}>
+                <Flex style={{ marginBottom: 16 }}>
                     <Tag
                         icon={<TrophyOutlined />}
                         color="gold"
@@ -468,7 +226,7 @@ const Prediction = () => {
                     >
                         Puntos Totales = {userPoints ?? 0}
                     </Tag>
-                </div>
+                </Flex>
             )}
 
             {/* ── Main cards ── */}
@@ -539,7 +297,7 @@ const Prediction = () => {
                     </Card>
                 </Col>
             </Row>
-        </div>
+        </Flex>
     );
 };
 

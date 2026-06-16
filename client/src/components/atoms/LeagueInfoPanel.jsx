@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Avatar, Tag, Button, Space, Typography } from 'antd';
+import { Tag, Button, Space, Typography, Flex } from 'antd';
 import { BookOutlined, LinkOutlined } from '@ant-design/icons';
+import { useTheme as useAppTheme } from '../../context/ThemeContext';
 
 const { Text } = Typography;
 
@@ -19,6 +20,7 @@ const STATUS_CONFIG = {
  */
 function LeagueInfoPanel({ league, onShowRules }) {
     const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+    const { isLightMode } = useAppTheme();
 
     useEffect(() => {
         const handler = () => setIsMobile(window.innerWidth < 768);
@@ -49,37 +51,46 @@ function LeagueInfoPanel({ league, onShowRules }) {
                     }
                 `}</style>
             )}
-            <div
+            <Flex
+                vertical={isMobile}
+                align={isMobile ? 'stretch' : 'center'}
+                gap={isMobile ? 12 : 16}
                 style={{
-                    display: 'flex',
-                    flexDirection: isMobile ? 'column' : 'row',
-                    alignItems: isMobile ? 'flex-start' : 'center',
-                    gap: isMobile ? 12 : 16,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                    boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                     borderRadius: 16,
                     padding: '12px 20px',
                     marginBottom: 16,
                 }}
             >
                 {/* League identity */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                    <Avatar
-                        src={league.logo_url}
-                        size={40}
-                        shape="square"
-                        style={{ borderRadius: 8, flexShrink: 0 }}
-                    />
-                    <div style={{ minWidth: 0 }}>
+                <Flex align="center" gap={16} style={{ flex: 1, minWidth: 0, width: '100%' }}>
+                    {league.logo_url && (
+                        <img
+                            src={league.logo_url}
+                            alt={league.name}
+                            style={{
+                                width: 60,
+                                height: 60,
+                                objectFit: 'contain',
+                                flexShrink: 0,
+                                borderRadius: 8,
+                                background: 'transparent',
+                                filter: isLightMode ? 'none' : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.15))'
+                            }}
+                        />
+                    )}
+                    <Flex vertical style={{ minWidth: 0, flex: 1 }}>
                         <Text
                             strong
                             style={{
-                                fontSize: 15,
+                                fontSize: 16,
                                 display: 'block',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                color: 'rgba(255,255,255,0.9)',
+                                color: isLightMode ? '#0f172a' : 'rgba(255,255,255,0.9)',
                             }}
                         >
                             {league.name}
@@ -87,7 +98,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                         {(league.start_date || league.end_date) && (
                             <Text
                                 type="secondary"
-                                style={{ fontSize: 12 }}
+                                style={{ fontSize: 12, marginTop: 2 }}
                             >
                                 {league.start_date
                                     ? new Date(league.start_date).toLocaleDateString()
@@ -98,17 +109,14 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                     : ''}
                             </Text>
                         )}
-                    </div>
-                </div>
+                    </Flex>
+                </Flex>
 
                 {/* Status + Actions */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        flexWrap: 'wrap',
-                    }}
+                <Flex
+                    align="center"
+                    gap={10}
+                    wrap="wrap"
                 >
                     {/* Status badge */}
                     <Tag
@@ -146,7 +154,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                 icon={<BookOutlined />}
                                 onClick={onShowRules}
                                 style={{
-                                    color: 'rgba(255,255,255,0.65)',
+                                    color: isLightMode ? '#64748b' : 'rgba(255,255,255,0.65)',
                                     fontSize: 13,
                                     borderRadius: 8,
                                 }}
@@ -161,7 +169,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                 icon={<LinkOutlined />}
                                 onClick={() => window.open(league.leaguepedia_url, '_blank', 'noopener')}
                                 style={{
-                                    color: 'rgba(255,255,255,0.65)',
+                                    color: isLightMode ? '#64748b' : 'rgba(255,255,255,0.65)',
                                     fontSize: 13,
                                     borderRadius: 8,
                                 }}
@@ -170,8 +178,8 @@ function LeagueInfoPanel({ league, onShowRules }) {
                             </Button>
                         )}
                     </Space>
-                </div>
-            </div>
+                </Flex>
+            </Flex>
         </>
     );
 }

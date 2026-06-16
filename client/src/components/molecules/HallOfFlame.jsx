@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Typography, Avatar, Divider, Space, Skeleton, Badge, Modal, Statistic, List, theme } from 'antd';
+import { Card, Row, Col, Typography, Avatar, Divider, Space, Skeleton, Badge, Modal, Statistic, List, theme, Flex } from 'antd';
 import { TrophyOutlined, UserOutlined, GlobalOutlined, LineChartOutlined, FireOutlined, ThunderboltOutlined, CrownOutlined } from '@ant-design/icons';
 import { API } from '../../services/api';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
@@ -79,34 +79,34 @@ const HallOfFlame = () => {
     };
 
     return (
-        <div style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <Flex vertical style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
+            <Flex vertical align="center" style={{ marginBottom: 48 }}>
                 <TrophyOutlined style={{ fontSize: 40, color: '#fadb14', marginBottom: 12 }} />
                 <Title level={1} style={{ margin: 0 }}>Hall of Flame</Title>
                 <Paragraph type="secondary" style={{ fontSize: 14, marginTop: 8 }}>
                     Reconocimiento a los jugadores de la Pachanga.
                 </Paragraph>
-            </div>
+            </Flex>
 
             <Row gutter={[32, 24]}>
                 {/* Lado izquierdo: Clasificación Pachanga */}
                 <Col xs={24} md={9} lg={8}>
-                    <div style={{ textAlign: 'left', minHeight: 70, marginTop: 5 }}>
-                        <Title level={3} style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            Pachanga 202X <TrophyOutlined style={{ color: '#fadb14', fontSize: 20 }} />
-                        </Title>
+                    <Flex vertical style={{ minHeight: 70, marginTop: 5 }}>
+                        <Space style={{ marginBottom: 4 }}>
+                            <Title level={3} style={{ margin: 0 }}>Pachanga 202X</Title>
+                            <TrophyOutlined style={{ color: '#fadb14', fontSize: 20 }} />
+                        </Space>
                         <Text type="secondary" style={{ fontSize: 13 }}>Puntos acumulados en la temporada actual</Text>
-                    </div>
+                    </Flex>
 
                     <Skeleton loading={loading} active paragraph={{ rows: 10 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <Flex vertical gap={12}>
                             {players.map((player, index) => (
-                                <div
+                                <Flex
                                     key={`rank-${player.id}`}
+                                    align="center"
+                                    gap={12}
                                     style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 12,
                                         padding: '12px 16px',
                                         background: token.colorFillTertiary,
                                         borderRadius: 8,
@@ -116,24 +116,25 @@ const HallOfFlame = () => {
                                     <Text strong style={{ fontSize: 14, width: 24, textAlign: 'center', opacity: 0.3 }}>#{index + 1}</Text>
                                     <Avatar src={getAvatarSrc(player.logo_url)} icon={<UserOutlined />} size={32} />
                                     <Text strong style={{ fontSize: 14 }}>{player.username}</Text>
-                                    <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                    <Flex style={{ marginLeft: 'auto', textAlign: 'right' }}>
                                         <Text strong style={{ fontSize: 16, color: '#3b82f6' }}>0</Text>
                                         <span style={{ fontSize: 10, opacity: 0.5, marginLeft: 4 }}>PTS</span>
-                                    </div>
-                                </div>
+                                    </Flex>
+                                </Flex>
                             ))}
-                        </div>
+                        </Flex>
                     </Skeleton>
                 </Col>
 
                 {/* Lado derecho: Ganadores */}
                 <Col xs={24} md={15} lg={16}>
-                    <div style={{ textAlign: 'left', marginBottom: 24, minHeight: 70 }}>
-                        <Title level={3} style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
-                            Campeones <CrownOutlined style={{ color: '#fadb14', fontSize: 20 }} />
-                        </Title>
+                    <Flex vertical style={{ marginBottom: 24, minHeight: 70 }}>
+                        <Space style={{ marginBottom: 4 }}>
+                            <Title level={3} style={{ margin: 0 }}>Campeones</Title>
+                            <CrownOutlined style={{ color: '#fadb14', fontSize: 20 }} />
+                        </Space>
                         <Text type="secondary" style={{ fontSize: 13 }}>Jugadores y ligas que han ganado</Text>
-                    </div>
+                    </Flex>
 
                     <Skeleton loading={loading} active paragraph={{ rows: 10 }}>
                         <Row gutter={[16, 16]}>
@@ -152,7 +153,7 @@ const HallOfFlame = () => {
                                         }}
                                         styles={{ body: { padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' } }}
                                     >
-                                        <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                                        <Flex vertical align="center" style={{ marginBottom: 12 }}>
                                             <Badge count={player.winInfo?.wins || 0} color="#fadb14" offset={[-5, 45]}>
                                                 <Avatar
                                                     src={getAvatarSrc(player.logo_url)}
@@ -176,15 +177,15 @@ const HallOfFlame = () => {
                                             <Text type="secondary" style={{ fontSize: 11 }}>
                                                 {player.winInfo?.wins || 0} {player.winInfo?.wins === 1 ? 'Victoria' : 'Victorias'}
                                             </Text>
-                                        </div>
+                                        </Flex>
 
                                         <Divider style={{ margin: '8px 0' }} />
 
-                                        <div style={{ flex: 1, textAlign: 'center' }}>
-                                            <div style={{ marginBottom: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                                        <Flex vertical align="center" style={{ flex: 1, textAlign: 'center' }}>
+                                            <Flex align="center" justify="center" gap={4} style={{ marginBottom: 4 }}>
                                                 <GlobalOutlined style={{ fontSize: 10, opacity: 0.5 }} />
                                                 <Text strong style={{ fontSize: 10, textTransform: 'uppercase', opacity: 0.5 }}>Ligas Ganadas</Text>
-                                            </div>
+                                            </Flex>
                                             <Paragraph
                                                 type="secondary"
                                                 style={{
@@ -197,7 +198,7 @@ const HallOfFlame = () => {
                                             >
                                                 {player.winInfo?.leagues || 'Próximamente...'}
                                             </Paragraph>
-                                        </div>
+                                        </Flex>
                                     </Card>
                                 </Col>
                             ))}
@@ -216,11 +217,10 @@ const HallOfFlame = () => {
                 styles={{ content: { background: token.colorBgContainer, border: `1px solid ${token.colorBorder}`, borderRadius: 24, padding: 0, overflow: 'hidden' } }}
             >
                 {selectedPlayer && (
-                    <div style={{ padding: 0 }}>
-                        <div style={{
+                    <Flex vertical style={{ padding: 0 }}>
+                        <Flex vertical align="center" style={{
                             background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(245, 34, 45, 0.1) 100%)',
                             padding: '40px 24px',
-                            textAlign: 'center',
                             position: 'relative'
                         }}>
                             {selectedPlayer.winInfo?.wins > 10 && (
@@ -237,9 +237,9 @@ const HallOfFlame = () => {
                             <Avatar src={getAvatarSrc(selectedPlayer.logo_url)} size={100} icon={<UserOutlined />} style={{ border: selectedPlayer.winInfo?.wins > 10 ? '4px solid #fadb14' : '4px solid rgba(255,255,255,0.2)', marginBottom: 16 }} />
                             <Title level={2} style={{ margin: 0, color: '#fff' }}>{selectedPlayer.username}</Title>
                             <Text style={{ color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12 }}>Leyenda de la Pachanga</Text>
-                        </div>
+                        </Flex>
 
-                        <div style={{ padding: 24 }}>
+                        <Flex vertical style={{ padding: 24 }}>
                             <Row gutter={16} style={{ marginBottom: 32 }}>
                                 <Col span={8}>
                                     <Card style={{ background: token.colorFillTertiary, border: 'none', borderRadius: 16 }}>
@@ -292,11 +292,11 @@ const HallOfFlame = () => {
                                 locale={{ emptyText: <Text type="secondary">Iniciando su legado...</Text> }}
                                 style={{ maxHeight: 250, overflowY: 'auto' }}
                             />
-                        </div>
-                    </div>
+                        </Flex>
+                    </Flex>
                 )}
             </Modal>
-        </div>
+        </Flex>
     );
 };
 

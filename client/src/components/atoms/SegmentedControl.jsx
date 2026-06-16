@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Select, Avatar, Segmented, Space, Flex } from 'antd';
 
 /**
- * A sleek Segmented Control component (Option 1 design).
+ * A sleek Segmented Control component with responsive mobile fallback.
+ * On mobile (<768px) it renders an Ant Design Select dropdown instead.
  * 
  * @param {Object[]} options - Array of options { value, label, logo (optional) }
  * @param {string|number} value - Currently selected value
@@ -9,79 +11,59 @@ import React from 'react';
  * @param {boolean} disabled - Whether the control is disabled/loading
  */
 export default function SegmentedControl({ options, value, onChange, disabled }) {
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+
     if (!options || options.length === 0) return null;
 
+    // ── Mobile: Ant Design Select ───────────────────────────────────────────
+    if (isMobile) {
+        return (
+            <Select
+                style={{ width: '100%' }}
+                value={value}
+                onChange={onChange}
+                disabled={disabled}
+                options={options.map(opt => ({
+                    label: (
+                        <Space size={8}>
+                            {opt.logo && typeof opt.logo === 'string' && opt.logo.startsWith('http') && (
+                                <Avatar src={opt.logo} size={16} shape="square" style={{ background: 'transparent', borderRadius: 3 }} />
+                            )}
+                            <span>{opt.label}</span>
+                        </Space>
+                    ),
+                    value: opt.value
+                }))}
+            />
+        );
+    }
+
+    // ── Desktop: Ant Design Segmented ────────────────────────────────────────
     return (
-        <div 
-            style={{
-                display: 'inline-flex',
-                background: '#1e293b',
-                padding: 4,
-                borderRadius: 12,
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)',
-                overflowX: 'auto',
-                maxWidth: '100%',
-                opacity: disabled ? 0.5 : 1,
-                pointerEvents: disabled ? 'none' : 'auto'
-            }}
-            className="segmented-control-hide-scroll"
-        >
-            <style>{`
-                .segmented-control-hide-scroll::-webkit-scrollbar { display: none; }
-            `}</style>
-            
-            {options.map((opt) => {
-                const isActive = value === opt.value;
-                return (
-                    <div
-                        key={opt.value}
-                        onClick={() => onChange(opt.value)}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: 8,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            background: isActive ? '#3b82f6' : 'transparent',
-                            color: isActive ? '#ffffff' : '#94a3b8',
-                            boxShadow: isActive ? '0 4px 6px rgba(59, 130, 246, 0.3)' : 'none',
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!isActive) e.currentTarget.style.color = '#e2e8f0';
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!isActive) e.currentTarget.style.color = '#94a3b8';
-                        }}
-                    >
-                        {opt.logo && (
-                            <div style={{
-                                width: 20,
-                                height: 20,
-                                background: '#0f172a',
-                                borderRadius: 4,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 8,
-                                fontWeight: 800,
-                                overflow: 'hidden'
-                            }}>
-                                {typeof opt.logo === 'string' && opt.logo.startsWith('http') ? (
-                                    <img src={opt.logo} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                ) : (
-                                    opt.logo
-                                )}
-                            </div>
-                        )}
-                        {opt.label}
-                    </div>
-                );
-            })}
-        </div>
+        <Flex style={{ overflowX: 'auto', maxWidth: '100%', paddingBottom: 8 }}>
+            <Segmented
+                disabled={disabled}
+                value={value}
+                onChange={onChange}
+                style={{ minWidth: 'max-content' }}
+                options={options.map(opt => ({
+                    label: (
+                        <Space size={8} style={{ padding: '2px 6px' }}>
+                            {opt.logo && typeof opt.logo === 'string' && opt.logo.startsWith('http') && (
+                                <Avatar src={opt.logo} size={16} shape="square" style={{ background: 'transparent' }} />
+                            )}
+                            <span>{opt.label}</span>
+                        </Space>
+                    ),
+                    value: opt.value
+                }))}
+            />
+        </Flex>
     );
 }

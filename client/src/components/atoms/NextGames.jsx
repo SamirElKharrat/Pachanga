@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { Skeleton, Typography, Avatar } from 'antd';
-=======
-import { Skeleton, Typography, theme } from 'antd';
->>>>>>> 28e9bcfa782d3986c15edc708e9b3989feafc910
+import { Skeleton, Typography, Avatar, theme, Card, Space, Divider } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -11,12 +7,6 @@ import { showAlert } from './AlertInfo';
 const { Text } = Typography;
 
 /**
-<<<<<<< HEAD
- * Component that displays a compact list of upcoming and live matches.
- * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
- * 
- * @returns {React.ReactElement|null} The NextGames list or null if no games.
-=======
  * Formats match date into friendly labels like 'HOY', 'MAÑANA' or day/month string.
  * 
  * @param {string} dateStr - ISO date string of the match.
@@ -53,9 +43,9 @@ const getMatchTimeInfo = (dateStr) => {
  * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
  * 
  * @returns {React.ReactElement|null} The NextGames horizontal list or null if no games.
->>>>>>> 28e9bcfa782d3986c15edc708e9b3989feafc910
  */
 const NextGames = () => {
+    const { token } = theme.useToken();
     const [loading, setLoading] = useState(false);
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
@@ -104,96 +94,12 @@ const NextGames = () => {
         fetchData();
     }, [location.key]);
 
-<<<<<<< HEAD
-    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 80, borderRadius: 12 }} /></div>;
-=======
     if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 60, borderRadius: 12 }} /></div>;
->>>>>>> 28e9bcfa782d3986c15edc708e9b3989feafc910
     if (nextGames.length === 0) return null;
 
     return (
         <div className="next-games-container px-3 mb-4">
             <style>{`
-<<<<<<< HEAD
-                .d2-container {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                    gap: 12px;
-                }
-                .d2-item {
-                    display: flex;
-                    align-items: center;
-                    background: #1e293b;
-                    border-radius: 12px;
-                    padding: 12px 16px;
-                    border-left: 4px solid #3b82f6;
-                    cursor: pointer;
-                    transition: transform 0.2s;
-                }
-                .d2-item:hover {
-                    transform: translateY(-2px);
-                }
-                .d2-item.live {
-                    border-left-color: #10b981;
-                    background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), #1e293b);
-                }
-                .d2-timebox {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    min-width: 60px;
-                    padding-right: 16px;
-                    border-right: 1px solid #334155;
-                    margin-right: 16px;
-                }
-                .d2-day { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
-                .d2-hour { font-size: 16px; font-weight: 800; color: #e2e8f0; }
-                .d2-match {
-                    display: flex;
-                    align-items: center;
-                    flex: 1;
-                    gap: 12px;
-                }
-                .d2-team { font-weight: 600; font-size: 14px; color: #f8fafc; }
-                .d2-vs { font-size: 11px; color: #64748b; font-weight: 800; }
-            `}</style>
-            
-            <div className="d2-container">
-                {nextGames.map((match) => {
-                    const isLive = match.status === 'live';
-                    const dateObj = new Date(match.date);
-                    
-                    const isToday = new Date().toDateString() === dateObj.toDateString();
-                    const isTomorrow = new Date(new Date().setDate(new Date().getDate() + 1)).toDateString() === dateObj.toDateString();
-                    
-                    let dayText = isToday ? 'Hoy' : isTomorrow ? 'Mañana' : new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(dateObj);
-                    if (isLive) dayText = 'EN VIVO';
-                    
-                    const hourText = isLive ? '--:--' : new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' }).format(dateObj);
-                    
-                    return (
-                        <div 
-                            key={match.id} 
-                            className={`d2-item ${isLive ? 'live' : ''}`}
-                            onClick={() => nav('/predictions/')}
-                        >
-                            <div className="d2-timebox">
-                                <span className="d2-day" style={{ color: isLive ? '#10b981' : undefined }}>{dayText}</span>
-                                <span className="d2-hour" style={{ color: isLive ? '#10b981' : undefined }}>{hourText}</span>
-                            </div>
-                            <div className="d2-match">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' }}>
-                                    <span className="d2-team" style={{ textAlign: 'right' }}>{match.Teams[0]?.name || 'TBD'}</span>
-                                    <Avatar src={match.Teams[0]?.logo_url} size={24} shape="square" className="bg-transparent" />
-                                </div>
-                                
-                                <span className="d2-vs">VS</span>
-                                
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-start' }}>
-                                    <Avatar src={match.Teams[1]?.logo_url} size={24} shape="square" className="bg-transparent" />
-                                    <span className="d2-team">{match.Teams[1]?.name || 'TBD'}</span>
-                                </div>
-=======
                 .next-games-scroll::-webkit-scrollbar {
                     height: 5px;
                 }
@@ -236,76 +142,60 @@ const NextGames = () => {
                         : getMatchTimeInfo(match.date);
                     
                     return (
-                        <div 
+                        <Card
                             key={match.id}
-                            onClick={() => nav('/predictions/')}
+                            hoverable
+                            onClick={() => {
+                                if (isLive) {
+                                    window.open('https://www.twitch.tv/caedrel', '_blank');
+                                } else {
+                                    nav('/predictions/');
+                                }
+                            }}
+                            styles={{ body: { padding: '8px 16px', display: 'flex', alignItems: 'center' } }}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
                                 background: 'rgba(30, 41, 59, 0.4)',
                                 border: `1px solid ${token.colorBorder}`,
                                 borderLeft: `3px solid ${timeInfo.color}`,
                                 borderRadius: 12,
-                                padding: '8px 16px',
-                                cursor: 'pointer',
-                                transition: 'all 0.25s ease',
                                 flexShrink: 0,
                                 minWidth: 240,
                             }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'rgba(30, 41, 59, 0.4)';
-                                e.currentTarget.style.borderColor = token.colorBorder;
-                            }}
                         >
-                            {/* Left Col: Badge status / time */}
-                            <div style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                paddingRight: 14,
-                                borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-                                minWidth: 70,
-                                textAlign: 'center',
-                            }}>
-                                <span style={{
-                                    fontSize: 10,
-                                    fontWeight: 800,
-                                    color: timeInfo.color,
-                                    letterSpacing: '0.05em',
-                                    marginBottom: 2
-                                }}>
-                                    {timeInfo.label}
-                                </span>
-                                <span style={{
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    color: isLive ? '#10b981' : 'rgba(255, 255, 255, 0.9)'
-                                }}>
-                                    {timeInfo.time}
-                                </span>
-                            </div>
+                            <Space split={<Divider type="vertical" style={{ borderColor: 'rgba(255, 255, 255, 0.1)', height: 30 }} />}>
+                                {/* Left Col: Badge status / time */}
+                                <Space direction="vertical" size={0} align="center" style={{ minWidth: 60 }}>
+                                    <Text style={{
+                                        fontSize: 10,
+                                        fontWeight: 800,
+                                        color: timeInfo.color,
+                                        letterSpacing: '0.05em'
+                                    }}>
+                                        {timeInfo.label}
+                                    </Text>
+                                    <Text style={{
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        color: isLive ? '#10b981' : 'rgba(255, 255, 255, 0.9)'
+                                    }}>
+                                        {timeInfo.time}
+                                    </Text>
+                                </Space>
 
-                            {/* Right Col: Teams names text */}
-                            <div style={{
-                                paddingLeft: 16,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                                fontWeight: 700,
-                                fontSize: 13,
-                                color: 'rgba(255, 255, 255, 0.9)',
-                            }}>
-                                <span>{match.Teams?.[0]?.name}</span>
-                                <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>vs</span>
-                                <span>{match.Teams?.[1]?.name}</span>
->>>>>>> 28e9bcfa782d3986c15edc708e9b3989feafc910
-                            </div>
-                        </div>
+                                {/* Right Col: Teams names & logos */}
+                                <Space align="center" size={8}>
+                                    <Space size={6} align="center">
+                                        <Avatar src={match.Teams?.[0]?.logo_url} size={20} shape="square" style={{ background: 'transparent' }} />
+                                        <Text strong style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.9)' }}>{match.Teams?.[0]?.name}</Text>
+                                    </Space>
+                                    <Text style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>vs</Text>
+                                    <Space size={6} align="center">
+                                        <Avatar src={match.Teams?.[1]?.logo_url} size={20} shape="square" style={{ background: 'transparent' }} />
+                                        <Text strong style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.9)' }}>{match.Teams?.[1]?.name}</Text>
+                                    </Space>
+                                </Space>
+                            </Space>
+                        </Card>
                     );
                 })}
             </div>
