@@ -22,7 +22,7 @@
 ### Frontend
 - **React 19 + Vite:** SPA rápida y moderna.
 - **Ant Design (Antd 5):** Sistema de componentes UI profesional.
-- **Framer Motion:** Animaciones fluidas y Modo Loco/Bizarro.
+- **Framer Motion:** Animaciones fluidas.
 - **Context API:** Gestión de estados globales y temas.
 
 ### Backend
