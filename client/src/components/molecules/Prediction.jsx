@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Card, Row, Col, Button, Typography, Skeleton,
-    Select, Space, Empty, Tag, Avatar, Flex,
+    Select, Space, Empty, Tag, Avatar, Flex, theme,
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import PredictionForm from '../atoms/PredictionForm';
@@ -9,7 +9,7 @@ import PredictionTable from '../atoms/PredictionTable';
 import ResultTable from '../atoms/ResultTable';
 import YearFilter from '../atoms/YearFilter';
 import SegmentedControl from '../atoms/SegmentedControl';
-import { HistoryOutlined, FormOutlined, CalendarOutlined, TrophyOutlined } from '@ant-design/icons';
+import { HistoryOutlined, FormOutlined, CalendarOutlined, TrophyOutlined, FilterOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { usePredictionData } from '../../hooks/usePredictionData';
 
 const { Text } = Typography;
@@ -40,11 +40,17 @@ const calculateWeeks = (startDateStr, endDateStr) => {
 
 const Prediction = () => {
     const nav = useNavigate();
+    const { token } = theme.useToken();
 
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [selectedWeek, setSelectedWeek]     = useState(null);
     const [send, setSend] = useState(false);
+    
+    // Toggle state to collapse selectors
+    const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
+        return localStorage.getItem('pachanga_filters_collapsed') === 'true';
+    });
 
     const {
         leagues,
@@ -161,18 +167,34 @@ const Prediction = () => {
                 }
             `}</style>
 
-            {/* ── Selectors ── */}
+            {/* ── Collapsible selectors card ── */}
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-                <Col xs={24}>
-                    <YearFilter
-                        leagues={leagues}
-                        selectedYear={selectedYear}
-                        onYearChange={handleYearChange}
-                    />
-                </Col>
                 <Col xs={24}>
                     <Card
                         className="selectors-card"
+                        title={
+                            <Space size={8}>
+                                <FilterOutlined style={{ color: token.colorPrimary }} />
+                                <span style={{ fontSize: 13, fontWeight: 700 }}>Filtros de Competición</span>
+                            </Space>
+                        }
+                        extra={
+                            <Button 
+                                type="text" 
+                                size="small" 
+                                onClick={() => {
+                                    setFiltersCollapsed(prev => {
+                                        const next = !prev;
+                                        localStorage.setItem('pachanga_filters_collapsed', String(next));
+                                        return next;
+                                    });
+                                }}
+                                icon={filtersCollapsed ? <DownOutlined /> : <UpOutlined />}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                            >
+                                {filtersCollapsed ? 'Mostrar' : 'Ocultar'}
+                            </Button>
+                        }
                         style={{
                             background: 'rgba(255, 255, 255, 0.02)',
                             border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -180,38 +202,71 @@ const Prediction = () => {
                             marginBottom: 0
                         }}
                     >
-                        {/* LIGA SELECCIONADA */}
-                        <Flex vertical style={{ marginBottom: 20 }}>
-                            <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
-                            {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
-                                <SegmentedControl 
-                                    options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
-                                    value={selectedLeague}
-                                    onChange={handleLeagueChange}
-                                    disabled={loading && leagues.length === 0}
-                                />
-                            )}
-                        </Flex>
+                        {filtersCollapsed ? (
+                            <Space split={<span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Año: <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedYear || 'Todos'}</span>
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Liga: <span style={{ color: token.colorText, fontWeight: 600 }}>{leagues.find(l => l.id === selectedLeague)?.name || 'Ninguna'}</span>
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Semana: <span style={{ color: token.colorText, fontWeight: 600 }}>{weeks.find(w => w.id === selectedWeek)?.name || 'Ninguna'}</span>
+                                </Text>
+                            </Space>
+                        ) : (
+                            <Row gutter={[16, 16]}>
+                                {/* AÑO (Restored custom YearFilter) */}
+                                <Col xs={24}>
+                                    <YearFilter
+                                        leagues={leagues}
+                                        selectedYear={selectedYear}
+                                        onYearChange={handleYearChange}
+                                    />
+                                </Col>
 
-                        {/* SEMANA */}
-                        <Flex vertical>
-                            <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>
-                                <CalendarOutlined style={{ marginRight: 6 }} />
-                                Semana
-                            </Text>
-                            {loading && weeks.length === 0 ? <Skeleton.Button active /> : (
-                                <SegmentedControl 
-                                    options={weeks.map(w => {
-                                        const todayStr = new Date().toISOString().split('T')[0];
-                                        const isCurrent = todayStr >= w.start && todayStr <= w.end;
-                                        return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
-                                    })}
-                                    value={selectedWeek}
-                                    onChange={setSelectedWeek}
-                                    disabled={loading && weeks.length === 0}
-                                />
-                            )}
-                        </Flex>
+                                {/* LIGA SELECCIONADA */}
+                                <Col xs={24}>
+                                    <Flex vertical gap={8}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                                        {loading && leagues.length === 0 ? (
+                                            <Skeleton.Button active block style={{ height: 32 }} />
+                                        ) : (
+                                            <SegmentedControl 
+                                                options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
+                                                value={selectedLeague}
+                                                onChange={handleLeagueChange}
+                                                disabled={loading && leagues.length === 0}
+                                            />
+                                        )}
+                                    </Flex>
+                                </Col>
+
+                                {/* SEMANA */}
+                                <Col xs={24}>
+                                    <Flex vertical gap={8}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>
+                                            <CalendarOutlined style={{ marginRight: 6 }} />
+                                            Semana
+                                        </Text>
+                                        {loading && weeks.length === 0 ? (
+                                            <Skeleton.Button active block style={{ height: 32 }} />
+                                        ) : (
+                                            <SegmentedControl 
+                                                options={weeks.map(w => {
+                                                    const todayStr = new Date().toISOString().split('T')[0];
+                                                    const isCurrent = todayStr >= w.start && todayStr <= w.end;
+                                                    return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
+                                                })}
+                                                value={selectedWeek}
+                                                onChange={setSelectedWeek}
+                                                disabled={loading && weeks.length === 0}
+                                            />
+                                        )}
+                                    </Flex>
+                                </Col>
+                            </Row>
+                        )}
                     </Card>
                 </Col>
             </Row>

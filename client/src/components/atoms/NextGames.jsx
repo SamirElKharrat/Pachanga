@@ -1,4 +1,4 @@
-import { Skeleton, Typography, Avatar, theme, Card, Space, Divider } from 'antd';
+import { Skeleton, Typography, Avatar, theme, Card, Space, Divider, Flex } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -50,6 +50,15 @@ const NextGames = () => {
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
+    
+    // State to detect mobile devices responsively
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -141,6 +150,74 @@ const NextGames = () => {
                         ? { label: 'EN VIVO', time: '--:--', color: '#10b981' }
                         : getMatchTimeInfo(match.date);
                     
+                    if (isMobile) {
+                        // Mobile View: Stacked compact matchups
+                        return (
+                            <Card
+                                key={match.id}
+                                hoverable
+                                onClick={() => {
+                                    if (isLive) {
+                                        window.open('https://www.twitch.tv/caedrel', '_blank');
+                                    } else {
+                                        nav('/predictions/');
+                                    }
+                                }}
+                                styles={{ body: { padding: '10px 14px' } }}
+                                style={{
+                                    background: 'rgba(30, 41, 59, 0.4)',
+                                    border: `1px solid ${token.colorBorder}`,
+                                    borderLeft: `3px solid ${timeInfo.color}`,
+                                    borderRadius: 12,
+                                    flexShrink: 0,
+                                    minWidth: 200,
+                                }}
+                            >
+                                <Space size={12} align="center">
+                                    {/* Left Col: Badge status / time */}
+                                    <Space direction="vertical" size={2} align="center" style={{ minWidth: 52 }}>
+                                        <Text style={{
+                                            fontSize: 9,
+                                            fontWeight: 800,
+                                            color: timeInfo.color,
+                                            letterSpacing: '0.05em',
+                                            lineHeight: 1
+                                        }}>
+                                            {timeInfo.label}
+                                        </Text>
+                                        <Text style={{
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            color: isLive ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
+                                            lineHeight: 1.2
+                                        }}>
+                                            {timeInfo.time}
+                                        </Text>
+                                    </Space>
+
+                                    <Divider type="vertical" style={{ borderColor: 'rgba(255, 255, 255, 0.1)', height: 36, margin: 0 }} />
+
+                                    {/* Right Col: Stacked Teams */}
+                                    <Flex vertical gap={4} style={{ minWidth: 95 }}>
+                                        <Flex align="center" gap={6}>
+                                            <Avatar src={match.Teams?.[0]?.logo_url} size={16} shape="square" style={{ background: 'transparent' }} />
+                                            <Text strong style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.9)', maxWidth: 75 }} ellipsis>
+                                                {match.Teams?.[0]?.name}
+                                            </Text>
+                                        </Flex>
+                                        <Flex align="center" gap={6}>
+                                            <Avatar src={match.Teams?.[1]?.logo_url} size={16} shape="square" style={{ background: 'transparent' }} />
+                                            <Text strong style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.9)', maxWidth: 75 }} ellipsis>
+                                                {match.Teams?.[1]?.name}
+                                            </Text>
+                                        </Flex>
+                                    </Flex>
+                                </Space>
+                            </Card>
+                        );
+                    }
+
+                    // Desktop View: Horizontal Match Layout
                     return (
                         <Card
                             key={match.id}

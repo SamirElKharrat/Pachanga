@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton, Modal, Flex } from 'antd';
-import { UserOutlined, FilterOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, Row, Col, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton, Modal, Flex, theme } from 'antd';
+import { UserOutlined, FilterOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHomeData } from '../../hooks/useHomeData';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
@@ -141,46 +141,62 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
 function MobileMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
+    const { token } = theme.useToken();
     return (
-        <Flex vertical gap={16} style={{ marginBottom: 32 }}>
+        <Flex vertical gap={8} style={{ marginBottom: 24 }}>
             {/* User header for mobile block */}
-            <Space align="center" size={10} style={{ padding: '0 4px 8px' }}>
-                <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={28} style={{ border: isCurrent ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)' }} />
+            <Space align="center" size={10} style={{ padding: '0 4px 4px' }}>
+                <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={26} style={{ border: isCurrent ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)' }} />
                 <Text strong style={{ fontSize: 13, color: isCurrent ? '#3b82f6' : 'inherit' }}>{participation.User?.username}</Text>
             </Space>
 
             {matchGroup.map(match => {
                 const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
                 const c = STATUS_COLORS[status];
+                
+                const name1 = match.Teams?.[0]?.name;
+                const name2 = match.Teams?.[1]?.name;
+                const shortLabel = `${name1 && name1.length > 4 ? name1.substring(0, 3).toUpperCase() : name1} vs ${name2 && name2.length > 4 ? name2.substring(0, 3).toUpperCase() : name2}`;
+
                 return (
-                    <Card key={match.id}
-                        styles={{ body: { padding: 0 } }}
+                    <Flex 
+                        key={match.id}
+                        align="center" 
+                        justify="space-between" 
                         style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: 14,
-                            overflow: 'hidden'
+                            padding: '8px 12px',
+                            background: c.bg,
+                            border: `1px solid ${c.border}`,
+                            borderRadius: 12,
+                            minHeight: 40
                         }}
                     >
-                        <Flex align="center" justify="center" style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)' }}>
-                            <Space align="center" size={6}>
-                                <Avatar src={match.Teams[0]?.logo_url} shape="square" size={20} style={{ borderRadius: 4 }} />
-                                <Text type="secondary" style={{ fontSize: 8, fontWeight: 900, opacity: 0.3, margin: '0 8px' }}>VS</Text>
-                                <Avatar src={match.Teams[1]?.logo_url} shape="square" size={20} style={{ borderRadius: 4 }} />
-                            </Space>
+                        {/* Left side: The Matchup (compact logos + text) */}
+                        <Flex align="center" gap={8}>
+                            <Avatar src={match.Teams?.[0]?.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
+                            <Text type="secondary" style={{ fontSize: 9, fontWeight: 900, opacity: 0.3 }}>VS</Text>
+                            <Avatar src={match.Teams?.[1]?.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
+                            <Text strong style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', marginLeft: 2 }}>
+                                {shortLabel}
+                            </Text>
                         </Flex>
 
-                        <Flex align="center" justify="center" gap={10} style={{ padding: '10px 16px', background: c.bg, borderTop: `1px solid ${c.border}` }}>
+                        {/* Right side: The Prediction status */}
+                        <Flex align="center" gap={8}>
                             {predictedTeam ? (
-                                <>
-                                    <Avatar src={predictedTeam.logo_url} shape="square" size={24} style={{ borderRadius: 5 }} />
-                                    {pred?.description && <Text style={{ fontSize: 13, color: c.text, fontWeight: 700 }}>{pred.description}</Text>}
-                                </>
+                                <Flex align="center" gap={6}>
+                                    <Avatar src={predictedTeam.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
+                                    {pred?.description && (
+                                        <Text strong style={{ fontSize: 12, color: c.text, fontWeight: 800 }}>
+                                            {pred.description}
+                                        </Text>
+                                    )}
+                                </Flex>
                             ) : (
-                                <Text type="secondary" style={{ fontSize: 14 }}>Sin predicción</Text>
+                                <Text type="secondary" style={{ fontSize: 11, opacity: 0.5 }}>—</Text>
                             )}
                         </Flex>
-                    </Card>
+                    </Flex>
                 );
             })}
         </Flex>
@@ -212,6 +228,7 @@ function Home() {
     const location = useLocation();
     const nav = useNavigate();
     const { getAvatarSrc } = useAppTheme();
+    const { token } = theme.useToken();
 
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(location.state?.leagueId || null);
@@ -219,8 +236,14 @@ function Home() {
     const [selectedParticipants, setSelectedParticipants] = useState([]);
     const [showCelebration, setShowCelebration] = useState(true);
     const [rulesModalVisible, setRulesModalVisible] = useState(false);
+    
+    // State to collapse/expand filter selection panel
+    const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
+        return localStorage.getItem('pachanga_filters_collapsed') === 'true';
+    });
+    
     // Ref to track which league the current `weeks` array belongs to
-    const weeksLeagueRef = React.useRef(null);
+    const weeksLeagueRef = useRef(null);
 
     const {
         leagues,
@@ -368,18 +391,34 @@ function Home() {
                 }
             `}</style>
 
-            {/* ── Selectors ── */}
+            {/* ── Collapsible selectors card ── */}
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-                <Col xs={24}>
-                    <YearFilter
-                        leagues={leagues}
-                        selectedYear={selectedYear}
-                        onYearChange={handleYearChange}
-                    />
-                </Col>
                 <Col xs={24}>
                     <Card
                         className="selectors-card"
+                        title={
+                            <Space size={8}>
+                                <FilterOutlined style={{ color: token.colorPrimary }} />
+                                <span style={{ fontSize: 13, fontWeight: 700 }}>Filtros de Competición</span>
+                            </Space>
+                        }
+                        extra={
+                            <Button 
+                                type="text" 
+                                size="small" 
+                                onClick={() => {
+                                    setFiltersCollapsed(prev => {
+                                        const next = !prev;
+                                        localStorage.setItem('pachanga_filters_collapsed', String(next));
+                                        return next;
+                                    });
+                                }}
+                                icon={filtersCollapsed ? <DownOutlined /> : <UpOutlined />}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                            >
+                                {filtersCollapsed ? 'Mostrar' : 'Ocultar'}
+                            </Button>
+                        }
                         style={{
                             background: 'rgba(255, 255, 255, 0.02)',
                             border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -387,35 +426,68 @@ function Home() {
                             marginBottom: 0
                         }}
                     >
-                        {/* LIGA SELECCIONADA */}
-                        <Flex vertical style={{ marginBottom: 20 }}>
-                            <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
-                            {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
-                                <SegmentedControl 
-                                    options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
-                                    value={selectedLeague}
-                                    onChange={handleLeagueChange}
-                                    disabled={loading && leagues.length === 0}
-                                />
-                            )}
-                        </Flex>
+                        {filtersCollapsed ? (
+                            <Space split={<span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Año: <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedYear || 'Todos'}</span>
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Liga: <span style={{ color: token.colorText, fontWeight: 600 }}>{leagues.find(l => l.id === selectedLeague)?.name || 'Ninguna'}</span>
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Semana: <span style={{ color: token.colorText, fontWeight: 600 }}>{weeks.find(w => w.id === selectedWeek)?.name || 'Ninguna'}</span>
+                                </Text>
+                            </Space>
+                        ) : (
+                            <Row gutter={[16, 16]}>
+                                {/* AÑO (Restored custom YearFilter) */}
+                                <Col xs={24}>
+                                    <YearFilter
+                                        leagues={leagues}
+                                        selectedYear={selectedYear}
+                                        onYearChange={handleYearChange}
+                                    />
+                                </Col>
 
-                        {/* SEMANA */}
-                        <Flex vertical>
-                            <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Semana</Text>
-                            {loading && weeks.length === 0 ? <Skeleton.Button active /> : (
-                                <SegmentedControl 
-                                    options={weeks.map(w => {
-                                        const todayStr = new Date().toISOString().split('T')[0];
-                                        const isCurrent = todayStr >= w.start && todayStr <= w.end;
-                                        return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
-                                    })}
-                                    value={selectedWeek}
-                                    onChange={setSelectedWeek}
-                                    disabled={loading && weeks.length === 0}
-                                />
-                            )}
-                        </Flex>
+                                {/* LIGA SELECCIONADA */}
+                                <Col xs={24}>
+                                    <Flex vertical gap={8}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                                        {loading && leagues.length === 0 ? (
+                                            <Skeleton.Button active block style={{ height: 32 }} />
+                                        ) : (
+                                            <SegmentedControl 
+                                                options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
+                                                value={selectedLeague}
+                                                onChange={handleLeagueChange}
+                                                disabled={loading && leagues.length === 0}
+                                            />
+                                        )}
+                                    </Flex>
+                                </Col>
+
+                                {/* SEMANA */}
+                                <Col xs={24}>
+                                    <Flex vertical gap={8}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Semana</Text>
+                                        {loading && weeks.length === 0 ? (
+                                            <Skeleton.Button active block style={{ height: 32 }} />
+                                        ) : (
+                                            <SegmentedControl 
+                                                options={weeks.map(w => {
+                                                    const todayStr = new Date().toISOString().split('T')[0];
+                                                    const isCurrent = todayStr >= w.start && todayStr <= w.end;
+                                                    return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
+                                                })}
+                                                value={selectedWeek}
+                                                onChange={setSelectedWeek}
+                                                disabled={loading && weeks.length === 0}
+                                            />
+                                        )}
+                                    </Flex>
+                                </Col>
+                            </Row>
+                        )}
                     </Card>
                 </Col>
             </Row>
@@ -555,18 +627,6 @@ function Home() {
                                                         )}
                                                     </Flex>
                                                     <Tag color="gold" style={{ margin: 0 }}>{item.points} pts</Tag>
-                                                    {/* Checkmark indicator */}
-                                                    {(isSelected || isCurrent) && (
-                                                        <span style={{ 
-                                                            color: isCurrent ? '#3b82f6' : '#10b981', 
-                                                            fontWeight: 800, 
-                                                            fontSize: 14, 
-                                                            marginLeft: 4,
-                                                            flexShrink: 0
-                                                        }}>
-                                                            ✓
-                                                        </span>
-                                                    )}
                                                 </Flex>
                                             </List.Item>
                                         );
