@@ -89,17 +89,6 @@ const IsGuilleWinning = () => {
     }
     return (
         <Flex vertical align="center" justify="center" style={{ height: '80vh', padding: 24, textAlign: 'center' }}>
-            <Text style={{
-                textTransform: 'uppercase',
-                letterSpacing: 4,
-                opacity: 0.5,
-                fontSize: 14,
-                fontWeight: 700,
-                marginBottom: 16
-            }}>
-                ¿Está ganando Guille?
-            </Text>
-
             <Title
                 style={{
                     fontSize: 'clamp(80px, 15vw, 180px)',
@@ -111,17 +100,6 @@ const IsGuilleWinning = () => {
             >
                 {isWinning}
             </Title>
-
-            <Flex style={{ marginTop: 40 }}>
-                <Text type="secondary" style={{
-                    fontSize: 18,
-                    fontWeight: 500
-                }}>
-                    {isWinning === 'SÍ'
-                        ? "El orden natural de las cosas se mantiene."
-                        : "Algo no va bien en la simulación."}
-                </Text>
-            </Flex>
         </Flex>
     );
 };
