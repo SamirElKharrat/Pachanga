@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, Space, Tag, Card, Typography, Image } from 'antd';
-import { CalendarOutlined } from '@ant-design/icons';
+import { Button, Space, Tag, Card, Typography, Image, theme, Flex } from 'antd';
+import { CalendarOutlined, ArrowRightOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -27,60 +27,131 @@ const CardInfo = ({
     onAction,
     actionText
 }) => {
+    const { token } = theme.useToken();
+    
+    // Check if the current theme is light based on the base background token
+    const isLight = token.colorBgBase === '#f8fafc';
+
     return (
         <Card
             hoverable
-            className="shadow-sm h-100"
+            style={{
+                height: '100%',
+                background: `linear-gradient(135deg, ${token.colorBgContainer}B3 0%, ${token.colorBgBase}CC 100%)`,
+                backdropFilter: 'blur(8px)',
+                border: `1px solid ${token.colorBorderSecondary}66`,
+                borderRadius: `${token.borderRadius * 2}px`,
+                boxShadow: token.boxShadowTertiary || `0 8px 32px 0 ${isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.3)'}`,
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column'
+            }}
             styles={{
                 body: { 
-                    height: '100%', 
+                    flex: 1,
                     display: 'flex', 
                     flexDirection: 'column',
-                    padding: '24px'
+                    padding: '20px',
+                    justifyContent: 'space-between'
                 }
             }}
         >
-            {image && (
-                <div className="text-center mb-4" style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Image
-                        src={image}
-                        alt={title}
-                        preview={false}
-                        style={{ maxHeight: 100, width: 'auto', objectFit: 'contain' }}
-                    />
-                </div>
-            )}
-
-            <div style={{ flexGrow: 1 }}>
-                <Title level={4} className="mb-2">{title}</Title>
-                {type && <Text type="secondary" className="d-block mb-3">{type}</Text>}
-
-                {date?.dates?.length > 0 && (
-                    <div className="mb-3">
-                        <Space wrap size={[8, 8]}>
-                            <CalendarOutlined className="text-primary" />
-                            {date.dates.map((d, i) => (
-                                <Tag key={i} color="blue" bordered={false}>
-                                    {new Date(d).toLocaleDateString('es-ES', {
-                                        day: '2-digit',
-                                        month: 'short',
-                                        year: 'numeric'
-                                    })}
-                                </Tag>
-                            ))}
-                        </Space>
-                    </div>
+            <Flex vertical>
+                {image && (
+                    <Flex
+                        align="center"
+                        justify="center"
+                        style={{
+                            background: token.colorFillAlter || 'rgba(0, 0, 0, 0.02)',
+                            borderRadius: `${token.borderRadiusLG || token.borderRadius}px`,
+                            padding: '16px',
+                            height: '120px',
+                            marginBottom: '16px',
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                            boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.02)',
+                        }}
+                    >
+                        <Image
+                            src={image}
+                            alt={title}
+                            preview={false}
+                            style={{ 
+                                maxHeight: '88px', 
+                                maxWidth: '100%', 
+                                objectFit: 'contain',
+                                filter: isLight 
+                                    ? 'drop-shadow(0 0 8px rgba(0, 0, 0, 0.08))' 
+                                    : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.15))'
+                            }}
+                        />
+                    </Flex>
                 )}
 
-                {description && <Paragraph type="secondary" ellipsis={{ rows: 3 }}>{description}</Paragraph>}
-            </div>
+                <Flex vertical gap={6} style={{ marginBottom: '16px' }}>
+                    <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>
+                        {title}
+                    </Title>
+                    {type && (
+                        <Text type="secondary" style={{ display: 'block', fontSize: '13px' }}>
+                            {type}
+                        </Text>
+                    )}
+
+                    {date?.dates?.length > 0 && (
+                        <Flex gap={8} align="start" style={{ margin: '6px 0 10px 0' }}>
+                            <CalendarOutlined style={{ color: token.colorPrimary, fontSize: '14px', marginTop: '4px', flexShrink: 0 }} />
+                            <Space size={[6, 6]} wrap>
+                                {date.dates.map((d, i) => (
+                                    <Tag 
+                                        key={i} 
+                                        color="processing"
+                                        bordered={false}
+                                        style={{
+                                            margin: 0,
+                                            fontSize: '12px',
+                                            fontWeight: 500,
+                                            borderRadius: `${Math.round(token.borderRadius / 1.3)}px`
+                                        }}
+                                    >
+                                        {new Date(d).toLocaleDateString('es-ES', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric'
+                                        })}
+                                    </Tag>
+                                ))}
+                            </Space>
+                        </Flex>
+                    )}
+
+                    {description && (
+                        <Paragraph type="secondary" style={{ fontSize: '13px', lineHeight: 1.5, margin: 0 }} ellipsis={{ rows: 3 }}>
+                            {description}
+                        </Paragraph>
+                    )}
+                </Flex>
+            </Flex>
 
             {onAction && (
-                <div className="mt-4">
-                    <Button type="primary" size="large" onClick={onAction} block>
+                <Flex style={{ marginTop: 'auto', paddingTop: '12px' }}>
+                    <Button 
+                        type="primary" 
+                        size="large" 
+                        onClick={onAction} 
+                        block
+                        style={{
+                            height: '40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: `0 4px 12px ${token.colorPrimary}4D`
+                        }}
+                        icon={<ArrowRightOutlined />}
+                    >
                         {actionText}
                     </Button>
-                </div>
+                </Flex>
             )}
         </Card>
     );

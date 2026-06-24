@@ -22,6 +22,21 @@ const RESULT_OPTIONS = {
 };
 
 /**
+ * Helper to parse dates that might come formatted as "DD-MM-YYYY HH:mm"
+ * back into ISO format for dayjs to read safely.
+ */
+const parseFriendlyDate = (dateStr) => {
+    if (!dateStr) return null;
+    const regex = /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/;
+    const match = dateStr.match(regex);
+    if (match) {
+        const [, day, month, year, hour, minute] = match;
+        return `${year}-${month}-${day}T${hour}:${minute}:00`;
+    }
+    return dateStr;
+};
+
+/**
  * A dynamic form for admin CRUD operations.
  */
 const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCount, selectData }) => {
@@ -37,12 +52,25 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
             const formattedRecord = { ...record[0] };
             Object.keys(formattedRecord).forEach(key => {
                 if (key.endsWith('_date') || key.includes('date')) {
-                    formattedRecord[key] = formattedRecord[key] ? dayjs(formattedRecord[key]) : null;
+                    const parsed = parseFriendlyDate(formattedRecord[key]);
+                    formattedRecord[key] = parsed ? dayjs(parsed) : null;
+                }
+
+                // Format string URLs for file uploads (e.g. logo_url) into the array format required by AntD Upload
+                const fieldIndex = names.indexOf(key);
+                if (fieldIndex !== -1 && fields[fieldIndex] === 'file' && typeof formattedRecord[key] === 'string' && formattedRecord[key]) {
+                    const url = formattedRecord[key];
+                    formattedRecord[key] = [{
+                        uid: '-1',
+                        name: url.substring(url.lastIndexOf('/') + 1) || 'logo',
+                        status: 'done',
+                        url: url
+                    }];
                 }
             });
             form.setFieldsValue(formattedRecord);
         }
-    }, [record, form]);
+    }, [record, form, names, fields]);
 
     const normFile = (e) => (Array.isArray(e) ? e : e?.fileList);
 
@@ -179,9 +207,14 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 return (
                     <Form.Item {...commonProps} valuePropName="fileList" getValueFromEvent={normFile}>
                         <Upload listType="picture-card" maxCount={1} beforeUpload={() => false} accept="image/*">
-                            {fileList.length < 1 && (
-                                <div><PlusOutlined /><div style={{ marginTop: 8 }}>Subir</div></div>
-                            )}
+                            <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues[name] !== currentValues[name]}>
+                                {({ getFieldValue }) => {
+                                    const list = getFieldValue(name) || [];
+                                    return list.length < 1 ? (
+                                        <div><PlusOutlined /><div style={{ marginTop: 8 }}>Subir</div></div>
+                                    ) : null;
+                                }}
+                            </Form.Item>
                         </Upload>
                     </Form.Item>
                 );

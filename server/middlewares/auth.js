@@ -5,7 +5,7 @@ require('dotenv').config();
 //Check if the user is authenticated
 const authenticateJwtToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; //Get the token from the header
+    const token = req.cookies.token || (authHeader && authHeader.split(' ')[1]); //Get the token from cookie or header
     if (!token) {
         return res.status(401).json({ message: 'Authentication required' });
     }

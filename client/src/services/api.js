@@ -6,35 +6,35 @@ import axios from 'axios';
  */
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Configure Axios to always send cookies for cross-origin requests
+axios.defaults.withCredentials = true;
+
 export const API = {
 
     /**
-     * Stores the authentication token in local storage.
+     * Stores the authentication token (Obsolete with HTTP-only cookies).
      * @param {string} token - The JWT token to store.
      */
     setToken(token) {
-        localStorage.setItem('token', token);
+        // Obsolete: Cookie is managed automatically by the browser
     },
 
     /**
-     * Retrieves the authentication token from local storage.
-     * @returns {string|null} The stored token or null if not found.
+     * Retrieves the authentication token (Obsolete with HTTP-only cookies).
+     * @returns {null} Always returns null.
      */
     getToken() {
-        return localStorage.getItem('token');
+        // Obsolete: Cookie is managed automatically by the browser
+        return null;
     },
 
     /**
-     * Fetches the current user profile using the stored token.
+     * Fetches the current user profile using the session cookie.
      * @returns {Promise<Object>} The user profile data.
      * @throws {Error} If the request fails.
      */
     async getUserByToken() {
-        const response = await axios.get(`${API_URL}/users/getToken`, {
-            headers: {
-                Authorization: `Bearer ${this.getToken()}`,
-            },
-        });
+        const response = await axios.get(`${API_URL}/users/getToken`);
         return response.data;
     },
 
@@ -44,11 +44,7 @@ export const API = {
      * @returns {Promise<any>} The response data.
      */
     async get(url) {
-        const response = await axios.get(`${API_URL}${url}`, {
-            headers: {
-                Authorization: `Bearer ${this.getToken()}`,
-            },
-        });
+        const response = await axios.get(`${API_URL}${url}`);
         return response.data;
     },
 
@@ -59,11 +55,7 @@ export const API = {
      * @returns {Promise<any>} The response data.
      */
     async post(url, data) {
-        const response = await axios.post(`${API_URL}${url}`, data, {
-            headers: {
-                Authorization: `Bearer ${this.getToken()}`,
-            },
-        });
+        const response = await axios.post(`${API_URL}${url}`, data);
         return response.data;
     },
 
@@ -74,11 +66,7 @@ export const API = {
      * @returns {Promise<any>} The updated response data.
      */
     async put(url, data) {
-        const response = await axios.put(`${API_URL}${url}`, data, {
-            headers: {
-                Authorization: `Bearer ${this.getToken()}`,
-            },
-        });
+        const response = await axios.put(`${API_URL}${url}`, data);
         return response.data;
     },
 
@@ -88,11 +76,7 @@ export const API = {
      * @returns {Promise<any>} The response confirmation.
      */
     async delete(url) {
-        const response = await axios.delete(`${API_URL}${url}`, {
-            headers: {
-                Authorization: `Bearer ${this.getToken()}`,
-            },
-        });
+        const response = await axios.delete(`${API_URL}${url}`);
         return response.data;
     },
 }

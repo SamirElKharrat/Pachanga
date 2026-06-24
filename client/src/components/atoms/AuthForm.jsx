@@ -1,4 +1,4 @@
-import { Card, Form, Input, Button, Typography, Image, Space, theme } from 'antd';
+import { Card, Form, Input, Button, Typography, Image, Space, theme, Checkbox } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { API } from '../../services/api';
@@ -43,8 +43,6 @@ const AuthForm = ({ method }) => {
                 showAlert('error', data.error);
                 return;
             }
-
-            API.setToken(data.token);
 
             if (isRegister) {
                 showAlert('success', '¡Registro completado! Ahora puedes iniciar sesión.');
@@ -146,6 +144,12 @@ const AuthForm = ({ method }) => {
                             placeholder="••••••••"
                         />
                     </Form.Item>
+
+                    {!isRegister && (
+                        <Form.Item name="keepSession" valuePropName="checked" style={{ marginBottom: 16 }}>
+                            <Checkbox style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Mantener sesión iniciada</Checkbox>
+                        </Form.Item>
+                    )}
 
                     <Form.Item className="mt-4">
                         <Button

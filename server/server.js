@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const { Sequelize } = require('sequelize');
 const config = require('./config/config');
 const db = require('./config/configdb');
@@ -30,7 +31,11 @@ const sequelize = new Sequelize(
 );
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://pachanga.lol'],
+    credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Relaciones

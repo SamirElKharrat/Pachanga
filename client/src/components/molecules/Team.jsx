@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { API } from '../../services/api';
-import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Space, Divider } from 'antd';
+import { Card, Row, Col, Image, Select, Button, Typography, Empty, Skeleton, Space, Divider, Avatar, Flex } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { TrophyOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons';
+import YearFilter from '../atoms/YearFilter';
+import SegmentedControl from '../atoms/SegmentedControl';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 
@@ -14,9 +17,11 @@ const { Title, Text } = Typography;
 export default function Team() {
     const [teams, setTeams] = useState([]);
     const [leagues, setLeagues] = useState([]);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const { isLightMode } = useTheme();
 
     /**
      * Fetches leagues and teams data.
@@ -52,9 +57,24 @@ export default function Team() {
         fetchData();
     }, [selectedLeague]);
 
+    const filteredLeagues = selectedYear
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
+        : leagues;
+
+    // Auto-select first league when year changes and current selection is outside filtered set
+    useEffect(() => {
+        if (filteredLeagues.length > 0 && selectedLeague && !filteredLeagues.find(l => l.id === selectedLeague)) {
+            setSelectedLeague(filteredLeagues[0].id);
+        }
+    }, [filteredLeagues]);
+
+    const handleYearChange = (year) => {
+        setSelectedYear(year);
+    };
+
     if (!loading && leagues.length === 0) {
         return (
-            <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+            <Flex vertical align="center" justify="center" style={{ minHeight: '60vh' }}>
                 <Empty
                     description={
                         <Space direction="vertical">
@@ -67,21 +87,42 @@ export default function Team() {
                         Buscar Ligas
                     </Button>
                 </Empty>
-            </div>
+            </Flex>
         );
     }
 
     return (
-        <div className="p-3">
-            <Title level={2} className="mb-4">Equipos de la Liga</Title>
+        <Flex vertical style={{ padding: 12 }}>
+            <Title level={2} style={{ marginBottom: 16 }}>Equipos de la Liga</Title>
 
-            <Select
-                placeholder="Selecciona una liga"
-                options={leagues.map(l => ({ label: l.name, value: l.id }))}
-                value={selectedLeague}
-                onChange={setSelectedLeague}
-                style={{ width: '100%', maxWidth: 300, marginBottom: 24 }}
+            <YearFilter
+                leagues={leagues}
+                selectedYear={selectedYear}
+                onYearChange={handleYearChange}
             />
+            <Card
+                className="selectors-card"
+                style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: 16,
+                    marginBottom: 24,
+                    marginTop: 16
+                }}
+                styles={{ body: { padding: '16px 20px' } }}
+            >
+                <Flex vertical>
+                    <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                    {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
+                        <SegmentedControl 
+                            options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
+                            value={selectedLeague}
+                            onChange={setSelectedLeague}
+                            disabled={loading && leagues.length === 0}
+                        />
+                    )}
+                </Flex>
+            </Card>
 
             <Divider />
 
@@ -103,15 +144,20 @@ export default function Team() {
                                 hoverable
                                 className="shadow-sm h-100 text-center"
                                 cover={
-                                    <div className="p-4 d-flex justify-content-center align-items-center" style={{ height: 160, background: 'rgba(255,255,255,0.02)' }}>
+                                    <Flex align="center" justify="center" style={{ height: 160, padding: 16, background: 'rgba(255,255,255,0.02)' }}>
                                         <Image
                                             src={team.logo_url}
                                             alt={team.name}
-                                            style={{ maxWidth: 120, maxHeight: 120, objectFit: 'contain' }}
+                                            style={{ 
+                                                maxWidth: 120, 
+                                                maxHeight: 120, 
+                                                objectFit: 'contain',
+                                                filter: isLightMode ? 'none' : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.15))'
+                                            }}
                                             preview={false}
                                             onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
                                         />
-                                    </div>
+                                    </Flex>
                                 }
                             >
                                 <Card.Meta
@@ -133,6 +179,6 @@ export default function Team() {
             ) : (
                 <Empty description="No se encontraron equipos para esta liga." />
             )}
-        </div>
+        </Flex>
     );
 }

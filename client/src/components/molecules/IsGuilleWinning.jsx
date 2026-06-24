@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Spin, Empty, Card } from 'antd';
+import { Typography, Spin, Empty, Card, Flex } from 'antd';
 import { API } from '../../services/api';
 import { ThunderboltOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
@@ -23,10 +23,25 @@ const IsGuilleWinning = () => {
                     return;
                 }
 
-                // Sort leagues by start_date descending to get the most recent one
-                const sortedLeagues = [...leagues].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                const currentLeague = sortedLeagues[0];
-                console.log('League checked:', currentLeague?.name);
+                // Get the most recent live league
+                const liveLeagues = leagues
+                    .filter(l => l.status === 'live')
+                    .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                let currentLeague = liveLeagues[0];
+
+                // Fallback to the most recent finished league if no live league exists
+                if (!currentLeague) {
+                    const finishedLeagues = leagues
+                        .filter(l => l.status === 'finished')
+                        .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                    currentLeague = finishedLeagues[0];
+                }
+
+                // Ultimate fallback to the overall most recent league (e.g. scheduled)
+                if (!currentLeague) {
+                    const sortedLeagues = [...leagues].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                    currentLeague = sortedLeagues[0];
+                }
 
                 // 2. Get participants and their points for this league
                 const participants = await API.get(`/leagueParticipations/get/participants/${currentLeague.id}`);
@@ -58,30 +73,22 @@ const IsGuilleWinning = () => {
 
     if (loading) {
         return (
-            <div style={{ height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+            <Flex vertical align="center" justify="center" gap={16} style={{ height: '70vh' }}>
                 <Spin size="large" />
                 <Text type="secondary">Calculando el destino de Guille...</Text>
-            </div>
+            </Flex>
         );
     }
 
     if (error) {
         return (
-            <div style={{ padding: 40, textAlign: 'center' }}>
+            <Flex align="center" justify="center" style={{ padding: 40 }}>
                 <Empty description={error} />
-            </div>
+            </Flex>
         );
     }
     return (
-        <div style={{
-            height: '80vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-            padding: 24,
-            textAlign: 'center'
-        }}>
+        <Flex vertical align="center" justify="center" style={{ height: '80vh', padding: 24, textAlign: 'center' }}>
             <Text style={{
                 textTransform: 'uppercase',
                 letterSpacing: 4,
@@ -105,7 +112,7 @@ const IsGuilleWinning = () => {
                 {isWinning}
             </Title>
 
-            <div style={{ marginTop: 40 }}>
+            <Flex style={{ marginTop: 40 }}>
                 <Text type="secondary" style={{
                     fontSize: 18,
                     fontWeight: 500
@@ -114,8 +121,8 @@ const IsGuilleWinning = () => {
                         ? "El orden natural de las cosas se mantiene."
                         : "Algo no va bien en la simulación."}
                 </Text>
-            </div>
-        </div>
+            </Flex>
+        </Flex>
     );
 };
 

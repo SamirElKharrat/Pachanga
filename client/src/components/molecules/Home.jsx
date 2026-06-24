@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Select, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton } from 'antd';
-import { UserOutlined, FilterOutlined } from '@ant-design/icons';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card, Row, Col, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton, Modal, Flex, theme } from 'antd';
+import { UserOutlined, FilterOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useHomeData } from '../../hooks/useHomeData';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
+import YearFilter from '../atoms/YearFilter';
+import WinnerCelebration from '../atoms/WinnerCelebration';
+import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
+import SegmentedControl from '../atoms/SegmentedControl';
 
 const { Text } = Typography;
 
@@ -42,20 +46,13 @@ function getPredInfo(match, participation, predictions, results) {
 }
 
 // ── Desktop: user-centric 6x6 grid of cards ──────────────────────────────────
-// ── Desktop: single user row with 6-column wrapping grid ──────────────────────
 function DesktopMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
     return (
-        <div style={{ position: 'relative' }}>
+        <Flex vertical gap="middle" style={{ position: 'relative' }}>
             {/* User Header */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                marginBottom: 12,
-                paddingLeft: 4
-            }}>
+            <Space align="center" size={10} style={{ paddingLeft: 4 }}>
                 <Avatar
                     src={getAvatarSrc(participation.User?.logo_url)}
                     icon={<UserOutlined />}
@@ -73,42 +70,50 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                 }}>
                     {participation.User?.username} {isCurrent && '(Tú)'}
                 </Text>
-            </div>
+            </Space>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
-                gap: 10
-            }}>
+            <Flex
+                wrap="wrap"
+                gap={10}
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))'
+                }}
+            >
                 {matchGroup.map(match => {
                     const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
                     const c = STATUS_COLORS[status];
 
                     return (
-                        <div key={match.id}
+                        <Card 
+                            key={match.id}
+                            styles={{
+                                body: {
+                                    padding: '8px 4px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 4,
+                                    minHeight: 100
+                                }
+                            }}
                             style={{
                                 background: c.bg,
                                 border: `1px solid ${c.border}`,
                                 borderRadius: 10,
-                                padding: '8px 4px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 4,
-                                transition: 'all 0.2s ease',
-                                minHeight: 100,
                                 boxShadow: '0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                transition: 'all 0.2s ease',
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                            <Flex align="center" gap={4} style={{ marginBottom: 2 }}>
                                 <Avatar src={match.Teams?.[0]?.logo_url} shape="square" size={12} style={{ borderRadius: 2 }} />
                                 <Text type="secondary" style={{ fontSize: 7, fontWeight: 800, opacity: 0.5 }}>VS</Text>
                                 <Avatar src={match.Teams?.[1]?.logo_url} shape="square" size={12} style={{ borderRadius: 2 }} />
-                            </div>
+                            </Flex>
 
                             {predictedTeam ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                <Flex vertical align="center" gap={3}>
                                     <Avatar
                                         src={predictedTeam.logo_url}
                                         shape="square"
@@ -120,63 +125,81 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                                             {pred.description}
                                         </Text>
                                     )}
-                                </div>
+                                </Flex>
                             ) : (
                                 <Text type="secondary" style={{ fontSize: 18, fontWeight: 300 }}>–</Text>
                             )}
-                        </div>
+                        </Card>
                     );
                 })}
-            </div>
-        </div>
+            </Flex>
+        </Flex>
     );
 }
 
-// ── Mobile: vertically stacked matches (No horizontal scroll) ────────────────
 // ── Mobile: vertically stacked matches for a single user ────────────────────
 function MobileMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
+    const { token } = theme.useToken();
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+        <Flex vertical gap={8} style={{ marginBottom: 24 }}>
             {/* User header for mobile block */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 4px 8px' }}>
-                <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={28} style={{ border: isCurrent ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)' }} />
+            <Space align="center" size={10} style={{ padding: '0 4px 4px' }}>
+                <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={26} style={{ border: isCurrent ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)' }} />
                 <Text strong style={{ fontSize: 13, color: isCurrent ? '#3b82f6' : 'inherit' }}>{participation.User?.username}</Text>
-            </div>
+            </Space>
 
             {matchGroup.map(match => {
                 const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
                 const c = STATUS_COLORS[status];
-                return (
-                    <div key={match.id} style={{
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 14,
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 16px', background: 'rgba(255,255,255,0.05)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <Avatar src={match.Teams[0]?.logo_url} shape="square" size={20} style={{ borderRadius: 4 }} />
-                                <Text type="secondary" style={{ fontSize: 8, fontWeight: 900, opacity: 0.3, margin: '0 8px' }}>VS</Text>
-                                <Avatar src={match.Teams[1]?.logo_url} shape="square" size={20} style={{ borderRadius: 4 }} />
-                            </div>
-                        </div>
+                
+                const name1 = match.Teams?.[0]?.name;
+                const name2 = match.Teams?.[1]?.name;
+                const shortLabel = `${name1 && name1.length > 4 ? name1.substring(0, 3).toUpperCase() : name1} vs ${name2 && name2.length > 4 ? name2.substring(0, 3).toUpperCase() : name2}`;
 
-                        <div style={{ padding: '10px 16px', background: c.bg, borderTop: `1px solid ${c.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                return (
+                    <Flex 
+                        key={match.id}
+                        align="center" 
+                        justify="space-between" 
+                        style={{
+                            padding: '8px 12px',
+                            background: c.bg,
+                            border: `1px solid ${c.border}`,
+                            borderRadius: 12,
+                            minHeight: 40
+                        }}
+                    >
+                        {/* Left side: The Matchup (compact logos + text) */}
+                        <Flex align="center" gap={8}>
+                            <Avatar src={match.Teams?.[0]?.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
+                            <Text type="secondary" style={{ fontSize: 9, fontWeight: 900, opacity: 0.3 }}>VS</Text>
+                            <Avatar src={match.Teams?.[1]?.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
+                            <Text strong style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', marginLeft: 2 }}>
+                                {shortLabel}
+                            </Text>
+                        </Flex>
+
+                        {/* Right side: The Prediction status */}
+                        <Flex align="center" gap={8}>
                             {predictedTeam ? (
-                                <>
-                                    <Avatar src={predictedTeam.logo_url} shape="square" size={24} style={{ borderRadius: 5 }} />
-                                    {pred?.description && <Text style={{ fontSize: 13, color: c.text, fontWeight: 700 }}>{pred.description}</Text>}
-                                </>
+                                <Flex align="center" gap={6}>
+                                    <Avatar src={predictedTeam.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
+                                    {pred?.description && (
+                                        <Text strong style={{ fontSize: 12, color: c.text, fontWeight: 800 }}>
+                                            {pred.description}
+                                        </Text>
+                                    )}
+                                </Flex>
                             ) : (
-                                <Text type="secondary" style={{ fontSize: 14 }}>Sin predicción</Text>
+                                <Text type="secondary" style={{ fontSize: 11, opacity: 0.5 }}>—</Text>
                             )}
-                        </div>
-                    </div>
+                        </Flex>
+                    </Flex>
                 );
             })}
-        </div>
+        </Flex>
     );
 }
 
@@ -192,27 +215,35 @@ function MatchGroupBlock(props) {
     return isMobile
         ? <MobileMatchGroupBlock {...props} />
         : (
-            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: '16px 20px', marginBottom: 24 }}>
+            <Card 
+                styles={{ body: { padding: '16px 20px' } }}
+                style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, marginBottom: 24 }}
+            >
                 <DesktopMatchGroupBlock {...props} />
-            </div>
+            </Card>
         );
 }
-
-
-
-
-
 
 function Home() {
     const location = useLocation();
     const nav = useNavigate();
     const { getAvatarSrc } = useAppTheme();
+    const { token } = theme.useToken();
 
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedLeague, setSelectedLeague] = useState(location.state?.leagueId || null);
     const [selectedWeek, setSelectedWeek] = useState(null);
-    const [filteredParticipants, setFilteredParticipants] = useState(null);
+    const [selectedParticipants, setSelectedParticipants] = useState([]);
+    const [showCelebration, setShowCelebration] = useState(true);
+    const [rulesModalVisible, setRulesModalVisible] = useState(false);
+    
+    // State to collapse/expand filter selection panel
+    const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
+        return localStorage.getItem('pachanga_filters_collapsed') === 'true';
+    });
+    
     // Ref to track which league the current `weeks` array belongs to
-    const weeksLeagueRef = React.useRef(null);
+    const weeksLeagueRef = useRef(null);
 
     const {
         leagues,
@@ -227,17 +258,25 @@ function Home() {
         currentUser,
     } = useHomeData(selectedLeague, selectedWeek);
 
+    const filteredLeagues = selectedYear
+        ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
+        : leagues;
+
     useEffect(() => {
-        if (leagues.length > 0 && selectedLeague === null) {
-            setSelectedLeague(leagues[0].id);
+        if (filteredLeagues.length > 0 && (selectedLeague === null || !filteredLeagues.find(l => l.id === selectedLeague))) {
+            setSelectedLeague(filteredLeagues[0].id);
         }
-    }, [leagues]);
+    }, [filteredLeagues]);
+
+    const handleYearChange = (year) => {
+        setSelectedYear(year);
+    };
 
     // Cuando cambie la liga, resetear la semana inmediatamente
     const handleLeagueChange = (val) => {
         setSelectedLeague(val);
         setSelectedWeek(null);
-        setFilteredParticipants(null);
+        setSelectedParticipants([]);
         weeksLeagueRef.current = null; // invalidate
     };
 
@@ -250,28 +289,29 @@ function Home() {
         weeksLeagueRef.current = selectedLeague;
         const todayStr = new Date().toISOString().split('T')[0];
         const currentWeek = weeks.find(w => todayStr >= w.start && todayStr <= w.end);
-        // Si hay semana actual -> esa. Si no -> la última semana disponible
-        setSelectedWeek(currentWeek ? currentWeek.id : weeks[weeks.length - 1].id);
+        if (currentWeek) {
+            setSelectedWeek(currentWeek.id);
+        } else {
+            // Si la liga no ha empezado aún (hoy es antes de la primera semana) -> Semana 1
+            if (todayStr < weeks[0].start) {
+                setSelectedWeek(weeks[0].id);
+            } else {
+                // Si la liga ya terminó (hoy es después del final) -> Última semana
+                setSelectedWeek(weeks[weeks.length - 1].id);
+            }
+        }
     }, [weeks]);
 
+
+
+    // Reset celebration state when selected league changes
     useEffect(() => {
-        if (participants.length > 0 && !filteredParticipants) {
-            setFilteredParticipants(participants);
-        }
-    }, [participants]);
+        setShowCelebration(true);
+    }, [selectedLeague]);
 
     if (!loading && leagues.length === 0) {
         return (
-            <div
-                style={{
-                    minHeight: '60vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 24,
-                }}
-            >
+            <Flex vertical align="center" justify="center" style={{ minHeight: '60vh', padding: 24 }}>
                 <Empty
                     description={
                         <Space direction="vertical">
@@ -284,61 +324,179 @@ function Home() {
                         Ver ligas disponibles
                     </Button>
                 </Empty>
-            </div>
+            </Flex>
         );
     }
 
     const handleParticipantFilter = participation => {
         if (currentUser && participation.id === currentUser.id) {
-            setFilteredParticipants([participation]);
-        } else {
-            setFilteredParticipants([currentUser, participation].filter(Boolean));
+            return; // El usuario logueado siempre está seleccionado/activo
         }
+        setSelectedParticipants(prev => {
+            const isSelected = prev.some(p => p.id === participation.id);
+            if (isSelected) {
+                return prev.filter(p => p.id !== participation.id);
+            } else {
+                return [...prev, participation];
+            }
+        });
     };
 
-    const visibleParticipants = filteredParticipants || participants;
+    const handleRemoveParticipant = participation => {
+        setSelectedParticipants(prev => prev.filter(p => p.id !== participation.id));
+    };
+
+    const handleClearAll = () => {
+        setSelectedParticipants([]);
+    };
+
+    const visibleParticipants = (() => {
+        if (selectedParticipants.length === 0) {
+            return participants;
+        }
+        // Mostrar siempre el usuario logueado + los seleccionados
+        const list = [];
+        const currentParticipation = participants.find(p => p.id === currentUser?.id);
+        if (currentParticipation) {
+            list.push(currentParticipation);
+        }
+        selectedParticipants.forEach(p => {
+            if (p.id !== currentUser?.id) {
+                list.push(p);
+            }
+        });
+        return list;
+    })();
     const matchGroups = chunkArray(matches, MATCHES_PER_GROUP);
 
     return (
-        <div style={{ padding: '12px 12px 32px' }}>
+        <Flex vertical style={{ padding: '12px 12px 32px' }}>
 
-            {/* ── Selectors ── */}
+            {/* ── Scrollbar hiding style & premium select toggles ── */}
+            <style>{`
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scrollbar {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                .selectors-card .ant-card-body {
+                    padding: 16px 20px;
+                }
+                @media (max-width: 576px) {
+                    .selectors-card .ant-card-body {
+                        padding: 12px 14px !important;
+                    }
+                }
+            `}</style>
+
+            {/* ── Collapsible selectors card ── */}
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-                <Col xs={24} sm={12}>
-                    <Text strong style={{ display: 'block', marginBottom: 6 }}>Liga</Text>
-                    <Select
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="Elige una liga"
-                        value={selectedLeague}
-                        onChange={handleLeagueChange}
-                        loading={loading && leagues.length === 0}
+                <Col xs={24}>
+                    <Card
+                        className="selectors-card"
+                        title={
+                            <Space size={8}>
+                                <FilterOutlined style={{ color: token.colorPrimary }} />
+                                <span style={{ fontSize: 13, fontWeight: 700 }}>Filtros de Competición</span>
+                            </Space>
+                        }
+                        extra={
+                            <Button 
+                                type="text" 
+                                size="small" 
+                                onClick={() => {
+                                    setFiltersCollapsed(prev => {
+                                        const next = !prev;
+                                        localStorage.setItem('pachanga_filters_collapsed', String(next));
+                                        return next;
+                                    });
+                                }}
+                                icon={filtersCollapsed ? <DownOutlined /> : <UpOutlined />}
+                                style={{ display: 'flex', alignItems: 'center', gap: 4 }}
+                            >
+                                {filtersCollapsed ? 'Mostrar' : 'Ocultar'}
+                            </Button>
+                        }
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            borderRadius: 16,
+                            marginBottom: 0
+                        }}
                     >
-                        {leagues.map(league => (
-                            <Select.Option key={league.id} value={league.id}>
-                                {league.name}
-                            </Select.Option>
-                        ))}
-                    </Select>
-                </Col>
-                <Col xs={24} sm={12}>
-                    <Text strong style={{ display: 'block', marginBottom: 6 }}>Semana</Text>
-                    <Select
-                        style={{ width: '100%' }}
-                        size="large"
-                        placeholder="Elige una semana"
-                        value={selectedWeek}
-                        onChange={setSelectedWeek}
-                        loading={loading && weeks.length === 0}
-                    >
-                        {weeks.map(week => (
-                            <Select.Option key={week.id} value={week.id}>
-                                {week.name}
-                            </Select.Option>
-                        ))}
-                    </Select>
+                        {filtersCollapsed ? (
+                            <Space split={<span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Año: <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedYear || 'Todos'}</span>
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Liga: <span style={{ color: token.colorText, fontWeight: 600 }}>{leagues.find(l => l.id === selectedLeague)?.name || 'Ninguna'}</span>
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                    Semana: <span style={{ color: token.colorText, fontWeight: 600 }}>{weeks.find(w => w.id === selectedWeek)?.name || 'Ninguna'}</span>
+                                </Text>
+                            </Space>
+                        ) : (
+                            <Row gutter={[16, 16]}>
+                                {/* AÑO (Restored custom YearFilter) */}
+                                <Col xs={24}>
+                                    <YearFilter
+                                        leagues={leagues}
+                                        selectedYear={selectedYear}
+                                        onYearChange={handleYearChange}
+                                    />
+                                </Col>
+
+                                {/* LIGA SELECCIONADA */}
+                                <Col xs={24}>
+                                    <Flex vertical gap={8}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                                        {loading && leagues.length === 0 ? (
+                                            <Skeleton.Button active block style={{ height: 32 }} />
+                                        ) : (
+                                            <SegmentedControl 
+                                                options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
+                                                value={selectedLeague}
+                                                onChange={handleLeagueChange}
+                                                disabled={loading && leagues.length === 0}
+                                            />
+                                        )}
+                                    </Flex>
+                                </Col>
+
+                                {/* SEMANA */}
+                                <Col xs={24}>
+                                    <Flex vertical gap={8}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Semana</Text>
+                                        {loading && weeks.length === 0 ? (
+                                            <Skeleton.Button active block style={{ height: 32 }} />
+                                        ) : (
+                                            <SegmentedControl 
+                                                options={weeks.map(w => {
+                                                    const todayStr = new Date().toISOString().split('T')[0];
+                                                    const isCurrent = todayStr >= w.start && todayStr <= w.end;
+                                                    return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
+                                                })}
+                                                value={selectedWeek}
+                                                onChange={setSelectedWeek}
+                                                disabled={loading && weeks.length === 0}
+                                            />
+                                        )}
+                                    </Flex>
+                                </Col>
+                            </Row>
+                        )}
+                    </Card>
                 </Col>
             </Row>
+
+            {/* ── League Info Panel ── */}
+            <LeagueInfoPanel
+                league={leagues.find(l => l.id === selectedLeague)}
+                onShowRules={() => setRulesModalVisible(true)}
+            />
 
             {/* ── Main content ── */}
             <Row gutter={[12, 16]}>
@@ -348,89 +506,133 @@ function Home() {
                     <Card
                         title="Clasificación"
                         extra={
-                            <Tooltip title="Filtro para eliminar las selecciones">
-                                <Button
-                                    type="text"
-                                    icon={<FilterOutlined />}
-                                    onClick={() => setFilteredParticipants(participants)}
-                                />
-                            </Tooltip>
+                            selectedParticipants.length > 0 ? (
+                                <Tooltip title="Quitar todos los filtros">
+                                    <Button
+                                        type="text"
+                                        size="small"
+                                        icon={<FilterOutlined style={{ color: '#ef4444' }} />}
+                                        onClick={handleClearAll}
+                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    />
+                                </Tooltip>
+                            ) : null
                         }
                         styles={{ body: { padding: 0 } }}
                     >
                         {loading ? (
                             <Skeleton active style={{ padding: 16 }} />
                         ) : (
-                            <List
-                                dataSource={[...participants].sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))}
-                                renderItem={(item) => {
-                                    const favTeam = favoriteTeams.find(f => f.user_id === item.User.id)?.team;
-                                    const isCurrent = currentUser?.id === item.id;
-                                    const rank = item.rank ?? 999;
-                                    const rankColor =
-                                        rank === 1 ? '#fbbf24' :
-                                            rank === 2 ? '#94a3b8' :
-                                                rank === 3 ? '#b45309' : '#334155';
-
-                                    // Movement indicator
-                                    const movement = item.movement;
-                                    const movementEl = movement === 'up'
-                                        ? <span style={{ color: '#10b981', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▲</span>
-                                        : movement === 'down'
-                                            ? <span style={{ color: '#ef4444', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▼</span>
-                                            : movement === 'same'
-                                                ? <span style={{ color: '#64748b', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>—</span>
-                                                : null; // first week or no data
-
-                                    return (
-                                        <List.Item
-                                            key={item.user_id}
-                                            onClick={() => handleParticipantFilter(item)}
-                                            style={{
-                                                padding: '10px 12px',
-                                                cursor: 'pointer',
-                                                background: isCurrent ? 'rgba(59,130,246,0.05)' : 'transparent',
-                                                borderLeft: isCurrent ? '3px solid #3b82f6' : '3px solid transparent',
-                                                transition: 'all 0.2s',
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 8 }}>
-                                                {/* Rank badge */}
-                                                <div
+                            <>
+                                {selectedParticipants.length > 0 && (
+                                    <div style={{
+                                        padding: '12px 14px',
+                                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                                        background: 'rgba(255,255,255,0.01)'
+                                    }}>
+                                        <Flex wrap="wrap" gap={6}>
+                                            {selectedParticipants.map(p => (
+                                                <Tag
+                                                    key={p.id}
+                                                    closable
+                                                    onClose={() => handleRemoveParticipant(p)}
+                                                    color="success"
                                                     style={{
-                                                        width: 26, height: 26,
-                                                        background: rankColor,
-                                                        borderRadius: 6,
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        fontWeight: 800, fontSize: 11,
-                                                        color: rank <= 3 ? '#000' : '#fff',
-                                                        boxShadow: rank <= 3 ? `0 0 8px ${rankColor}55` : 'none',
-                                                        flexShrink: 0,
+                                                        background: 'rgba(16, 185, 129, 0.12)',
+                                                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                                                        color: '#10b981',
+                                                        borderRadius: 4,
+                                                        fontSize: 10,
+                                                        fontWeight: 700,
+                                                        padding: '1px 5px',
+                                                        margin: 0,
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center'
                                                     }}
                                                 >
-                                                    {rank}
-                                                </div>
-                                                {/* Movement arrow */}
-                                                <div style={{ width: 14, textAlign: 'center', flexShrink: 0 }}>
-                                                    {movementEl}
-                                                </div>
-                                                <Avatar src={getAvatarSrc(item.User.logo_url)} icon={<UserOutlined />} size={32} />
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <Text strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {item.User.username}
-                                                    </Text>
-                                                    {favTeam && (
-                                                        <Tooltip title={favTeam.name}>
-                                                            <Avatar size={14} shape="square" src={favTeam.logo_url} style={{ borderRadius: 2 }} />
-                                                        </Tooltip>
-                                                    )}
-                                                </div>
-                                                <Tag color="gold" style={{ margin: 0 }}>{item.points} pts</Tag>
-                                            </div>
-                                        </List.Item>
-                                    );
-                                }}
-                            />
+                                                    {p.User?.username}
+                                                </Tag>
+                                            ))}
+                                        </Flex>
+                                    </div>
+                                )}
+                                <List
+                                    dataSource={[...participants].sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))}
+                                    renderItem={(item) => {
+                                        const favTeam = favoriteTeams.find(f => f.user_id === item.User.id)?.team;
+                                        const isCurrent = currentUser?.id === item.id;
+                                        const isSelected = selectedParticipants.some(p => p.id === item.id);
+                                        const rank = item.rank ?? 999;
+                                        const rankColor =
+                                            rank === 1 ? '#fbbf24' :
+                                                rank === 2 ? '#94a3b8' :
+                                                    rank === 3 ? '#b45309' : '#334155';
+
+                                        // Movement indicator
+                                        const movement = item.movement;
+                                        const movementEl = movement === 'up'
+                                            ? <span style={{ color: '#10b981', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▲</span>
+                                            : movement === 'down'
+                                                ? <span style={{ color: '#ef4444', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▼</span>
+                                                : movement === 'same'
+                                                    ? <span style={{ color: '#64748b', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>—</span>
+                                                    : null; // first week or no data
+
+                                        return (
+                                            <List.Item
+                                                key={item.user_id}
+                                                onClick={() => handleParticipantFilter(item)}
+                                                style={{
+                                                    padding: '10px 12px',
+                                                    cursor: (isCurrent) ? 'default' : 'pointer',
+                                                    background: isSelected 
+                                                        ? 'rgba(16, 185, 129, 0.08)' 
+                                                        : (isCurrent ? 'rgba(59,130,246,0.05)' : 'transparent'),
+                                                    borderLeft: isSelected 
+                                                        ? '3px solid #10b981' 
+                                                        : (isCurrent ? '3px solid #3b82f6' : '3px solid transparent'),
+                                                    transition: 'all 0.2s',
+                                                }}
+                                            >
+                                                <Flex align="center" gap={8} style={{ width: '100%' }}>
+                                                    {/* Rank badge */}
+                                                    <Flex
+                                                        align="center"
+                                                        justify="center"
+                                                        style={{
+                                                            width: 26, height: 26,
+                                                            background: rankColor,
+                                                            borderRadius: 6,
+                                                            fontWeight: 800, fontSize: 11,
+                                                            color: rank <= 3 ? '#000' : '#fff',
+                                                            boxShadow: rank <= 3 ? `0 0 8px ${rankColor}55` : 'none',
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        {rank}
+                                                    </Flex>
+                                                    {/* Movement arrow */}
+                                                    <Flex justify="center" align="center" style={{ width: 14, flexShrink: 0 }}>
+                                                        {movementEl}
+                                                    </Flex>
+                                                    <Avatar src={getAvatarSrc(item.User.logo_url)} icon={<UserOutlined />} size={32} />
+                                                    <Flex vertical style={{ flex: 1, minWidth: 0 }}>
+                                                        <Text strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {item.User.username} {isCurrent && <span style={{ color: '#3b82f6', fontSize: 11, fontWeight: 700 }}>(Tú)</span>}
+                                                        </Text>
+                                                        {favTeam && (
+                                                            <Tooltip title={favTeam.name}>
+                                                                <Avatar size={14} shape="square" src={favTeam.logo_url} style={{ borderRadius: 2 }} />
+                                                            </Tooltip>
+                                                        )}
+                                                    </Flex>
+                                                    <Tag color="gold" style={{ margin: 0 }}>{item.points} pts</Tag>
+                                                </Flex>
+                                            </List.Item>
+                                        );
+                                    }}
+                                />
+                            </>
                         )}
 
                     </Card>
@@ -444,7 +646,7 @@ function Home() {
                         styles={{ body: { padding: '12px 10px' } }}
                     >
                         {(!predictionsMade || matches.length === 0) ? (
-                            <div style={{ textAlign: 'center', padding: '40px 16px' }}>
+                            <Flex justify="center" align="center" style={{ padding: '40px 16px' }}>
                                 {matches.length === 0 ? (
                                     <Empty description="No hay partidos programados para esta semana" />
                                 ) : (
@@ -462,9 +664,9 @@ function Home() {
                                         </Button>
                                     </Space>
                                 )}
-                            </div>
+                            </Flex>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <Flex vertical gap={10}>
                                 {visibleParticipants.map((participation) => (
                                     <MatchGroupBlock
                                         key={participation.id}
@@ -476,12 +678,57 @@ function Home() {
                                         currentUser={currentUser}
                                     />
                                 ))}
-                            </div>
+                            </Flex>
                         )}
                     </Card>
                 </Col>
             </Row>
-        </div>
+
+            {/* ── Rules Modal ── */}
+            <Modal
+                title="Reglamento"
+                open={rulesModalVisible}
+                onCancel={() => setRulesModalVisible(false)}
+                footer={null}
+                styles={{ body: { maxHeight: '60vh', overflowY: 'auto', whiteSpace: 'pre-wrap' } }}
+            >
+                {leagues.find(l => l.id === selectedLeague)?.rules || 'No hay reglamento disponible.'}
+            </Modal>
+
+            {/* ── Winner Celebration ── */}
+            {(() => {
+                const currentLeague = leagues.find(l => l.id === selectedLeague);
+                const isFinished = currentLeague?.status === 'finished';
+                if (!isFinished) return null;
+
+                // Only calculate winner and show once loading is complete
+                const winner = !loading && participants.length > 0
+                    ? [...participants].sort((a, b) => (b.points || 0) - (a.points || 0))[0]
+                    : null;
+                if (!winner) return null;
+
+                const seenKey = `celebration_seen_${selectedLeague}`;
+                const hasSeen = localStorage.getItem(seenKey);
+                if (hasSeen) return null;
+
+                const isCurrentUserWinner = currentUser && winner.User?.id === currentUser.id;
+
+                return (
+                    <WinnerCelebration
+                        visible={showCelebration}
+                        onClose={() => {
+                            localStorage.setItem(seenKey, 'true');
+                            setShowCelebration(false);
+                        }}
+                        leagueName={currentLeague.name}
+                        username={winner.User?.username}
+                        points={winner.points}
+                        avatarUrl={getAvatarSrc(winner.User?.logo_url)}
+                        isCurrentUserWinner={isCurrentUserWinner}
+                    />
+                );
+            })()}
+        </Flex>
     );
 }
 

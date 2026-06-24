@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Layout, Menu, Avatar, Image, Dropdown, Typography, Space, Modal, Radio, Switch, Divider, Button, theme } from "antd";
+import { Layout, Menu, Avatar, Image, Dropdown, Typography, Space, Modal, Radio, Switch, Divider, Button, theme, Drawer } from "antd";
 import Footer from "./Footer";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
@@ -19,20 +19,23 @@ import {
     SunOutlined,
     ControlOutlined,
     StarOutlined,
+    MenuOutlined,
+    BarChartOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
 
-const { Content, Sider } = Layout;
+const { Content, Sider, Header } = Layout;
 const { Text } = Typography;
 
 const getMenuItems = (isAdmin, navigate) => {
     const items = [
         { label: 'Inicio', key: '/', icon: <HomeOutlined />, onClick: () => navigate('/') },
         { label: 'Ligas', key: '/leagues', icon: <TrophyOutlined />, onClick: () => navigate('/leagues') },
-        { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
+        // { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
+        // { label: 'Clasificación', key: '/clasification', icon: <BarChartOutlined />, onClick: () => navigate('/clasification') },
         { label: 'Predicciones', key: '/predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
-        // { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
+        { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
         { label: '¿Esta Ganando Guille?', key: '/is-guille-winning', icon: <ThunderboltOutlined />, onClick: () => navigate('/is-guille-winning') },
     ];
 
@@ -53,6 +56,8 @@ const UserMenu = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState(null);
     const [optionsOpen, setOptionsOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [drawerOpen, setDrawerOpen] = useState(false);
 
     // Context & settings
     const { themePreference, changeTheme, isLightMode, gifsEnabled, toggleGifs, getAvatarSrc, modoCrazy, changeModoCrazy } = useTheme();
@@ -80,13 +85,13 @@ const UserMenu = ({ children }) => {
         API.getUserByToken()
             .then(data => setUser(data))
             .catch(() => {
-                API.setToken('');
                 showAlert('error', "Sesión expirada");
                 nav('/login');
             });
 
         const handleResize = () => {
             if (window.innerWidth <= 992) setCollapsed(true);
+            setIsMobile(window.innerWidth <= 768);
         };
         handleResize();
         window.addEventListener('resize', handleResize);
@@ -101,8 +106,12 @@ const UserMenu = ({ children }) => {
             label: 'Cerrar sesión',
             icon: <LogoutOutlined />,
             danger: true,
-            onClick: () => {
-                API.setToken('');
+            onClick: async () => {
+                try {
+                    await API.post('/users/logout');
+                } catch (error) {
+                    console.error("Logout error:", error);
+                }
                 localStorage.removeItem('admin');
                 showAlert('success', "Has cerrado sesión correctamente");
                 nav('/login');
@@ -110,108 +119,186 @@ const UserMenu = ({ children }) => {
         },
     ];
 
-    return (
-        <Layout className="main-layout" style={{ minHeight: '100vh' }}>
-            <Sider
-                collapsible
-                collapsed={collapsed}
-                onCollapse={val => setCollapsed(val)}
-                breakpoint="lg"
-                theme={isLightMode ? "light" : "dark"}
-                width={240}
-                style={{
-                    overflow: 'auto',
-                    height: '100vh',
-                    position: 'fixed',
-                    left: 0, top: 0, bottom: 0,
-                    zIndex: 1000,
-                    borderRight: `1px solid ${token.colorBorder}`,
-                    boxShadow: '4px 0 10px rgba(0,0,0,0.05)',
-                    display: 'flex',
-                    flexDirection: 'column',
+    const sidebarContent = (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            {/* Logo */}
+            <div
+                className="p-4 d-flex align-items-center justify-content-center cursor-pointer logo-container"
+                style={{ cursor: 'pointer', flexShrink: 0 }}
+                onClick={() => {
+                    nav("/");
+                    if (isMobile) setDrawerOpen(false);
                 }}
             >
-                {/* Logo */}
-                <div
-                    className="p-4 d-flex align-items-center justify-content-center cursor-pointer logo-container"
-                    style={{ cursor: 'pointer', flexShrink: 0 }}
-                    onClick={() => nav("/")}
+                <Image
+                    width={(collapsed && !isMobile) ? 32 : 120}
+                    preview={false}
+                    src="/pachanga_logo_blanco.webp"
+                    alt="Pachanga Logo"
+                    className="pachanga-logo-img"
+                    style={{ filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none' }}
+                />
+            </div>
+
+            {/* User Identity */}
+            <div style={{ padding: '0 16px', marginBottom: 24, flexShrink: 0 }}>
+                <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
+                    <div
+                        className="user-profile-trigger p-2 rounded transition-all"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            background: token.colorBgContainer,
+                            justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
+                            cursor: 'pointer',
+                            border: `1px solid ${token.colorBorder}`,
+                        }}
+                    >
+                        <Avatar
+                            size={(collapsed && !isMobile) ? 28 : 36}
+                            icon={<UserOutlined />}
+                            src={getAvatarSrc(user?.logo_url)}
+                            style={{ flexShrink: 0 }}
+                        />
+                        {(!(collapsed && !isMobile)) && (
+                            <div style={{ marginLeft: 12, overflow: 'hidden' }}>
+                                <Text strong style={{ fontSize: 13, display: 'block' }} ellipsis>
+                                    {user?.username}
+                                </Text>
+                                <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
+                                    {isAdmin ? 'Administrador' : 'Jugador'}
+                                </Text>
+                            </div>
+                        )}
+                    </div>
+                </Dropdown>
+            </div>
+
+            {/* Navigation */}
+            <Menu
+                theme={isLightMode ? "light" : "dark"}
+                mode="inline"
+                items={getMenuItems(isAdmin, (path) => {
+                    nav(path);
+                    if (isMobile) setDrawerOpen(false);
+                })}
+                selectedKeys={[location.pathname]}
+                className="border-0"
+                style={{ flex: 1 }}
+            />
+
+            {/* Options button at bottom */}
+            <div style={{ padding: '12px 16px', borderTop: `1px solid ${token.colorBorder}`, flexShrink: 0 }}>
+                <Button
+                    type="text"
+                    icon={<SettingOutlined />}
+                    onClick={() => {
+                        setOptionsOpen(true);
+                        if (isMobile) setDrawerOpen(false);
+                    }}
+                    style={{
+                        width: '100%',
+                        justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
+                        color: token.colorTextSecondary,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        paddingLeft: (collapsed && !isMobile) ? 0 : 8,
+                        transition: 'color 0.2s',
+                    }}
                 >
+                    {(!(collapsed && !isMobile)) && 'Opciones'}
+                </Button>
+            </div>
+        </div>
+    );
+
+    return (
+        <Layout className="main-layout" style={{ minHeight: '100vh' }}>
+            {/* Desktop Sider */}
+            {!isMobile && (
+                <Sider
+                    collapsible
+                    collapsed={collapsed}
+                    onCollapse={val => setCollapsed(val)}
+                    breakpoint="lg"
+                    theme={isLightMode ? "light" : "dark"}
+                    width={240}
+                    style={{
+                        overflow: 'auto',
+                        height: '100vh',
+                        position: 'fixed',
+                        left: 0, top: 0, bottom: 0,
+                        zIndex: 1000,
+                        borderRight: `1px solid ${token.colorBorder}`,
+                        boxShadow: '4px 0 10px rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
+                >
+                    {sidebarContent}
+                </Sider>
+            )}
+
+            {/* Mobile Drawer */}
+            {isMobile && (
+                <Drawer
+                    placement="left"
+                    onClose={() => setDrawerOpen(false)}
+                    open={drawerOpen}
+                    width={280}
+                    styles={{ body: { padding: 0, background: token.colorBgContainer } }}
+                    closable={false}
+                >
+                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: token.colorBgContainer }}>
+                        {sidebarContent}
+                    </div>
+                </Drawer>
+            )}
+
+            {/* Mobile Top Header */}
+            {isMobile && (
+                <Header
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 56,
+                        lineHeight: '56px',
+                        padding: '0 16px',
+                        background: token.colorBgContainer,
+                        borderBottom: `1px solid ${token.colorBorder}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        zIndex: 999,
+                    }}
+                >
+                    <Button
+                        type="text"
+                        icon={<MenuOutlined style={{ fontSize: 18, color: token.colorText }} />}
+                        onClick={() => setDrawerOpen(true)}
+                        style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    />
                     <Image
-                        width={collapsed ? 32 : 120}
+                        width={100}
                         preview={false}
                         src="/pachanga_logo_blanco.webp"
                         alt="Pachanga Logo"
                         className="pachanga-logo-img"
-                        style={{ filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none' }}
+                        style={{ filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none', cursor: 'pointer' }}
+                        onClick={() => nav("/")}
                     />
-                </div>
-
-                {/* User Identity */}
-                <div style={{ padding: '0 16px', marginBottom: 24, flexShrink: 0 }}>
-                    <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
-                        <div
-                            className="user-profile-trigger p-2 rounded transition-all"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                background: token.colorBgContainer,
-                                justifyContent: collapsed ? 'center' : 'flex-start',
-                                cursor: 'pointer',
-                                border: `1px solid ${token.colorBorder}`,
-                            }}
-                        >
-                            <Avatar
-                                size={collapsed ? 28 : 36}
-                                icon={<UserOutlined />}
-                                src={getAvatarSrc(user?.logo_url)}
-                                style={{ flexShrink: 0 }}
-                            />
-                            {!collapsed && (
-                                <div style={{ marginLeft: 12, overflow: 'hidden' }}>
-                                    <Text strong style={{ fontSize: 13, display: 'block' }} ellipsis>
-                                        {user?.username}
-                                    </Text>
-                                    <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-                                        {isAdmin ? 'Administrador' : 'Jugador'}
-                                    </Text>
-                                </div>
-                            )}
-                        </div>
-                    </Dropdown>
-                </div>
-
-                {/* Navigation */}
-                <Menu
-                    theme={isLightMode ? "light" : "dark"}
-                    mode="inline"
-                    items={getMenuItems(isAdmin, nav)}
-                    selectedKeys={[location.pathname]}
-                    className="border-0"
-                    style={{ flex: 1 }}
-                />
-
-                {/* Options button at bottom */}
-                <div style={{ padding: '12px 16px', borderTop: `1px solid ${token.colorBorder}`, flexShrink: 0 }}>
-                    <Button
-                        type="text"
-                        icon={<SettingOutlined />}
-                        onClick={() => setOptionsOpen(true)}
-                        style={{
-                            width: '100%',
-                            justifyContent: collapsed ? 'center' : 'flex-start',
-                            color: token.colorTextSecondary,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            paddingLeft: collapsed ? 0 : 8,
-                            transition: 'color 0.2s',
-                        }}
-                    >
-                        {!collapsed && 'Opciones'}
-                    </Button>
-                </div>
-            </Sider>
+                    <Avatar
+                        size={32}
+                        icon={<UserOutlined />}
+                        src={getAvatarSrc(user?.logo_url)}
+                        onClick={() => nav("/user")}
+                        style={{ cursor: 'pointer' }}
+                    />
+                </Header>
+            )}
 
             {/* ── Options Modal ── */}
             <Modal
@@ -307,7 +394,11 @@ const UserMenu = ({ children }) => {
             {/* Main content */}
             <Layout
                 className="site-layout transition-all"
-                style={{ marginLeft: collapsed ? 80 : 240, background: 'transparent' }}
+                style={{
+                    marginLeft: isMobile ? 0 : (collapsed ? 80 : 240),
+                    paddingTop: isMobile ? 56 : 0,
+                    background: 'transparent'
+                }}
             >
                 <Content style={{ margin: 0, minHeight: 'calc(100vh - 70px)' }}>
                     {children}

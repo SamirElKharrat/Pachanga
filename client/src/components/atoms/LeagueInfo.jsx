@@ -65,10 +65,10 @@ const LeagueInfo = ({ leagueId }) => {
     return (
         <div className="p-3">
             <div className="d-flex align-items-center mb-4 gap-3">
-                <Button 
-                    shape="circle" 
-                    icon={<ArrowLeftOutlined />} 
-                    onClick={() => nav('/leagues')} 
+                <Button
+                    shape="circle"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => nav('/leagues')}
                 />
                 <Title level={2} className="m-0">Detalles de la Liga</Title>
             </div>
@@ -86,10 +86,10 @@ const LeagueInfo = ({ leagueId }) => {
                     <Col xs={24} md={18}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <Title level={3}>{league.name}</Title>
-                            <Space>
+                            {/* <Space>
                                 <Button size="small">Reglas</Button>
                                 <Button size="small">Estadísticas</Button>
-                            </Space>
+                            </Space> */}
                         </div>
                         <Space direction="vertical" size="small">
                             <Space>
@@ -120,9 +120,9 @@ const LeagueInfo = ({ leagueId }) => {
                             dataSource={teams}
                             renderItem={team => (
                                 <List.Item>
-                                    <Card 
-                                        hoverable 
-                                        size="small" 
+                                    <Card
+                                        hoverable
+                                        size="small"
                                         className="text-center"
                                         onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}
                                     >
@@ -141,8 +141,8 @@ const LeagueInfo = ({ leagueId }) => {
                             dataSource={players}
                             renderItem={player => (
                                 <List.Item>
-                                    <div 
-                                        className="text-center p-2 rounded hover-bg-light transition-all" 
+                                    <div
+                                        className="text-center p-2 rounded hover-bg-light transition-all"
                                         style={{ cursor: 'pointer' }}
                                     >
                                         <Avatar src={getAvatarSrc(player.logo_url)} icon={<UserOutlined />} size={64} className="mb-2 shadow-sm" />

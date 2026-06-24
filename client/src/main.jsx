@@ -32,11 +32,11 @@ function Root() {
                   <Route index element={<Home />} />
                   <Route path='/leagues' element={<League />} />
                   <Route path='/leagues/:id' element={<League />} />
-                  <Route path='/teams' element={<Team />} />
-                  <Route path='/teams/:id' element={<Team />} />
+                  {/* <Route path='/teams' element={<Team />} />
+                  <Route path='/teams/:id' element={<Team />} /> */}
                   <Route path='/predictions' element={<Prediction />} />
                   <Route path='/user' element={<User />} />
-                  {/* <Route path='/hall-of-flame' element={<HallOfFlame />} /> */}
+                  <Route path='/hall-of-flame' element={<HallOfFlame />} />
                   <Route path='/is-guille-winning' element={<IsGuilleWinning />} />
                 </Route>
                 <Route element={<AdminRoute />}>

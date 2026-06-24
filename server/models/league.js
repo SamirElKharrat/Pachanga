@@ -27,6 +27,18 @@ const League = sequelize.define('League', {
     status: {
         type: DataTypes.ENUM('scheduled', 'live', 'finished'),
         defaultValue: 'scheduled'
+    },
+    rules: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    leaguepedia_url: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
+    stats_url: {
+        type: DataTypes.STRING,
+        allowNull: true
     }
 }, {
     tableName: 'League',
