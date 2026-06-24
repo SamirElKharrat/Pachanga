@@ -92,15 +92,15 @@ exports.loginUser = async (req, res) => {
     //Generate a token infinite live for now
     const token = jwt.sign({ email: user.email, role: user.role }, process.env.SECRET_KEY);
     console.log("Usuario Logeado", token)
-    
+
     const cookieOptions = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'None'
     };
 
     if (keepSession) {
-        cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
     }
 
     res.cookie('token', token, cookieOptions);
