@@ -20,6 +20,7 @@ import {
     ControlOutlined,
     StarOutlined,
     MenuOutlined,
+    BarChartOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
@@ -31,9 +32,10 @@ const getMenuItems = (isAdmin, navigate) => {
     const items = [
         { label: 'Inicio', key: '/', icon: <HomeOutlined />, onClick: () => navigate('/') },
         { label: 'Ligas', key: '/leagues', icon: <TrophyOutlined />, onClick: () => navigate('/leagues') },
-        { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
+        // { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
+        // { label: 'Clasificación', key: '/clasification', icon: <BarChartOutlined />, onClick: () => navigate('/clasification') },
         { label: 'Predicciones', key: '/predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
-        // { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
+        { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
         { label: '¿Esta Ganando Guille?', key: '/is-guille-winning', icon: <ThunderboltOutlined />, onClick: () => navigate('/is-guille-winning') },
     ];
 
@@ -392,10 +394,10 @@ const UserMenu = ({ children }) => {
             {/* Main content */}
             <Layout
                 className="site-layout transition-all"
-                style={{ 
-                    marginLeft: isMobile ? 0 : (collapsed ? 80 : 240), 
-                    paddingTop: isMobile ? 56 : 0, 
-                    background: 'transparent' 
+                style={{
+                    marginLeft: isMobile ? 0 : (collapsed ? 80 : 240),
+                    paddingTop: isMobile ? 56 : 0,
+                    background: 'transparent'
                 }}
             >
                 <Content style={{ margin: 0, minHeight: 'calc(100vh - 70px)' }}>
