@@ -94,6 +94,7 @@ exports.loginUser = async (req, res) => {
 
     const cookieOptions = {
       httpOnly: true,
+      domain: 'pachanga.lol',
       secure: true,
       sameSite: 'Lax'
     };
