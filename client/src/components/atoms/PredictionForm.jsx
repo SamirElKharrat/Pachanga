@@ -83,7 +83,7 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
             const predictionPromises = data.map(match => {
                 const winnerId = selectedTeams[match.id];
                 const result = match.format === 'BO1' ? '1-0' : selectedResults[match.id];
-                
+
                 return API.post('/predictions/set', {
                     user_id: user.id,
                     match_id: match.id,
@@ -98,7 +98,7 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
             nav('/', { state: { leagueId } });
         } catch (error) {
             console.error("Error submitting predictions:", error);
-            showAlert('error', "No se pudieron enviar las predicciones");
+            //showAlert('error', "No se pudieron enviar las predicciones");
         } finally {
             setIsSubmitting(false);
             setModalOpen(false);
@@ -132,7 +132,7 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
                                 <div className="d-flex align-items-center justify-content-between">
                                     {match.Teams.map((team, index) => (
                                         <React.Fragment key={team.id}>
-                                            <div 
+                                            <div
                                                 className="p-1 rounded cursor-pointer transition-all"
                                                 style={{
                                                     borderRadius: 6,
@@ -155,7 +155,7 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
                                     ))}
                                 </div>
                             </Col>
-                            
+
                             <Col xs={24} md={14} lg={16}>
                                 <Space className="w-100 justify-content-start ps-md-4" size="large">
                                     <Coin

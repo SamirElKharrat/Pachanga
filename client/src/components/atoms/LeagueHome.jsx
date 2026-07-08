@@ -47,7 +47,7 @@ const LeagueHome = () => {
                 setLeagues(allLeagues);
             } catch (error) {
                 console.error("Error loading leagues:", error);
-                showAlert('error', "No se pudieron cargar las ligas");
+                //showAlert('error', "No se pudieron cargar las ligas");
             } finally {
                 setLoading(false);
             }

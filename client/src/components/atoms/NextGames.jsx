@@ -15,19 +15,19 @@ const { Text } = Typography;
 const getMatchTimeInfo = (dateStr) => {
     const matchDate = new Date(dateStr);
     const now = new Date();
-    
+
     const isToday = matchDate.getDate() === now.getDate() &&
         matchDate.getMonth() === now.getMonth() &&
         matchDate.getFullYear() === now.getFullYear();
-        
+
     const tomorrow = new Date(now);
     tomorrow.setDate(now.getDate() + 1);
     const isTomorrow = matchDate.getDate() === tomorrow.getDate() &&
         matchDate.getMonth() === tomorrow.getMonth() &&
         matchDate.getFullYear() === tomorrow.getFullYear();
-        
+
     const timeStr = matchDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    
+
     if (isToday) {
         return { label: 'HOY', time: timeStr, color: '#3b82f6' };
     } else if (isTomorrow) {
@@ -50,7 +50,7 @@ const NextGames = () => {
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
-    
+
     // State to detect mobile devices responsively
     const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
@@ -66,18 +66,18 @@ const NextGames = () => {
             try {
                 const response = await API.get('/matches/getByWeek/');
                 const now = new Date();
-                
+
                 const updatedGames = await Promise.all(response.map(async game => {
                     const matchDate = new Date(game.date);
                     if (matchDate <= now && game.status === 'scheduled') {
                         try {
                             await API.put('/matches/update/' + game.id, { status: 'live' });
-                            return { ...game, status: 'live' }; 
+                            return { ...game, status: 'live' };
                         } catch {
                             return game;
                         }
                     }
-                    return game; 
+                    return game;
                 }));
 
                 const participations = await API.get('/leagueParticipations/get/');
@@ -95,7 +95,7 @@ const NextGames = () => {
                 setNextGames(filtered.slice(0, 6));
             } catch (error) {
                 console.error("Error fetching next games:", error);
-                showAlert('error', "No se pudieron cargar los próximos partidos");
+                //showAlert('error', "No se pudieron cargar los próximos partidos");
             } finally {
                 setLoading(false);
             }
@@ -120,7 +120,7 @@ const NextGames = () => {
                     background: transparent;
                 }
             `}</style>
-            
+
             <Text strong style={{
                 display: 'block',
                 fontSize: 11,
@@ -133,7 +133,7 @@ const NextGames = () => {
                 Próximos Partidos
             </Text>
 
-            <div 
+            <div
                 className="next-games-scroll"
                 style={{
                     display: 'flex',
@@ -146,10 +146,10 @@ const NextGames = () => {
             >
                 {nextGames.map((match) => {
                     const isLive = match.status === 'live';
-                    const timeInfo = isLive 
+                    const timeInfo = isLive
                         ? { label: 'EN VIVO', time: '--:--', color: '#10b981' }
                         : getMatchTimeInfo(match.date);
-                    
+
                     if (isMobile) {
                         // Mobile View: Stacked compact matchups
                         return (

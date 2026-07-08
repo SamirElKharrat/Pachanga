@@ -47,7 +47,7 @@ const LeagueInfo = ({ leagueId }) => {
                 setPlayers(playersData);
             } catch (error) {
                 console.error("Error loading league details:", error);
-                showAlert('error', "No se pudieron cargar los detalles de la liga");
+                //showAlert('error', "No se pudieron cargar los detalles de la liga");
             } finally {
                 setLoading(false);
             }
