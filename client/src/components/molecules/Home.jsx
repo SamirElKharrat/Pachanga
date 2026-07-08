@@ -8,6 +8,7 @@ import YearFilter from '../atoms/YearFilter';
 import WinnerCelebration from '../atoms/WinnerCelebration';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 import SegmentedControl from '../atoms/SegmentedControl';
+import { API } from '../../services/api';
 
 const { Text } = Typography;
 
@@ -301,6 +302,39 @@ function Home() {
     }, [weeks]);
 
 
+
+    // Check and update league status (scheduled -> live -> finished) based on current date
+    useEffect(() => {
+        if (!leagues || leagues.length === 0) return;
+
+        const checkAndUpdateLeagues = async () => {
+            const now = new Date();
+            let statusChanged = false;
+
+            for (const league of leagues) {
+                const startDate = new Date(league.start_date);
+                const endDate = new Date(league.end_date);
+                let newStatus = null;
+
+                if (now >= startDate && now <= endDate && league.status === 'scheduled') {
+                    newStatus = 'live';
+                } else if (now > endDate && league.status !== 'finished') {
+                    newStatus = 'finished';
+                }
+
+                if (newStatus) {
+                    try {
+                        await API.put(`/leagues/update/${league.id}`, { status: newStatus });
+                        statusChanged = true;
+                    } catch (error) {
+                        console.error(`Error updating league ${league.id} status:`, error);
+                    }
+                }
+            }
+        };
+
+        checkAndUpdateLeagues();
+    }, [leagues]);
 
     // Reset celebration state when selected league changes
     useEffect(() => {

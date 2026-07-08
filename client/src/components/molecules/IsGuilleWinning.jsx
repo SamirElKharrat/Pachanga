@@ -28,6 +28,7 @@ const IsGuilleWinning = () => {
                     .filter(l => l.status === 'live')
                     .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
                 let currentLeague = liveLeagues[0];
+                console.log(liveLeagues);
 
                 // Fallback to the most recent finished league if no live league exists
                 if (!currentLeague) {
