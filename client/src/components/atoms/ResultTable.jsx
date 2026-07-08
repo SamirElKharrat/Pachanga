@@ -42,6 +42,46 @@ const OUTCOME_CONFIG = {
 };
 
 /**
+ * Helper to format result based on winner and original team ordering.
+ * If the winner is Team 1, score shows as "Winner-Loser" (e.g. 3-0).
+ * If the winner is Team 2, score shows as "Loser-Winner" (e.g. 0-3).
+ */
+const getFormattedResult = (resultStr, isTeam1Winner) => {
+    if (!resultStr || !resultStr.includes('-')) return resultStr || '–';
+    return isTeam1Winner ? resultStr : resultStr.split('-').reverse().join('-');
+};
+
+/**
+ * Reusable helper component to render team avatar and trophy.
+ */
+const TeamAvatar = ({ team, isWinner }) => (
+    <Tooltip title={team?.name}>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+            <Avatar
+                src={team?.logo_url}
+                shape="square"
+                size={isWinner ? 36 : 30}
+                style={{ opacity: isWinner ? 1 : 0.35 }}
+            />
+            {isWinner && (
+                <TrophyFilled
+                    style={{
+                        position: 'absolute',
+                        top: -5,
+                        right: -5,
+                        fontSize: 11,
+                        color: '#faad14',
+                        background: 'rgba(0,0,0,0.75)',
+                        borderRadius: '50%',
+                        padding: 2,
+                    }}
+                />
+            )}
+        </div>
+    </Tooltip>
+);
+
+/**
  * Shows the user's prediction history for matches that already have results.
  *
  * Props:
@@ -60,9 +100,6 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
 
                 const pred = userPredictions.find(p => p.match_id === match.id);
 
-                const winnerTeam = match.Teams.find(t => t.id === result.winner);
-                const loserTeam = match.Teams.find(t => t.id !== result.winner);
-
                 let outcome = 'nopred';
                 if (pred) {
                     const correctWinner = result.winner === pred.winner;
@@ -76,7 +113,11 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
                     ? match.Teams.find(t => t.id === pred.winner)
                     : null;
 
-                return { key: match.id, match, result, pred, winnerTeam, loserTeam, predictedTeam, outcome };
+                const team1 = match.Teams?.[0] || null;
+                const team2 = match.Teams?.[1] || null;
+                const isTeam1Winner = team1?.id === result.winner;
+
+                return { key: match.id, match, result, pred, predictedTeam, outcome, team1, team2, isTeam1Winner };
             })
             .filter(Boolean)
             .reverse();
@@ -95,6 +136,7 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {pageRows.map(row => {
                     const cfg = OUTCOME_CONFIG[row.outcome];
+                    const formattedResult = getFormattedResult(row.result.result, row.isTeam1Winner);
                     return (
                         <div
                             key={row.key}
@@ -114,38 +156,15 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
 
                                 {/* Teams row */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    <Tooltip title={row.loserTeam?.name}>
-                                        <Avatar
-                                            src={row.loserTeam?.logo_url}
-                                            shape="square"
-                                            size={30}
-                                            style={{ opacity: 0.35, flexShrink: 0 }}
-                                        />
-                                    </Tooltip>
+                                    <TeamAvatar team={row.team1} isWinner={row.isTeam1Winner} />
 
                                     <div style={{ textAlign: 'center', minWidth: 48 }}>
                                         <Text strong style={{ fontSize: 15, letterSpacing: 1 }}>
-                                            {row.result.result ?? '–'}
+                                            {formattedResult}
                                         </Text>
                                     </div>
 
-                                    <Tooltip title={row.winnerTeam?.name}>
-                                        <div style={{ position: 'relative', flexShrink: 0 }}>
-                                            <Avatar src={row.winnerTeam?.logo_url} shape="square" size={36} />
-                                            <TrophyFilled
-                                                style={{
-                                                    position: 'absolute',
-                                                    top: -5,
-                                                    right: -5,
-                                                    fontSize: 11,
-                                                    color: '#faad14',
-                                                    background: 'rgba(0,0,0,0.75)',
-                                                    borderRadius: '50%',
-                                                    padding: 2,
-                                                }}
-                                            />
-                                        </div>
-                                    </Tooltip>
+                                    <TeamAvatar team={row.team2} isWinner={!row.isTeam1Winner} />
 
                                     <Text
                                         type="secondary"
@@ -157,7 +176,7 @@ const ResultTable = ({ results, matches, userPredictions = [] }) => {
                                             flex: 1,
                                         }}
                                     >
-                                        {row.loserTeam?.name} vs {row.winnerTeam?.name}
+                                        {row.team1?.name} vs {row.team2?.name}
                                     </Text>
                                 </div>
 
