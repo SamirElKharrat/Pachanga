@@ -85,7 +85,7 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                     const c = STATUS_COLORS[status];
 
                     return (
-                        <Card 
+                        <Card
                             key={match.id}
                             styles={{
                                 body: {
@@ -153,16 +153,14 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
             {matchGroup.map(match => {
                 const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
                 const c = STATUS_COLORS[status];
-                
-                const name1 = match.Teams?.[0]?.name;
-                const name2 = match.Teams?.[1]?.name;
-                const shortLabel = `${name1 && name1.length > 4 ? name1.substring(0, 3).toUpperCase() : name1} vs ${name2 && name2.length > 4 ? name2.substring(0, 3).toUpperCase() : name2}`;
+
+                const shortLabel = `${match.Teams?.[0]?.acronym} vs ${match.Teams?.[1]?.acronym}`;
 
                 return (
-                    <Flex 
+                    <Flex
                         key={match.id}
-                        align="center" 
-                        justify="space-between" 
+                        align="center"
+                        justify="space-between"
                         style={{
                             padding: '8px 12px',
                             background: c.bg,
@@ -215,7 +213,7 @@ function MatchGroupBlock(props) {
     return isMobile
         ? <MobileMatchGroupBlock {...props} />
         : (
-            <Card 
+            <Card
                 styles={{ body: { padding: '16px 20px' } }}
                 style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, marginBottom: 24 }}
             >
@@ -236,12 +234,12 @@ function Home() {
     const [selectedParticipants, setSelectedParticipants] = useState([]);
     const [showCelebration, setShowCelebration] = useState(true);
     const [rulesModalVisible, setRulesModalVisible] = useState(false);
-    
+
     // State to collapse/expand filter selection panel
     const [filtersCollapsed, setFiltersCollapsed] = useState(() => {
         return localStorage.getItem('pachanga_filters_collapsed') === 'true';
     });
-    
+
     // Ref to track which league the current `weeks` array belongs to
     const weeksLeagueRef = useRef(null);
 
@@ -403,9 +401,9 @@ function Home() {
                             </Space>
                         }
                         extra={
-                            <Button 
-                                type="text" 
-                                size="small" 
+                            <Button
+                                type="text"
+                                size="small"
                                 onClick={() => {
                                     setFiltersCollapsed(prev => {
                                         const next = !prev;
@@ -456,7 +454,7 @@ function Home() {
                                         {loading && leagues.length === 0 ? (
                                             <Skeleton.Button active block style={{ height: 32 }} />
                                         ) : (
-                                            <SegmentedControl 
+                                            <SegmentedControl
                                                 options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
                                                 value={selectedLeague}
                                                 onChange={handleLeagueChange}
@@ -473,7 +471,7 @@ function Home() {
                                         {loading && weeks.length === 0 ? (
                                             <Skeleton.Button active block style={{ height: 32 }} />
                                         ) : (
-                                            <SegmentedControl 
+                                            <SegmentedControl
                                                 options={weeks.map(w => {
                                                     const todayStr = new Date().toISOString().split('T')[0];
                                                     const isCurrent = todayStr >= w.start && todayStr <= w.end;
@@ -585,11 +583,11 @@ function Home() {
                                                 style={{
                                                     padding: '10px 12px',
                                                     cursor: (isCurrent) ? 'default' : 'pointer',
-                                                    background: isSelected 
-                                                        ? 'rgba(16, 185, 129, 0.08)' 
+                                                    background: isSelected
+                                                        ? 'rgba(16, 185, 129, 0.08)'
                                                         : (isCurrent ? 'rgba(59,130,246,0.05)' : 'transparent'),
-                                                    borderLeft: isSelected 
-                                                        ? '3px solid #10b981' 
+                                                    borderLeft: isSelected
+                                                        ? '3px solid #10b981'
                                                         : (isCurrent ? '3px solid #3b82f6' : '3px solid transparent'),
                                                     transition: 'all 0.2s',
                                                 }}

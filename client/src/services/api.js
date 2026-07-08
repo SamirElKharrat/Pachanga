@@ -4,7 +4,7 @@ import axios from 'axios';
  * API service for communicating with the Pachanga backend.
  * Handles authentication and provides standardized methods for CRUD operations.
  */
-const API_URL = "/api";
+const API_URL = "http://localhost:3001/api";
 
 // Configure Axios to always send cookies for cross-origin requests
 axios.defaults.withCredentials = true;

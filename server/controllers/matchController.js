@@ -100,7 +100,7 @@ exports.getCurrentWeekMatchesByLeague = async (req, res) => {
             },
             include: [{
                 model: Team,
-                attributes: ['id', 'name', 'logo_url'],
+                attributes: ['id', 'name', 'logo_url', 'acronym'],
                 through: { attributes: [] }
             }]
         });
@@ -127,7 +127,7 @@ exports.getCurrentWeekMatchesByWeek = async (req, res) => {
             },
             include: [{
                 model: Team,
-                attributes: ['id', 'name', 'logo_url'],
+                attributes: ['id', 'name', 'logo_url', 'acronym'],
                 through: { attributes: [] }
             }]
         });
@@ -148,7 +148,7 @@ exports.getMatchesByLeague = async (req, res) => {
             },
             include: [{
                 model: Team,
-                attributes: ['id', 'name', 'logo_url'],
+                attributes: ['id', 'name', 'logo_url', 'acronym'],
                 through: { attributes: [] }
             }]
         });
@@ -183,7 +183,7 @@ exports.getMatchesWithoutResult = async (req, res) => {
         let matches = await Match.findAll({
             include: [{
                 model: Team,
-                attributes: ['id', 'name', 'logo_url'],
+                attributes: ['id', 'name', 'logo_url', 'acronym'],
                 through: { attributes: [] }
             }],
         });
