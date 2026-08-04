@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Form, Input, Button, Select, Upload, DatePicker, Switch, Space, Typography, Divider } from 'antd';
 import { PlusOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -46,7 +46,26 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
     const [loading, setLoading]             = useState(false);
     const [selectedFormat, setSelectedFormat] = useState(null); // for result_select
 
-    // ── Pre-fill form when editing ────────────────────────────────────────────
+    // ── Handle dynamic dependent selects ─────────────────────────────────────
+    const handleSelect = useCallback(async (option) => {
+        const url = option.name === 'match_id' ? '/matches/getTeams' : '/leagues/getTeams';
+        try {
+            const response = await API.get(`${url}/${option.value}`);
+            setRelationData(response.Teams || []);
+
+            if (option.name === 'match_id') {
+                const matchRes = await API.get(`/matches/get/${option.value}`);
+                const fmt = matchRes[0]?.format || matchRes?.format || 'BO1';
+                setSelectedFormat(fmt);
+                // Clear result field when match changes
+                form.setFieldValue('result', undefined);
+            }
+        } catch {
+            showAlert('error', 'Error al cargar datos relacionados');
+        }
+    }, [form]);
+
+    // ── Pre-fill form when editing / default values ────────────────────────────
     useEffect(() => {
         if (record) {
             const formattedRecord = { ...record[0] };
@@ -69,29 +88,22 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 }
             });
             form.setFieldsValue(formattedRecord);
+            if (table === 'matches' && formattedRecord.league_id) {
+                handleSelect({ value: formattedRecord.league_id, name: 'leagues' });
+            }
+        } else {
+            if (table === 'matches' && selectData?.length > 0) {
+                const leagueData = selectData.find(d => d.name === 'leagues');
+                if (leagueData && leagueData.data?.length > 0) {
+                    const newestLeagueId = leagueData.data[0].value;
+                    form.setFieldValue('leagues', newestLeagueId);
+                    handleSelect({ value: newestLeagueId, name: 'leagues' });
+                }
+            }
         }
-    }, [record, form, names, fields]);
+    }, [record, form, names, fields, selectData, table, handleSelect]);
 
     const normFile = (e) => (Array.isArray(e) ? e : e?.fileList);
-
-    // ── Handle dynamic dependent selects ─────────────────────────────────────
-    const handleSelect = async (option) => {
-        const url = option.name === 'match_id' ? '/matches/getTeams' : '/leagues/getTeams';
-        try {
-            const response = await API.get(`${url}/${option.value}`);
-            setRelationData(response.Teams || []);
-
-            if (option.name === 'match_id') {
-                const matchRes = await API.get(`/matches/get/${option.value}`);
-                const fmt = matchRes[0]?.format || matchRes?.format || 'BO1';
-                setSelectedFormat(fmt);
-                // Clear result field when match changes
-                form.setFieldValue('result', undefined);
-            }
-        } catch {
-            showAlert('error', 'Error al cargar datos relacionados');
-        }
-    };
 
     // ── Submit ────────────────────────────────────────────────────────────────
     const onFinish = async (values) => {

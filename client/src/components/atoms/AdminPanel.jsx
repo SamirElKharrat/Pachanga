@@ -117,9 +117,17 @@ const AdminPanel = ({ table, names, fields, relation }) => {
             try {
                 const endpoint = item === 'matches' ? '/matches/getWithoutResult' : `/${item}/get`;
                 const response = await API.get(endpoint);
+                
+                let resList = Array.isArray(response) ? response : [];
+
+                if (table === 'matches' && item === 'leagues') {
+                    resList = resList.filter(l => l.status === 'scheduled' || l.status === 'live');
+                    resList.sort((a, b) => (b.id || 0) - (a.id || 0));
+                }
+
                 finalData.push({
                     name: item,
-                    data: response.map(res => {
+                    data: resList.map(res => {
                         let label = res.name || res.username;
                         if (!label && res.Teams) label = res.Teams.map(t => t.name).join(' vs ');
                         return { value: res.id, label: label || `ID: ${res.id}`, format: res.format };
