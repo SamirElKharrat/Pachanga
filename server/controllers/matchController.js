@@ -45,6 +45,15 @@ exports.getTeamsFromMatch = async (req, res) => {
 // Modificar la función getCurrentWeekMatches en matchController.js
 exports.getCurrentWeekMatches = async (req, res) => {
     try {
+        // Ensure any match that already has a Result registered is marked as 'finished'
+        const existingResults = await Result.findAll({ attributes: ['match_id'], raw: true });
+        const finishedMatchIds = existingResults.map(r => r.match_id).filter(Boolean);
+        if (finishedMatchIds.length > 0) {
+            await Match.update(
+                { status: 'finished' },
+                { where: { id: { [Op.in]: finishedMatchIds }, status: { [Op.ne]: 'finished' } } }
+            );
+        }
 
         const currentStartOfWeek = startOfWeek();
 

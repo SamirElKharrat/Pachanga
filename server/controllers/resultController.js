@@ -74,6 +74,9 @@ exports.createResult = async (req, res) => {
             }]
         });
 
+        // ALWAYS mark match as finished when a result is created
+        await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
+
         const winner = req.body.winner;
         const predictions = await Prediction.findAll({
             where: { match_id: req.body.match_id },
@@ -208,8 +211,6 @@ exports.createResult = async (req, res) => {
                 );
             });
 
-            await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
-
             await Promise.all(leagueParticipationsPromises);
         }
 
@@ -228,6 +229,9 @@ exports.updateResult = async (req, res) => {
             return res.status(404).json({ error: 'Result not found' });
         }
         const updatedResult = await result.update(req.body);
+        if (result.match_id) {
+            await Match.update({ status: 'finished' }, { where: { id: result.match_id } });
+        }
         res.json(updatedResult);
     } catch (error) {
         res.status(400).json({ error: error.message });
