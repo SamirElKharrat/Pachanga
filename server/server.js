@@ -14,6 +14,7 @@ const Prediction = require('./models/prediction');
 const Result = require('./models/result');
 const Hall = require('./models/hall');
 const PachangaPoint = require('./models/pachangaPoint');
+const Rule = require('./models/rule');
 
 const app = express();
 const PORT = 3001;
@@ -75,6 +76,9 @@ User.hasMany(PachangaPoint, { as: 'PachangaPoints', foreignKey: 'user_id' });
 PachangaPoint.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
 League.hasMany(PachangaPoint, { as: 'PachangaPoints', foreignKey: 'league_id' });
 
+// Rule relations
+Rule.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
+League.hasMany(Rule, { as: 'Rules', foreignKey: 'league_id' });
 
 const hallController = require('./controllers/hallController');
 const pachangaController = require('./controllers/pachangaController');

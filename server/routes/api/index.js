@@ -11,6 +11,7 @@ const leagueParticipationRoute = require("./leagueParticipation");
 const uploadRoute = require("./upload");
 const hallRoute = require("./hall");
 const pachangaRoute = require("./pachanga");
+const ruleRoute = require("./rule");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -24,5 +25,6 @@ router.use("/leagueParticipations", leagueParticipationRoute);
 router.use("/upload", uploadRoute);
 router.use("/hall", hallRoute);
 router.use("/pachanga", pachangaRoute);
+router.use("/rules", ruleRoute);
 
 module.exports = router;

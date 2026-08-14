@@ -361,6 +361,47 @@
   transform: translateY(-2px);
 }
 
+.pachanga-admin-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.pachanga-admin-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.pachanga-rules-preview-box {
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+.pachanga-rules-preview-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 3px;
+}
+
+.pachanga-rules-preview-text {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
 .pachanga-stats-card {
   border-style: dashed;
   text-align: center;
@@ -387,26 +428,51 @@
   padding-right: 8px;
 }
 
-.pachanga-rules-modal-body h3 {
-  font-size: 15px;
+.pachanga-rule-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.pachanga-rule-card:hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pachanga-rule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 8px;
+}
+
+.pachanga-rule-title {
+  font-size: 16px;
   font-weight: 800;
   color: #f8fafc;
-  margin: 20px 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 4px;
+  margin: 0 !important;
 }
 
-.pachanga-rules-modal-body h3:first-child {
-  margin-top: 0;
+.pachanga-rule-content-block {
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
-.pachanga-rules-modal-body ul {
+.pachanga-rule-ul {
   padding-left: 20px;
   margin-bottom: 12px;
+  list-style-type: disc;
 }
 
-.pachanga-rules-modal-body li {
-  margin-bottom: 4px;
+.pachanga-rule-ul li {
+  margin-bottom: 6px;
+  color: #cbd5e1;
 }
 
 .pachanga-notice-box {

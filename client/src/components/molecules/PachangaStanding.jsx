@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Avatar, Skeleton, Modal, Form, Input, Select, Button, Popconfirm, Empty, Space } from 'antd';
-import { UserOutlined, PlusOutlined, CloseOutlined, ArrowRightOutlined, BookOutlined, BarChartOutlined } from '@ant-design/icons';
+import { Typography, Avatar, Skeleton, Modal, Form, Input, Select, Button, Popconfirm, Empty, Space, InputNumber, Tooltip } from 'antd';
+import { UserOutlined, PlusOutlined, CloseOutlined, ArrowRightOutlined, BookOutlined, EditOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons';
 import { API } from '../../services/api';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import { showAlert } from '../atoms/AlertInfo';
 import './css/PachangaStanding.css';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+const { TextArea } = Input;
 
 const PachangaStanding = () => {
     const [standings, setStandings] = useState([]);
@@ -16,12 +17,20 @@ const PachangaStanding = () => {
     const [loading, setLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
-    // Modals
+    // Rules state
+    const [rulesList, setRulesList] = useState([]);
+    const [rulesLoading, setRulesLoading] = useState(false);
     const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+    const [isRuleFormModalOpen, setIsRuleFormModalOpen] = useState(false);
+    const [editingRule, setEditingRule] = useState(null);
+    const [ruleSubmitting, setRuleSubmitting] = useState(false);
+
+    // Points Form Modal
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
     const [form] = Form.useForm();
+    const [ruleForm] = Form.useForm();
     const { getAvatarSrc } = useAppTheme();
 
     // Check admin status
@@ -55,8 +64,22 @@ const PachangaStanding = () => {
         }
     };
 
+    // Load rules from DB
+    const fetchRules = async (year = selectedYear) => {
+        try {
+            setRulesLoading(true);
+            const res = await API.get(`/rules?year=${year}&league_id=null`);
+            setRulesList(res.rules || []);
+        } catch (error) {
+            console.error("Error loading rules:", error);
+        } finally {
+            setRulesLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchStandings(selectedYear);
+        fetchRules(selectedYear);
     }, [selectedYear]);
 
     // Load users for admin modal
@@ -117,6 +140,107 @@ const PachangaStanding = () => {
             console.error("Error deleting point entry:", error);
             showAlert('error', error.response?.data?.error || 'Error al eliminar');
         }
+    };
+
+    // Open Add / Edit Rule Modal
+    const openRuleModal = (rule = null) => {
+        ruleForm.resetFields();
+        if (rule) {
+            setEditingRule(rule);
+            ruleForm.setFieldsValue({
+                title: rule.title || '',
+                content: rule.content || '',
+                category: rule.category || 'general',
+                year: rule.year || selectedYear,
+                order_num: rule.order_num || 0
+            });
+        } else {
+            setEditingRule(null);
+            ruleForm.setFieldsValue({
+                title: `Normativa Oficial Pachanga ${selectedYear}`,
+                content: '',
+                category: 'general',
+                year: selectedYear,
+                order_num: (rulesList.length || 0) + 1
+            });
+        }
+        setIsRuleFormModalOpen(true);
+    };
+
+    // Save Rule (Create or Update)
+    const handleSaveRule = async (values) => {
+        try {
+            setRuleSubmitting(true);
+            const payload = {
+                title: values.title || null,
+                content: values.content,
+                category: values.category || 'general',
+                year: values.year ? parseInt(values.year, 10) : selectedYear,
+                order_num: values.order_num !== undefined ? parseInt(values.order_num, 10) : 0,
+                league_id: null
+            };
+
+            if (editingRule) {
+                await API.put(`/rules/${editingRule.id}`, payload);
+                showAlert('success', 'Normativa actualizada correctamente');
+            } else {
+                await API.post('/rules', payload);
+                showAlert('success', 'Normativa añadida correctamente');
+            }
+
+            setIsRuleFormModalOpen(false);
+            ruleForm.resetFields();
+            await fetchRules(selectedYear);
+        } catch (error) {
+            console.error("Error saving rule:", error);
+            showAlert('error', error.response?.data?.error || 'Error al guardar la normativa');
+        } finally {
+            setRuleSubmitting(false);
+        }
+    };
+
+    // Delete Rule
+    const handleDeleteRule = async (ruleId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await API.delete(`/rules/${ruleId}`);
+            showAlert('success', 'Normativa eliminada');
+            await fetchRules(selectedYear);
+        } catch (error) {
+            console.error("Error deleting rule:", error);
+            showAlert('error', error.response?.data?.error || 'Error al eliminar');
+        }
+    };
+
+    // Render formatted text content nicely
+    const renderFormattedContent = (content) => {
+        if (!content) return null;
+        const paragraphs = content.split(/\n\s*\n/);
+
+        return (
+            <div className="pachanga-rule-content-block">
+                {paragraphs.map((para, pIdx) => {
+                    const lines = para.split('\n').map(l => l.trim()).filter(Boolean);
+                    const isList = lines.every(l => l.startsWith('-') || l.startsWith('•') || /^\d+\./.test(l));
+
+                    if (isList) {
+                        return (
+                            <ul key={pIdx} className="pachanga-rule-ul">
+                                {lines.map((line, lIdx) => (
+                                    <li key={lIdx}>{line.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '')}</li>
+                                ))}
+                            </ul>
+                        );
+                    }
+
+                    return (
+                        <p key={pIdx} style={{ marginBottom: 12, lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                            {para}
+                        </p>
+                    );
+                })}
+            </div>
+        );
     };
 
     return (
@@ -211,7 +335,7 @@ const PachangaStanding = () => {
                                                     <span key={item.id} className="pachanga-pc-chip">
                                                         <span>{item.competition_name} (+{item.points})</span>
                                                         {isAdmin && (
-                                                            <Popconfirm
+                                                             <Popconfirm
                                                                 title="¿Eliminar estos puntos?"
                                                                 onConfirm={(e) => handleDeletePoint(item.id, e)}
                                                                 okText="Eliminar"
@@ -254,22 +378,54 @@ const PachangaStanding = () => {
                 <div className="pachanga-bottom-card">
                     <div>
                         <h4>
-                            <span>Normativa de la Pachanga {selectedYear}</span>
-                            <span style={{ fontSize: 11, color: '#788296', fontWeight: 600 }}>6 Competiciones</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <BookOutlined style={{ color: '#60a5fa' }} /> Normativa de la Pachanga {selectedYear}
+                            </span>
+                            {rulesList.length > 0 && (
+                                <span style={{ fontSize: 11, color: '#788296', fontWeight: 600 }}>
+                                    {rulesList.length} {rulesList.length === 1 ? 'sección' : 'secciones'}
+                                </span>
+                            )}
                         </h4>
-                        <ul className="pachanga-rules-summary-list">
-                            <li><strong>Puntuación Pachanga:</strong> 1.º (5 pts) • 2.º (3 pts) • 3.º (1 pt) en cada liga oficial.</li>
-                            <li><strong>Partidos:</strong> BO1 (2 pts) • BO3 (2 vict / 3 result) • BO5 (2 vict / 5 result).</li>
-                            <li><strong>Premios Temporada:</strong> 1.º (20 €) • 2.º (10 €) • 3.º (5 €) para LoL u otro juego.</li>
-                            <li><strong>Excepción:</strong> Worlds no suma puntos para la Pachanga y cuenta con premios propios independientes.</li>
-                        </ul>
+
+                        {rulesLoading ? (
+                            <Skeleton active paragraph={{ rows: 3 }} />
+                        ) : rulesList.length > 0 ? (
+                            <div className="pachanga-rules-preview-box">
+                                {rulesList.slice(0, 2).map((r) => (
+                                    <div key={r.id} style={{ marginBottom: 10 }}>
+                                        {r.title && <div className="pachanga-rules-preview-title">{r.title}</div>}
+                                        <div className="pachanga-rules-preview-text">
+                                            {r.content.length > 180 ? `${r.content.substring(0, 180)}...` : r.content}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ padding: '16px 0', color: '#94a3b8', fontSize: 13 }}>
+                                No hay normativa registrada para la temporada {selectedYear}.
+                            </div>
+                        )}
                     </div>
-                    <button
-                        className="pachanga-read-more-btn"
-                        onClick={() => setIsRulesModalOpen(true)}
-                    >
-                        Leer Normativa Completa {selectedYear} <ArrowRightOutlined style={{ fontSize: 11 }} />
-                    </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+                        <button
+                            className="pachanga-read-more-btn"
+                            onClick={() => setIsRulesModalOpen(true)}
+                        >
+                            {rulesList.length > 0 ? `Leer Normativa Completa ${selectedYear}` : 'Ver Normativa'} <ArrowRightOutlined style={{ fontSize: 11 }} />
+                        </button>
+
+                        {isAdmin && (
+                            <button
+                                className="pachanga-admin-btn-secondary"
+                                onClick={() => openRuleModal()}
+                                title="Añadir nueva regla o texto de normativa"
+                            >
+                                <PlusOutlined /> Añadir Norma
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Stats Teaser */}
@@ -282,14 +438,25 @@ const PachangaStanding = () => {
             </div>
 
             {/* ═══════════════════════════════════════════ */}
-            {/*          FULL RULES MODAL (2026)           */}
+            {/*          DYNAMIC RULES MODAL               */}
             {/* ═══════════════════════════════════════════ */}
             <Modal
                 title={
-                    <div style={{ padding: '6px 0 4px' }}>
-                        <Title level={4} style={{ margin: 0, color: '#f8fafc' }}>
-                            Normativa Oficial — Pachanga {selectedYear}
+                    <div style={{ padding: '6px 0 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: 32 }}>
+                        <Title level={4} style={{ margin: 0, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <BookOutlined style={{ color: '#60a5fa' }} /> Normativa Oficial — Pachanga {selectedYear}
                         </Title>
+                        {isAdmin && (
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<PlusOutlined />}
+                                onClick={() => openRuleModal()}
+                                style={{ background: '#3b82f6' }}
+                            >
+                                Añadir Norma
+                            </Button>
+                        )}
                     </div>
                 }
                 open={isRulesModalOpen}
@@ -299,77 +466,146 @@ const PachangaStanding = () => {
                         Cerrar
                     </Button>
                 ]}
-                width={740}
+                width={800}
                 centered
             >
                 <div className="pachanga-rules-modal-body">
-                    <p>Hola, bienvenidos a la <strong>Pachanga 2026</strong>.</p>
+                    {rulesLoading ? (
+                        <Skeleton active paragraph={{ rows: 8 }} />
+                    ) : rulesList.length > 0 ? (
+                        rulesList.map((rule) => (
+                            <div key={rule.id} className="pachanga-rule-card">
+                                <div className="pachanga-rule-header">
+                                    <h3 className="pachanga-rule-title">
+                                        {rule.title || `Normativa ${rule.year}`}
+                                    </h3>
 
-                    <h3>1. Competiciones de la Temporada</h3>
-                    <p>Este año tendremos <strong>6 competiciones en total</strong>:</p>
-                    <ul>
-                        <li>LEC Versus (LEC)</li>
-                        <li>Last Stand (Internacional)</li>
-                        <li>Spring Split (LEC)</li>
-                        <li>MSI (Internacional)</li>
-                        <li>Summer Split (LEC)</li>
-                        <li>Worlds (Internacional) <em>(FabriFraude)</em></li>
-                    </ul>
-                    <p style={{ fontSize: 13, color: '#788296' }}>Este año va a ser básicamente como el anterior en casi todo.</p>
+                                    {isAdmin && (
+                                        <Space size={6}>
+                                            <Button
+                                                type="text"
+                                                size="small"
+                                                icon={<EditOutlined />}
+                                                onClick={() => openRuleModal(rule)}
+                                                style={{ color: '#60a5fa' }}
+                                                title="Editar esta norma"
+                                            >
+                                                Editar
+                                            </Button>
+                                            <Popconfirm
+                                                title="¿Eliminar esta normativa?"
+                                                description="Esta acción eliminará este registro de la base de datos."
+                                                onConfirm={(e) => handleDeleteRule(rule.id, e)}
+                                                okText="Eliminar"
+                                                cancelText="Cancelar"
+                                                okButtonProps={{ danger: true }}
+                                            >
+                                                <Button
+                                                    type="text"
+                                                    size="small"
+                                                    icon={<DeleteOutlined />}
+                                                    danger
+                                                    title="Eliminar norma"
+                                                >
+                                                    Eliminar
+                                                </Button>
+                                            </Popconfirm>
+                                        </Space>
+                                    )}
+                                </div>
 
-                    <h3>2. Sistema de Puntos por Partidos</h3>
-                    <ul>
-                        <li><strong>Los BO1</strong> dan 2 puntos por acierto.</li>
-                        <li><strong>Los BO3</strong> dan 2 puntos por victoria y 3 por resultado.</li>
-                        <li><strong>Los BO5</strong> dan 2 puntos por victoria y 5 por resultado.</li>
-                    </ul>
-
-                    <h3>3. Sistema de Plenos Semanales</h3>
-                    <p>Los plenos van a cambiar este año, ya que con la web a veces una semana hay 2 partidos, o 5 o más. Ahora funcionará así:</p>
-                    <ul>
-                        <li>Los plenos serán cuando se acierten mínimo más de 1 partido.</li>
-                        <li>Como la web funciona semanal, para hacerte un pleno completo tendrás que adivinar todos los partidos de esa semana.</li>
-                        <li>Adivinar <strong>3 partidos seguidos:</strong> dará 1 punto.</li>
-                        <li>Adivinar <strong>5 partidos seguidos:</strong> dará 2 puntos.</li>
-                        <li>Adivinar <strong>más de 5 partidos seguidos:</strong> dará 3 puntos.</li>
-                    </ul>
-
-                    <h3>4. Equipos Favoritos</h3>
-                    <p>Seguiremos con los equipos favoritos, dando <strong>+1 punto</strong> por acertar su resultado y su victoria. También tendremos los puntos finales según dónde terminó tu equipo:</p>
-                    <ul>
-                        <li>1.º: 20 puntos • 2.º: 16 puntos</li>
-                        <li>3.º: 12 puntos • 4.º: 10 puntos</li>
-                        <li>5.º: 8 puntos • 6.º: 6 puntos</li>
-                        <li>7.º: 5 puntos • 8.º: 3 puntos</li>
-                    </ul>
-
-                    <h3>5. Clasificación y Premios de la Pachanga</h3>
-                    <p>Por cada competición, el top 3 se apuntará puntos que se usarán al final para declarar el top 3 de los mejores de la Pachanga:</p>
-                    <ul>
-                        <li>🥇 <strong>1.º:</strong> 5 puntos</li>
-                        <li>🥈 <strong>2.º:</strong> 3 puntos</li>
-                        <li>🥉 <strong>3.º:</strong> 1 punto</li>
-                    </ul>
-                    <div className="pachanga-notice-box">
-                        <strong>Premios de la Pachanga (pueden cambiar):</strong><br />
-                        • <strong>1.º:</strong> 20 € para el LoL u otro juego<br />
-                        • <strong>2.º:</strong> 10 € para el LoL u otro juego<br />
-                        • <strong>3.º:</strong> 5 € para el LoL u otro juego
-                    </div>
-
-                    <h3>6. Premios Especiales de Worlds</h3>
-                    <p>El Mundial tiene premios propios independientes, como los del año pasado:</p>
-                    <ul>
-                        <li><strong>Premio Base:</strong> 10 € en RP o en otro juego.</li>
-                        <li>Si el ganador del Mundial es tu equipo y tú has ganado la competición: la skin vendrá con su edición superior (con el chroma y todo lo demás).</li>
-                        <li>Si el ganador del Mundial es un equipo europeo, es tu equipo favorito y tú has ganado la competición: te llevarás la camiseta del equipo (puede ser la del siguiente año o la de Worlds).</li>
-                        <li>Los 10 € son el premio base; si se cumplen las dos condiciones, se cambian por el premio monetario, y si no quieres ni la skin ni la camiseta, pues RP con el valor.</li>
-                    </ul>
-
-                    <div className="pachanga-notice-box" style={{ marginTop: 24 }}>
-                        💡 <em>Recordad, como siempre: si tenéis ideas o errores que habéis visto, comentádmelo :)</em>
-                    </div>
+                                {renderFormattedContent(rule.content)}
+                            </div>
+                        ))
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                            <Empty description={`No hay normativa registrada en la base de datos para la temporada ${selectedYear}.`} />
+                            {isAdmin && (
+                                <Button
+                                    type="primary"
+                                    icon={<PlusOutlined />}
+                                    style={{ marginTop: 16 }}
+                                    onClick={() => openRuleModal()}
+                                >
+                                    Añadir primera norma
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </div>
+            </Modal>
+
+            {/* ═══════════════════════════════════════════ */}
+            {/*       ADMIN CREATE / EDIT RULE MODAL       */}
+            {/* ═══════════════════════════════════════════ */}
+            <Modal
+                title={
+                    <div style={{ padding: '6px 0 4px' }}>
+                        <Title level={4} style={{ margin: 0 }}>
+                            {editingRule ? 'Editar Normativa' : 'Añadir Normativa a la Base de Datos'}
+                        </Title>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                            {editingRule ? 'Modifica el contenido de la regla' : `Guarda las normas para la temporada ${selectedYear}`}
+                        </Text>
+                    </div>
+                }
+                open={isRuleFormModalOpen}
+                onCancel={() => setIsRuleFormModalOpen(false)}
+                footer={null}
+                width={720}
+                centered
+            >
+                <Form
+                    form={ruleForm}
+                    layout="vertical"
+                    onFinish={handleSaveRule}
+                    style={{ marginTop: 16 }}
+                >
+                    <Form.Item
+                        name="title"
+                        label="Título de la Sección / Normativa"
+                    >
+                        <Input placeholder="Ej: Normativa Oficial Pachanga 2026 o 2. Sistema de Puntos por Partidos" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="content"
+                        label="Contenido Completo de la Normativa"
+                        rules={[{ required: true, message: 'Por favor pega o escribe el texto de la normativa' }]}
+                        help="Puedes pegar el texto completo con saltos de línea, listas con guiones (-) o números."
+                    >
+                        <TextArea
+                            rows={12}
+                            placeholder="Pega aquí el texto completo de las normas..."
+                            style={{ fontFamily: 'inherit', fontSize: 14 }}
+                        />
+                    </Form.Item>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <Form.Item
+                            name="year"
+                            label="Año / Temporada"
+                        >
+                            <InputNumber style={{ width: '100%' }} />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="order_num"
+                            label="Orden de visualización"
+                        >
+                            <InputNumber style={{ width: '100%' }} min={0} />
+                        </Form.Item>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 20 }}>
+                        <Button onClick={() => setIsRuleFormModalOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button type="primary" htmlType="submit" loading={ruleSubmitting}>
+                            {editingRule ? 'Guardar Cambios' : 'Crear Normativa'}
+                        </Button>
+                    </div>
+                </Form>
             </Modal>
 
             {/* ═══════════════════════════════════════════ */}
