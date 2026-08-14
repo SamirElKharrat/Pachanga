@@ -148,7 +148,7 @@ const LeagueInfo = ({ leagueId }) => {
                 <div className="league-champion-banner">
                     <Flex align="center" gap={18}>
                         <div className="league-champion-avatar-wrap">
-                            <span className="league-champion-crown">👑</span>
+                            <span className="league-champion-crown">1</span>
                             <Avatar
                                 src={getAvatarSrc(champion.User.logo_url)}
                                 icon={<UserOutlined />}
