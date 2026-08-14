@@ -14,6 +14,7 @@ const { Title, Paragraph, Text } = Typography;
  * @param {string} [props.image] - URL for the thumbnail image.
  * @param {Object} [props.date] - Date information object.
  * @param {string[]} [props.date.dates] - Array of ISO date strings.
+ * @param {string} [props.status] - Status of the league ('finished', 'live', 'scheduled').
  * @param {Function} [props.onAction] - Callback for the primary button.
  * @param {string} [props.actionText] - Label for the primary button.
  * @returns {React.ReactElement} The rendered CardInfo component.
@@ -24,13 +25,35 @@ const CardInfo = ({
     description,
     image,
     date,
+    status,
     onAction,
     actionText
 }) => {
     const { token } = theme.useToken();
-    
-    // Check if the current theme is light based on the base background token
     const isLight = token.colorBgBase === '#f8fafc';
+
+    const renderStatusTag = () => {
+        if (!status) return null;
+        if (status === 'finished') {
+            return (
+                <Tag color="warning" bordered={false} style={{ margin: 0, fontWeight: 600, fontSize: 11 }}>
+                    Finalizada
+                </Tag>
+            );
+        }
+        if (status === 'live') {
+            return (
+                <Tag color="success" bordered={false} style={{ margin: 0, fontWeight: 600, fontSize: 11 }}>
+                    En curso
+                </Tag>
+            );
+        }
+        return (
+            <Tag color="default" bordered={false} style={{ margin: 0, fontWeight: 600, fontSize: 11 }}>
+                Programada
+            </Tag>
+        );
+    };
 
     return (
         <Card
@@ -57,6 +80,7 @@ const CardInfo = ({
             }}
         >
             <Flex vertical>
+                {/* Image and Status Tag Header */}
                 {image && (
                     <Flex
                         align="center"
@@ -69,6 +93,7 @@ const CardInfo = ({
                             marginBottom: '16px',
                             border: `1px solid ${token.colorBorderSecondary}`,
                             boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.02)',
+                            position: 'relative'
                         }}
                     >
                         <Image
@@ -88,9 +113,13 @@ const CardInfo = ({
                 )}
 
                 <Flex vertical gap={6} style={{ marginBottom: '16px' }}>
-                    <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>
-                        {title}
-                    </Title>
+                    <Flex justify="space-between" align="center" gap={8}>
+                        <Title level={4} style={{ margin: 0, fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em', flex: 1 }}>
+                            {title}
+                        </Title>
+                        {renderStatusTag()}
+                    </Flex>
+
                     {type && (
                         <Text type="secondary" style={{ display: 'block', fontSize: '13px' }}>
                             {type}

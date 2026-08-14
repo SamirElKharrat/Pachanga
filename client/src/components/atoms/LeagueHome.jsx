@@ -149,6 +149,7 @@ const LeagueHome = () => {
                                 <CardInfo
                                     title={league.name}
                                     image={league.logo_url}
+                                    status={league.status || 'scheduled'}
                                     date={{
                                         dates: [league.start_date, league.end_date]
                                     }}

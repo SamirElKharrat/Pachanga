@@ -1,0 +1,343 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                            LEAGUE INFO STYLES                              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.league-info-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 20px 60px;
+  width: 100%;
+}
+
+/* ─── Hero Header ─── */
+.league-hero-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 28px;
+  margin-bottom: 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+}
+
+.league-hero-logo {
+  max-width: 140px;
+  max-height: 140px;
+  width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.15));
+}
+
+.league-hero-title {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 8px 0 !important;
+  letter-spacing: -0.02em;
+}
+
+.league-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.league-status-badge.finished {
+  background: rgba(212, 168, 67, 0.12);
+  border: 1px solid rgba(212, 168, 67, 0.3);
+  color: #f5d576;
+}
+
+.league-status-badge.live {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.league-status-badge.scheduled {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #cbd5e1;
+}
+
+/* ─── Champion Highlight Banner ─── */
+.league-champion-banner {
+  background: linear-gradient(135deg, rgba(212, 168, 67, 0.15) 0%, rgba(245, 213, 118, 0.05) 50%, rgba(0, 0, 0, 0.2) 100%);
+  border: 1px solid rgba(212, 168, 67, 0.35);
+  border-radius: 18px;
+  padding: 20px 28px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 0 35px rgba(212, 168, 67, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.league-champion-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f5d576, #d4a843, transparent);
+}
+
+.league-champion-avatar-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.league-champion-crown {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  font-size: 24px;
+  filter: drop-shadow(0 0 8px rgba(245, 213, 118, 0.8));
+  animation: champCrownBounce 2.5s ease-in-out infinite;
+}
+
+@keyframes champCrownBounce {
+  0%, 100% { transform: translateX(-50%) rotate(-8deg) translateY(0); }
+  50% { transform: translateX(-50%) rotate(-8deg) translateY(-4px); }
+}
+
+.league-champion-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0;
+}
+
+.league-champion-subtitle {
+  color: #f5d576;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.league-champion-points-badge {
+  background: rgba(212, 168, 67, 0.15);
+  border: 1px solid rgba(212, 168, 67, 0.4);
+  padding: 10px 20px;
+  border-radius: 14px;
+  text-align: right;
+}
+
+.league-champion-points-num {
+  font-size: 24px;
+  font-weight: 900;
+  color: #f5d576;
+  line-height: 1;
+}
+
+.league-champion-points-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+/* ─── Classification Cards / Table ─── */
+.league-section-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 24px;
+  height: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.league-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #f8fafc;
+}
+
+.league-standing-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.league-standing-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.league-standing-row.rank-1 {
+  background: linear-gradient(90deg, rgba(212, 168, 67, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(212, 168, 67, 0.25);
+}
+
+.league-standing-row.rank-2 {
+  background: linear-gradient(90deg, rgba(168, 180, 196, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(168, 180, 196, 0.2);
+}
+
+.league-standing-row.rank-3 {
+  background: linear-gradient(90deg, rgba(181, 122, 74, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-color: rgba(181, 122, 74, 0.2);
+}
+
+.league-rank-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+}
+
+.league-rank-badge.gold {
+  background: linear-gradient(135deg, #f5d576, #d4a843);
+  color: #07080d;
+  box-shadow: 0 0 10px rgba(212, 168, 67, 0.4);
+}
+
+.league-rank-badge.silver {
+  background: linear-gradient(135deg, #cdd6e4, #a8b4c4);
+  color: #07080d;
+}
+
+.league-rank-badge.bronze {
+  background: linear-gradient(135deg, #d4955e, #b57a4a);
+  color: #07080d;
+}
+
+.league-standing-name {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+  color: #f1f5f9;
+}
+
+.league-standing-pts {
+  font-weight: 800;
+  font-size: 14px;
+  color: #f5d576;
+}
+
+/* ─── Team Grid (Revamped) ─── */
+.league-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.league-team-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.league-team-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(59, 130, 246, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.league-team-logo-container {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.league-team-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  transition: transform 0.25s ease;
+}
+
+.league-team-card:hover .league-team-logo {
+  transform: scale(1.08);
+}
+
+.league-team-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  .league-info-container {
+    padding: 12px 10px 40px;
+  }
+
+  .league-hero-card {
+    padding: 20px 16px;
+  }
+
+  .league-hero-title {
+    font-size: 24px;
+  }
+
+  .league-champion-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px;
+    gap: 14px;
+  }
+
+  .league-champion-points-badge {
+    text-align: center;
+    width: 100%;
+  }
+
+  .league-teams-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+
+  .league-team-logo-container {
+    width: 48px;
+    height: 48px;
+  }
+}
