@@ -6,6 +6,7 @@ const Match = require('../models/match');
 const Prediction = require('../models/prediction');
 const Result = require('../models/result');
 const hallController = require('./hallController');
+const pachangaController = require('./pachangaController');
 
 
 // Get all leagues
@@ -88,6 +89,7 @@ exports.updateLeague = async (req, res) => {
         const updatedLeague = await league.update(req.body);
         if (req.body.status === 'finished') {
             await hallController.syncFinishedLeagueWinners();
+            await pachangaController.syncFinishedLeaguePachangaPoints(updatedLeague.id);
         }
         res.json(updatedLeague);
     } catch (error) {

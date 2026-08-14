@@ -432,7 +432,7 @@ const HallOfFlame = () => {
             {/* ═══════════════════════════════════════════ */}
             <Modal
                 title={
-                    <div style={{ padding: '8px 0 4px' }}>
+                    <div style={{ padding: '4px 0' }}>
                         <Title level={4} style={{ margin: 0 }}>Añadir Trofeo</Title>
                         <Text type="secondary" style={{ fontSize: 13 }}>
                             Registra una victoria manualmente al palmarés de un jugador
@@ -444,21 +444,12 @@ const HallOfFlame = () => {
                 footer={null}
                 centered
                 width={520}
-                style={{ maxWidth: 'calc(100vw - 24px)', margin: '0 auto' }}
-                styles={{
-                    content: {
-                        background: token.colorBgContainer || '#11131a',
-                        border: `1px solid ${token.colorBorder || 'rgba(255,255,255,0.08)'}`,
-                        borderRadius: 20
-                    }
-                }}
             >
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={handleCreateTrophy}
                     initialValues={{ date: dayjs() }}
-                    style={{ marginTop: 16 }}
                 >
                     <Form.Item
                         name="user_id"
@@ -519,12 +510,6 @@ const HallOfFlame = () => {
                             type="primary"
                             htmlType="submit"
                             loading={submitting}
-                            style={{
-                                background: 'linear-gradient(135deg, #d4a843 0%, #8b7030 100%)',
-                                borderColor: '#d4a843',
-                                color: '#07080d',
-                                fontWeight: 700
-                            }}
                         >
                             Añadir Trofeo
                         </Button>

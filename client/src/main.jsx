@@ -12,6 +12,7 @@ import Team from './components/molecules/Team'
 import Prediction from './components/molecules/Prediction'
 import User from './components/molecules/User'
 import HallOfFlame from './components/molecules/HallOfFlame'
+import PachangaStanding from './components/molecules/PachangaStanding'
 import IsGuilleWinning from './components/molecules/IsGuilleWinning'
 import './index.css';
 import './components/atoms/AlertInfo' // Importamos para inicializar la configuración
@@ -32,6 +33,8 @@ function Root() {
                   <Route index element={<Home />} />
                   <Route path='/leagues' element={<League />} />
                   <Route path='/leagues/:id' element={<League />} />
+                  <Route path='/clasificacion' element={<PachangaStanding />} />
+                  <Route path='/pachanga' element={<PachangaStanding />} />
                   {/* <Route path='/teams' element={<Team />} />
                   <Route path='/teams/:id' element={<Team />} /> */}
                   <Route path='/predictions' element={<Prediction />} />

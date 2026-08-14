@@ -33,8 +33,8 @@ const getMenuItems = (isAdmin, navigate) => {
     const items = [
         { label: 'Inicio', key: '/', icon: <HomeOutlined />, onClick: () => navigate('/') },
         { label: 'Ligas', key: '/leagues', icon: <TrophyOutlined />, onClick: () => navigate('/leagues') },
+        { label: 'Clasificación', key: '/clasificacion', icon: <BarChartOutlined />, onClick: () => navigate('/clasificacion') },
         // { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
-        // { label: 'Clasificación', key: '/clasification', icon: <BarChartOutlined />, onClick: () => navigate('/clasification') },
         { label: 'Predicciones', key: '/predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
         {
             label: (

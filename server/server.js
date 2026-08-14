@@ -13,6 +13,7 @@ const Match = require('./models/match');
 const Prediction = require('./models/prediction');
 const Result = require('./models/result');
 const Hall = require('./models/hall');
+const PachangaPoint = require('./models/pachangaPoint');
 
 const app = express();
 const PORT = 3001;
@@ -67,6 +68,12 @@ Hall.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
 User.hasMany(Hall, { as: 'Halls', foreignKey: 'user_id' });
 Hall.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
 League.hasMany(Hall, { as: 'Halls', foreignKey: 'league_id' });
+
+// PachangaPoint relations
+PachangaPoint.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
+User.hasMany(PachangaPoint, { as: 'PachangaPoints', foreignKey: 'user_id' });
+PachangaPoint.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
+League.hasMany(PachangaPoint, { as: 'PachangaPoints', foreignKey: 'league_id' });
 
 
 // Routes

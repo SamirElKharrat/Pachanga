@@ -10,6 +10,7 @@ const favoriteTeamRoute = require("./favoriteTeam");
 const leagueParticipationRoute = require("./leagueParticipation");
 const uploadRoute = require("./upload");
 const hallRoute = require("./hall");
+const pachangaRoute = require("./pachanga");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -22,5 +23,6 @@ router.use("/favoriteTeams", favoriteTeamRoute);
 router.use("/leagueParticipations", leagueParticipationRoute);
 router.use("/upload", uploadRoute);
 router.use("/hall", hallRoute);
+router.use("/pachanga", pachangaRoute);
 
 module.exports = router;

@@ -41,6 +41,11 @@ export const pachangaTheme = {
       colorBgContainer: '#334155',
       colorBorder: 'transparent',
     },
+    Modal: {
+      contentBg: '#1e293b',
+      headerBg: '#1e293b',
+      footerBg: '#1e293b',
+    },
   },
 };
 
@@ -88,6 +93,11 @@ export const pachangaLightTheme = {
     Select: {
       colorBgContainer: '#ffffff',
       colorBorder: '#cbd5e1',
+    },
+    Modal: {
+      contentBg: '#ffffff',
+      headerBg: '#ffffff',
+      footerBg: '#ffffff',
     },
   },
 };
