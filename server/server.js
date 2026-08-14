@@ -35,8 +35,8 @@ const sequelize = new Sequelize(
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://pachanga.lol'],
-    credentials: true
+  origin: ['http://localhost:5173', 'https://pachanga.lol'],
+  credentials: true
 }));
 app.use(cookieParser());
 app.use(express.json());
@@ -96,22 +96,6 @@ const syncDatabase = async () => {
     // Sincronizar modelos
     await db.sync({ force: false });
     console.log('Modelos sincronizados correctamente.');
-
-    // Auto-inicialización segura en arranque (Render & local)
-    try {
-      if (hallController.seedHistoricalHallIfEmpty) {
-        await hallController.seedHistoricalHallIfEmpty();
-      }
-      if (hallController.syncFinishedLeagueWinners) {
-        await hallController.syncFinishedLeagueWinners();
-      }
-      if (pachangaController.syncAllFinishedLeagues) {
-        await pachangaController.syncAllFinishedLeagues();
-      }
-      console.log('Datos de Hall of Flame y Clasificación sincronizados.');
-    } catch (syncErr) {
-      console.error('Error durante la inicialización de datos:', syncErr);
-    }
 
     // Iniciar el servidor
     app.listen(PORT, () => {
