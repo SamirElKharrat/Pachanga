@@ -268,7 +268,6 @@ const HallOfFlame = () => {
                     {/* ═══════════════════════════════════════════ */}
                     {restPlayers.length > 0 && (
                         <div>
-                            <div className="hof-rest-title">Resto del Palmarés</div>
                             <div className="hof-rest-list">
                                 {restPlayers.map((player, index) => {
                                     const rankNumber = index + 4;

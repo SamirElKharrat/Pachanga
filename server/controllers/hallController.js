@@ -74,16 +74,32 @@ exports.getAllHallEntries = async (req, res) => {
         // First, auto-sync any finished leagues that might not have a Hall record yet
         await syncFinishedLeagueWinners();
 
-        // 1. Calculate total competitions: finished leagues in DB + manual Hall entries (league_id is null)
-        const finishedLeaguesCount = await League.count({
-            where: { status: 'finished' }
+        // 1. Calculate total competitions: finished leagues in DB + distinct manual Hall entries
+        const finishedLeagues = await League.findAll({
+            where: { status: 'finished' },
+            attributes: ['id', 'name']
         });
 
-        const manualCompetitionsCount = await Hall.count({
-            where: { league_id: null }
+        const manualHallEntries = await Hall.findAll({
+            where: { league_id: null },
+            attributes: ['competition_name'],
+            raw: true
         });
 
-        const totalCompetitions = (finishedLeaguesCount + manualCompetitionsCount) || 1;
+        const uniqueCompetitions = new Set();
+
+        finishedLeagues.forEach(l => {
+            if (l.name) uniqueCompetitions.add(l.name.trim().toLowerCase());
+            else uniqueCompetitions.add(`league_${l.id}`);
+        });
+
+        manualHallEntries.forEach(h => {
+            if (h.competition_name) {
+                uniqueCompetitions.add(h.competition_name.trim().toLowerCase());
+            }
+        });
+
+        const totalCompetitions = uniqueCompetitions.size || 1;
 
         // 2. Fetch all Hall records with User and League
         const allHallRecords = await Hall.findAll({
@@ -149,8 +165,8 @@ exports.getAllHallEntries = async (req, res) => {
         res.json({
             players: sortedPlayers,
             totalCompetitions,
-            finishedLeaguesCount,
-            manualCompetitionsCount
+            finishedLeaguesCount: finishedLeagues.length,
+            manualCompetitionsCount: manualHallEntries.length
         });
     } catch (error) {
         console.error('Error fetching Hall of Flame entries:', error);

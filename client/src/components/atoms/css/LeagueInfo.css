@@ -341,3 +341,28 @@
     height: 48px;
   }
 }
+
+/* ─── League Statistics Teaser ─── */
+.league-stats-card {
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  margin-top: 24px;
+  transition: all 0.2s ease;
+}
+
+.league-stats-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.02);
+}
+
+.league-stats-tag {
+  font-size: 11px;
+  color: #3b82f6;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 6px;
+}

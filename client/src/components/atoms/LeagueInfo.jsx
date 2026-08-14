@@ -260,6 +260,14 @@ const LeagueInfo = ({ leagueId }) => {
                     </div>
                 </Col>
             </Row>
+
+            {/* ─── League Statistics Teaser ─── */}
+            <div className="league-stats-card">
+                <div className="league-stats-tag">Próximamente</div>
+                <h4 style={{ color: '#ffffff', margin: '4px 0 0', fontSize: 16, fontWeight: 700 }}>
+                    Estadísticas de la Liga
+                </h4>
+            </div>
         </div>
     );
 };
