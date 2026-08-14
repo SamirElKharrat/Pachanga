@@ -5,6 +5,7 @@ const LeagueParticipation = require('../models/leagueParticipation');
 const Match = require('../models/match');
 const Prediction = require('../models/prediction');
 const Result = require('../models/result');
+const hallController = require('./hallController');
 
 
 // Get all leagues
@@ -85,6 +86,9 @@ exports.updateLeague = async (req, res) => {
             return res.status(404).json({ error: 'League not found' });
         }
         const updatedLeague = await league.update(req.body);
+        if (req.body.status === 'finished') {
+            await hallController.syncFinishedLeagueWinners();
+        }
         res.json(updatedLeague);
     } catch (error) {
         res.status(400).json({ error: error.message });

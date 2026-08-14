@@ -12,6 +12,7 @@ const Team = require('./models/team');
 const Match = require('./models/match');
 const Prediction = require('./models/prediction');
 const Result = require('./models/result');
+const Hall = require('./models/hall');
 
 const app = express();
 const PORT = 3001;
@@ -60,6 +61,12 @@ User.hasMany(Prediction, { foreignKey: 'user_id' });
 Result.belongsTo(Match, { as: 'Match', foreignKey: 'match_id' });
 Match.hasOne(Result, { foreignKey: 'match_id' });
 Result.belongsTo(Team, { as: 'Winner', foreignKey: 'winner' });
+
+// Hall relations
+Hall.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
+User.hasMany(Hall, { as: 'Halls', foreignKey: 'user_id' });
+Hall.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
+League.hasMany(Hall, { as: 'Halls', foreignKey: 'league_id' });
 
 
 // Routes

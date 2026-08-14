@@ -1,302 +1,537 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Typography, Avatar, Divider, Space, Skeleton, Badge, Modal, Statistic, List, theme, Flex } from 'antd';
-import { TrophyOutlined, UserOutlined, GlobalOutlined, LineChartOutlined, FireOutlined, ThunderboltOutlined, CrownOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { Typography, Avatar, Skeleton, Modal, Form, Input, Select, DatePicker, Button, Popconfirm, theme } from 'antd';
+import { UserOutlined, PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { API } from '../../services/api';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
+import { showAlert } from '../atoms/AlertInfo';
+import dayjs from 'dayjs';
+import './css/HallOfFlame.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
-const WINNERS_DATA = [
-    {
-        username: 'Guille',
-        wins: 11,
-        leagues: 'LEC WINTER 2023, WORLDS 2023, LEC WINTER 2024, LEC SPRING REGULAR 2024, LEC SPRING 2024, LEC FINALS 2024, PACHANGA 24, LEC WINTER 2025, FIRST STAND 2025, LEC SUMMER 2025, PACHANGA 2025'
-    },
-    {
-        username: 'Fabri',
-        wins: 3,
-        leagues: 'WORLDS 2022 (EMPATE), WORLDS 2024, WORLDS 2025'
-    },
-    {
-        username: 'Samir',
-        wins: 3,
-        leagues: 'LEC SPRING 2023, LEC SUMMER 2023, LEC VERSUS 2026'
-    },
-    {
-        username: 'Aridane',
-        wins: 2,
-        leagues: 'MSI 2024, LEC SUMMER REGULAR 2024'
-    },
-    {
-        username: 'Tensi',
-        wins: 2,
-        leagues: 'WORLDS 2022 (EMPATE), LEC SUMMER 2024'
-    },
-    {
-        username: 'Karim',
-        wins: 3,
-        leagues: 'MSI 2023, MSI 2025, FIRST STAND 2026'
-    },
-    {
-        username: 'Javi',
-        wins: 1,
-        leagues: 'LEC SPRING 2025'
-    }
-];
+const getSubtitle = (wins) => {
+    if (wins >= 10) return 'Leyenda de la Pachanga';
+    if (wins >= 5) return 'Veterano de la Pachanga';
+    if (wins >= 3) return 'Competidor Destacado';
+    if (wins >= 2) return 'Campeón';
+    return 'Primer Trofeo';
+};
 
 const HallOfFlame = () => {
     const [players, setPlayers] = useState([]);
+    const [totalCompetitions, setTotalCompetitions] = useState(1);
+    const [allUsers, setAllUsers] = useState([]);
+    const [allLeagues, setAllLeagues] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
     const [selectedPlayer, setSelectedPlayer] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    const [form] = Form.useForm();
+    const navigate = useNavigate();
     const { token } = theme.useToken();
     const { getAvatarSrc } = useAppTheme();
 
-    useEffect(() => {
-        const fetchPlayers = async () => {
-            try {
-                setLoading(true);
-                const users = await API.get('/users/get');
-
-                const sortedUsers = users.map(u => {
-                    const winInfo = WINNERS_DATA.find(w => w.username.toLowerCase() === u.username.toLowerCase());
-                    return { ...u, winInfo };
-                }).sort((a, b) => (b.winInfo?.wins || 0) - (a.winInfo?.wins || 0));
-
-                setPlayers(sortedUsers);
-            } catch (error) {
-                console.error("Error loading players for Hall of Flame:", error);
-            } finally {
-                setLoading(false);
+    const fetchHallData = async () => {
+        try {
+            setLoading(true);
+            const response = await API.get('/hall/get');
+            if (response && response.players) {
+                setPlayers(response.players);
+                setTotalCompetitions(response.totalCompetitions || 1);
             }
-        };
-        fetchPlayers();
-    }, []);
-
-    const openDetails = (player) => {
-        setSelectedPlayer(player);
-        setIsModalOpen(true);
+        } catch (error) {
+            console.error("Error loading Hall of Flame data:", error);
+            showAlert('error', 'Error al cargar el Hall of Flame');
+        } finally {
+            setLoading(false);
+        }
     };
 
+    const fetchFormData = async () => {
+        try {
+            const [usersData, leaguesData] = await Promise.all([
+                API.get('/users/get').catch(() => []),
+                API.get('/leagues/get').catch(() => [])
+            ]);
+            setAllUsers(usersData || []);
+            setAllLeagues(leaguesData || []);
+        } catch (error) {
+            console.error("Error fetching auxiliary data for form:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchHallData();
+        fetchFormData();
+
+        // Check if current user is admin
+        const checkAdmin = async () => {
+            try {
+                const storedAdmin = localStorage.getItem('admin') === 'true';
+                if (storedAdmin) {
+                    setIsAdmin(true);
+                    return;
+                }
+                const user = await API.getUserByToken();
+                if (user && user.role === 'admin') {
+                    setIsAdmin(true);
+                }
+            } catch {
+                setIsAdmin(false);
+            }
+        };
+        checkAdmin();
+    }, []);
+
+    const openPlayerDetails = (player) => {
+        setSelectedPlayer(player);
+        setIsPlayerModalOpen(true);
+    };
+
+    const openAddTrophyModal = (preselectedUserId = null) => {
+        form.resetFields();
+        if (preselectedUserId) {
+            form.setFieldsValue({ user_id: preselectedUserId });
+        }
+        setIsFormModalOpen(true);
+    };
+
+    const handleCreateTrophy = async (values) => {
+        try {
+            setSubmitting(true);
+            const payload = {
+                user_id: values.user_id,
+                competition_name: values.competition_name,
+                league_id: values.league_id || null,
+                date: values.date ? values.date.toISOString() : new Date().toISOString()
+            };
+
+            await API.post('/hall/set', payload);
+            showAlert('success', 'Trofeo añadido correctamente');
+            setIsFormModalOpen(false);
+            form.resetFields();
+
+            // Refresh Hall of Flame
+            await fetchHallData();
+        } catch (error) {
+            console.error("Error creating trophy:", error);
+            showAlert('error', error.response?.data?.error || 'Error al añadir el trofeo');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteTrophy = async (trophyId, e) => {
+        if (e) e.stopPropagation();
+        try {
+            await API.delete(`/hall/delete/${trophyId}`);
+            showAlert('success', 'Trofeo eliminado correctamente');
+
+            // Update selectedPlayer state locally so modal reflects removal immediately
+            setSelectedPlayer(prev => {
+                if (!prev) return null;
+                const updatedTrophies = prev.trophies.filter(t => t.id !== trophyId);
+                const newWins = updatedTrophies.length;
+                const newWinRate = Number(((newWins / totalCompetitions) * 100).toFixed(1));
+                return {
+                    ...prev,
+                    wins: newWins,
+                    trophies: updatedTrophies,
+                    winRate: newWinRate
+                };
+            });
+
+            // Refetch full data in background
+            await fetchHallData();
+        } catch (error) {
+            console.error("Error deleting trophy:", error);
+            showAlert('error', error.response?.data?.error || 'Error al eliminar el trofeo');
+        }
+    };
+
+    const first = players[0];
+    const second = players[1];
+    const third = players[2];
+    const restPlayers = players.slice(3);
+
     return (
-        <Flex vertical style={{ padding: '24px', maxWidth: 1200, margin: '0 auto' }}>
-            <Flex vertical align="center" style={{ marginBottom: 48 }}>
-                <TrophyOutlined style={{ fontSize: 40, color: '#fadb14', marginBottom: 12 }} />
-                <Title level={1} style={{ margin: 0 }}>Hall of Flame</Title>
-                <Paragraph type="secondary" style={{ fontSize: 14, marginTop: 8 }}>
-                    Reconocimiento a los jugadores de la Pachanga.
-                </Paragraph>
-            </Flex>
+        <div className="hof-container">
+            {/* ═══════════════════════════════════════════ */}
+            {/*                   HEADER                    */}
+            {/* ═══════════════════════════════════════════ */}
+            <div className="hof-header">
+                {isAdmin && (
+                    <button
+                        className="hof-header-admin-btn"
+                        onClick={() => openAddTrophyModal()}
+                    >
+                        <PlusOutlined /> Añadir Trofeo
+                    </button>
+                )}
+                <h1>
+                    <span>Hall of </span>
+                    <span className="hof-flame">Flame</span>
+                </h1>
+                <p>Palmarés de Campeones</p>
+            </div>
 
-            <Row gutter={[32, 24]}>
-                {/* Lado izquierdo: Clasificación Pachanga */}
-                <Col xs={24} md={9} lg={8}>
-                    <Flex vertical style={{ minHeight: 70, marginTop: 5 }}>
-                        <Space style={{ marginBottom: 4 }}>
-                            <Title level={3} style={{ margin: 0 }}>Pachanga 202X</Title>
-                            <TrophyOutlined style={{ color: '#fadb14', fontSize: 20 }} />
-                        </Space>
-                        <Text type="secondary" style={{ fontSize: 13 }}>Puntos acumulados en la temporada actual</Text>
-                    </Flex>
-
-                    <Skeleton loading={loading} active paragraph={{ rows: 10 }}>
-                        <Flex vertical gap={12}>
-                            {players.map((player, index) => (
-                                <Flex
-                                    key={`rank-${player.id}`}
-                                    align="center"
-                                    gap={12}
-                                    style={{
-                                        padding: '12px 16px',
-                                        background: token.colorFillTertiary,
-                                        borderRadius: 8,
-                                        border: `1px solid ${token.colorBorder}`
-                                    }}
-                                >
-                                    <Text strong style={{ fontSize: 14, width: 24, textAlign: 'center', opacity: 0.3 }}>#{index + 1}</Text>
-                                    <Avatar src={getAvatarSrc(player.logo_url)} icon={<UserOutlined />} size={32} />
-                                    <Text strong style={{ fontSize: 14 }}>{player.username}</Text>
-                                    <Flex style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                                        <Text strong style={{ fontSize: 16, color: '#3b82f6' }}>0</Text>
-                                        <span style={{ fontSize: 10, opacity: 0.5, marginLeft: 4 }}>PTS</span>
-                                    </Flex>
-                                </Flex>
-                            ))}
-                        </Flex>
-                    </Skeleton>
-                </Col>
-
-                {/* Lado derecho: Ganadores */}
-                <Col xs={24} md={15} lg={16}>
-                    <Flex vertical style={{ marginBottom: 24, minHeight: 70 }}>
-                        <Space style={{ marginBottom: 4 }}>
-                            <Title level={3} style={{ margin: 0 }}>Campeones</Title>
-                            <CrownOutlined style={{ color: '#fadb14', fontSize: 20 }} />
-                        </Space>
-                        <Text type="secondary" style={{ fontSize: 13 }}>Jugadores y ligas que han ganado</Text>
-                    </Flex>
-
-                    <Skeleton loading={loading} active paragraph={{ rows: 10 }}>
-                        <Row gutter={[16, 16]}>
-                            {players.map((player) => (
-                                <Col key={`winner-${player.id}`} xs={24} sm={12} md={12} lg={12} xl={8}>
-                                    <Card
-                                        hoverable
-                                        className="shadow-sm border-0"
-                                        onClick={() => openDetails(player)}
-                                        style={{
-                                            borderRadius: 12,
-                                            background: token.colorFillTertiary,
-                                            height: '100%',
-                                            display: 'flex',
-                                            flexDirection: 'column'
-                                        }}
-                                        styles={{ body: { padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' } }}
+            {loading ? (
+                <Skeleton active paragraph={{ rows: 12 }} />
+            ) : (
+                <>
+                    {/* ═══════════════════════════════════════════ */}
+                    {/*               PODIUM TOP 3                  */}
+                    {/* ═══════════════════════════════════════════ */}
+                    {players.length > 0 && (
+                        <div className="hof-podium-section">
+                            <div className="hof-podium">
+                                {/* 2nd Place */}
+                                {second && (
+                                    <div
+                                        className="hof-podium-slot second"
+                                        onClick={() => openPlayerDetails(second)}
                                     >
-                                        <Flex vertical align="center" style={{ marginBottom: 12 }}>
-                                            <Badge count={player.winInfo?.wins || 0} color="#fadb14" offset={[-5, 45]}>
+                                        <div className="hof-avatar-wrap">
+                                            <div className="hof-avatar">
+                                                <Avatar
+                                                    src={getAvatarSrc(second.logo_url)}
+                                                    icon={<UserOutlined />}
+                                                    size={76}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="hof-podium-name">{second.username}</div>
+                                        <div className="hof-podium-wins">
+                                            <span>{second.wins}</span> {second.wins === 1 ? 'victoria' : 'victorias'}
+                                        </div>
+                                        <div className="hof-podium-pedestal">2</div>
+                                    </div>
+                                )}
+
+                                {/* 1st Place */}
+                                {first && (
+                                    <div
+                                        className="hof-podium-slot first"
+                                        onClick={() => openPlayerDetails(first)}
+                                    >
+                                        <div className="hof-avatar-wrap">
+                                            <span className="hof-crown">👑</span>
+                                            <div className="hof-avatar">
+                                                <Avatar
+                                                    src={getAvatarSrc(first.logo_url)}
+                                                    icon={<UserOutlined />}
+                                                    size={104}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="hof-podium-name">{first.username}</div>
+                                        <div className="hof-podium-wins">
+                                            <span>{first.wins}</span> {first.wins === 1 ? 'victoria' : 'victorias'}
+                                        </div>
+                                        <div className="hof-podium-pedestal">1</div>
+                                    </div>
+                                )}
+
+                                {/* 3rd Place */}
+                                {third && (
+                                    <div
+                                        className="hof-podium-slot third"
+                                        onClick={() => openPlayerDetails(third)}
+                                    >
+                                        <div className="hof-avatar-wrap">
+                                            <div className="hof-avatar">
+                                                <Avatar
+                                                    src={getAvatarSrc(third.logo_url)}
+                                                    icon={<UserOutlined />}
+                                                    size={76}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="hof-podium-name">{third.username}</div>
+                                        <div className="hof-podium-wins">
+                                            <span>{third.wins}</span> {third.wins === 1 ? 'victoria' : 'victorias'}
+                                        </div>
+                                        <div className="hof-podium-pedestal">3</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ═══════════════════════════════════════════ */}
+                    {/*             REST OF PALMARÉS                */}
+                    {/* ═══════════════════════════════════════════ */}
+                    {restPlayers.length > 0 && (
+                        <div>
+                            <div className="hof-rest-title">Resto del Palmarés</div>
+                            <div className="hof-rest-list">
+                                {restPlayers.map((player, index) => {
+                                    const rankNumber = index + 4;
+                                    const leaguesSummary = player.trophies
+                                        ?.map(t => t.competition_name)
+                                        .join(', ') || '';
+
+                                    return (
+                                        <div
+                                            key={player.id}
+                                            className="hof-rest-item"
+                                            onClick={() => openPlayerDetails(player)}
+                                        >
+                                            <div className="hof-rest-rank">{rankNumber}</div>
+                                            <div className="hof-rest-avatar">
                                                 <Avatar
                                                     src={getAvatarSrc(player.logo_url)}
                                                     icon={<UserOutlined />}
-                                                    size={60}
-                                                    style={{ border: player.winInfo?.wins > 10 ? '2px solid #fadb14' : `2px solid ${token.colorBorder}` }}
+                                                    size={44}
                                                 />
-                                                {player.winInfo?.wins > 10 && (
-                                                    <CrownOutlined style={{
-                                                        position: 'absolute',
-                                                        top: -15,
-                                                        left: '50%',
-                                                        transform: 'translateX(-50%) rotate(-10deg)',
-                                                        fontSize: 24,
-                                                        color: '#fadb14',
-                                                        filter: 'drop-shadow(0 0 5px rgba(250, 219, 20, 0.5))'
-                                                    }} />
-                                                )}
-                                            </Badge>
-                                            <Title level={5} style={{ margin: '12px 0 2px 0' }}>{player.username}</Title>
-                                            <Text type="secondary" style={{ fontSize: 11 }}>
-                                                {player.winInfo?.wins || 0} {player.winInfo?.wins === 1 ? 'Victoria' : 'Victorias'}
-                                            </Text>
-                                        </Flex>
+                                            </div>
+                                            <div className="hof-rest-info">
+                                                <div className="hof-rest-name">{player.username}</div>
+                                                <div className="hof-rest-leagues">{leaguesSummary}</div>
+                                            </div>
+                                            <div className="hof-rest-wins-badge">
+                                                {player.wins} {player.wins === 1 ? 'victoria' : 'victorias'}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
 
-                                        <Divider style={{ margin: '8px 0' }} />
-
-                                        <Flex vertical align="center" style={{ flex: 1, textAlign: 'center' }}>
-                                            <Flex align="center" justify="center" gap={4} style={{ marginBottom: 4 }}>
-                                                <GlobalOutlined style={{ fontSize: 10, opacity: 0.5 }} />
-                                                <Text strong style={{ fontSize: 10, textTransform: 'uppercase', opacity: 0.5 }}>Ligas Ganadas</Text>
-                                            </Flex>
-                                            <Paragraph
-                                                type="secondary"
-                                                style={{
-                                                    fontSize: 11,
-                                                    lineHeight: '1.4',
-                                                    margin: 0,
-                                                    height: player.winInfo?.leagues ? 'auto' : 40
-                                                }}
-                                                ellipsis={{ rows: 3, expandable: false }}
-                                            >
-                                                {player.winInfo?.leagues || 'Próximamente...'}
-                                            </Paragraph>
-                                        </Flex>
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                    </Skeleton>
-                </Col>
-            </Row>
-
+            {/* ═══════════════════════════════════════════ */}
+            {/*           PLAYER DETAIL MODAL              */}
+            {/* ═══════════════════════════════════════════ */}
             <Modal
-                title={null}
-                open={isModalOpen}
-                onCancel={() => setIsModalOpen(false)}
+                open={isPlayerModalOpen}
+                onCancel={() => setIsPlayerModalOpen(false)}
                 footer={null}
                 centered
-                width={600}
-                styles={{ content: { background: token.colorBgContainer, border: `1px solid ${token.colorBorder}`, borderRadius: 24, padding: 0, overflow: 'hidden' } }}
+                width={540}
+                style={{ maxWidth: 'calc(100vw - 24px)', margin: '0 auto' }}
+                styles={{
+                    content: {
+                        background: token.colorBgContainer || '#11131a',
+                        border: `1px solid ${token.colorBorder || 'rgba(255,255,255,0.08)'}`,
+                        borderRadius: 24,
+                        padding: 0,
+                        overflow: 'hidden'
+                    }
+                }}
             >
                 {selectedPlayer && (
-                    <Flex vertical style={{ padding: 0 }}>
-                        <Flex vertical align="center" style={{
-                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(245, 34, 45, 0.1) 100%)',
-                            padding: '40px 24px',
-                            position: 'relative'
-                        }}>
-                            {selectedPlayer.winInfo?.wins > 10 && (
-                                <CrownOutlined style={{
-                                    position: 'absolute',
-                                    top: 15,
-                                    left: '50%',
-                                    transform: 'translateX(-50%) rotate(-10deg)',
-                                    fontSize: 32,
-                                    color: '#fadb14',
-                                    filter: 'drop-shadow(0 0 10px rgba(250, 219, 20, 0.8))'
-                                }} />
+                    <div>
+                        <div className="hof-modal-header-player">
+                            {(selectedPlayer === first || selectedPlayer.wins >= 10) && (
+                                <span className="hof-modal-crown">👑</span>
                             )}
-                            <Avatar src={getAvatarSrc(selectedPlayer.logo_url)} size={100} icon={<UserOutlined />} style={{ border: selectedPlayer.winInfo?.wins > 10 ? '4px solid #fadb14' : '4px solid rgba(255,255,255,0.2)', marginBottom: 16 }} />
-                            <Title level={2} style={{ margin: 0, color: '#fff' }}>{selectedPlayer.username}</Title>
-                            <Text style={{ color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: 2, fontSize: 12 }}>Leyenda de la Pachanga</Text>
-                        </Flex>
+                            <div className="hof-modal-avatar">
+                                <Avatar
+                                    src={getAvatarSrc(selectedPlayer.logo_url)}
+                                    icon={<UserOutlined />}
+                                    size={96}
+                                />
+                            </div>
+                            <h2 className="hof-modal-player-name">{selectedPlayer.username}</h2>
+                            <div className="hof-modal-player-subtitle">
+                                {getSubtitle(selectedPlayer.wins)}
+                            </div>
+                        </div>
 
-                        <Flex vertical style={{ padding: 24 }}>
-                            <Row gutter={16} style={{ marginBottom: 32 }}>
-                                <Col span={8}>
-                                    <Card style={{ background: token.colorFillTertiary, border: 'none', borderRadius: 16 }}>
-                                        <Statistic
-                                            title={<Text type="secondary" style={{ fontSize: 10 }}>WINS</Text>}
-                                            value={selectedPlayer.winInfo?.wins || 0}
-                                            prefix={<FireOutlined style={{ color: '#fadb14' }} />}
-                                            valueStyle={{ fontSize: 24 }}
-                                        />
-                                    </Card>
-                                </Col>
-                                <Col span={8}>
-                                    <Card style={{ background: token.colorFillTertiary, border: 'none', borderRadius: 16 }}>
-                                        <Statistic
-                                            title={<Text type="secondary" style={{ fontSize: 10 }}>WIN RATE</Text>}
-                                            value={selectedPlayer.winInfo ? ((selectedPlayer.winInfo.wins / 23) * 100).toFixed(1) : "0.0"}
-                                            suffix="%"
-                                            prefix={<LineChartOutlined style={{ color: '#52c41a' }} />}
-                                            valueStyle={{ fontSize: 24 }}
-                                        />
-                                    </Card>
-                                </Col>
-                                <Col span={8}>
-                                    <Card style={{ background: token.colorFillTertiary, border: 'none', borderRadius: 16 }}>
-                                        <Statistic
-                                            title={<Text type="secondary" style={{ fontSize: 10 }}>RANK</Text>}
-                                            value={selectedPlayer.id === 27 ? 'S+' : 'A'}
-                                            prefix={<ThunderboltOutlined style={{ color: '#3b82f6' }} />}
-                                            valueStyle={{ fontSize: 24 }}
-                                        />
-                                    </Card>
-                                </Col>
-                            </Row>
+                        <div className="hof-modal-stats">
+                            <div className="hof-stat-box">
+                                <div className="hof-stat-value">{selectedPlayer.wins}</div>
+                                <div className="hof-stat-label">Victorias</div>
+                            </div>
+                            <div className="hof-stat-box">
+                                <div className="hof-stat-value">{selectedPlayer.winRate}%</div>
+                                <div className="hof-stat-label">Win Rate</div>
+                            </div>
+                        </div>
 
-                            <Title level={5} style={{ marginBottom: 16 }}>
-                                <GlobalOutlined style={{ marginRight: 8, opacity: 0.5 }} />
-                                Historial de Conquistas
-                            </Title>
+                        {isAdmin && (
+                            <div className="hof-modal-add-trophy">
+                                <button
+                                    className="hof-modal-add-trophy-btn"
+                                    onClick={() => {
+                                        const uid = selectedPlayer.id;
+                                        setIsPlayerModalOpen(false);
+                                        openAddTrophyModal(uid);
+                                    }}
+                                >
+                                    <PlusOutlined /> Añadir Trofeo a este jugador
+                                </button>
+                            </div>
+                        )}
 
-                            <List
-                                dataSource={selectedPlayer.winInfo?.leagues.split(', ') || []}
-                                renderItem={(item) => (
-                                    <List.Item style={{ borderBottom: `1px solid ${token.colorBorder}`, padding: '12px 0' }}>
-                                        <Space>
-                                            <TrophyOutlined style={{ color: '#fadb14', fontSize: 16 }} />
-                                            <Text>{item}</Text>
-                                        </Space>
-                                    </List.Item>
-                                )}
-                                locale={{ emptyText: <Text type="secondary">Iniciando su legado...</Text> }}
-                                style={{ maxHeight: 250, overflowY: 'auto' }}
-                            />
-                        </Flex>
-                    </Flex>
+                        <div className="hof-modal-conquests">
+                            <div className="hof-conquest-title">Historial de Conquistas</div>
+                            {selectedPlayer.trophies && selectedPlayer.trophies.length > 0 ? (
+                                selectedPlayer.trophies.map((trophy) => {
+                                    const hasLeague = Boolean(trophy.league_id);
+                                    return (
+                                        <div key={trophy.id} className="hof-conquest-item">
+                                            <div className="hof-conquest-dot" />
+                                            <span className="hof-conquest-name">
+                                                {hasLeague ? (
+                                                    <span
+                                                        className="hof-conquest-link"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setIsPlayerModalOpen(false);
+                                                            navigate(`/leagues/${trophy.league_id}`);
+                                                        }}
+                                                    >
+                                                        {trophy.competition_name}
+                                                    </span>
+                                                ) : (
+                                                    <span className="hof-conquest-nolink">
+                                                        {trophy.competition_name}
+                                                    </span>
+                                                )}
+                                            </span>
+                                            {hasLeague && <span className="hof-conquest-arrow">→</span>}
+                                            {isAdmin && (
+                                                <Popconfirm
+                                                    title="¿Eliminar trofeo?"
+                                                    description="¿Seguro que quieres eliminar esta victoria del palmarés?"
+                                                    onConfirm={(e) => handleDeleteTrophy(trophy.id, e)}
+                                                    okText="Eliminar"
+                                                    cancelText="Cancelar"
+                                                    okButtonProps={{ danger: true }}
+                                                >
+                                                    <button
+                                                        className="hof-conquest-delete-btn"
+                                                        title="Eliminar este trofeo"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <CloseOutlined />
+                                                    </button>
+                                                </Popconfirm>
+                                            )}
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <Text type="secondary">Sin victorias registradas aún.</Text>
+                            )}
+                        </div>
+                    </div>
                 )}
             </Modal>
-        </Flex>
+
+            {/* ═══════════════════════════════════════════ */}
+            {/*            ADMIN FORM MODAL                */}
+            {/* ═══════════════════════════════════════════ */}
+            <Modal
+                title={
+                    <div style={{ padding: '8px 0 4px' }}>
+                        <Title level={4} style={{ margin: 0 }}>Añadir Trofeo</Title>
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                            Registra una victoria manualmente al palmarés de un jugador
+                        </Text>
+                    </div>
+                }
+                open={isFormModalOpen}
+                onCancel={() => setIsFormModalOpen(false)}
+                footer={null}
+                centered
+                width={520}
+                style={{ maxWidth: 'calc(100vw - 24px)', margin: '0 auto' }}
+                styles={{
+                    content: {
+                        background: token.colorBgContainer || '#11131a',
+                        border: `1px solid ${token.colorBorder || 'rgba(255,255,255,0.08)'}`,
+                        borderRadius: 20
+                    }
+                }}
+            >
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleCreateTrophy}
+                    initialValues={{ date: dayjs() }}
+                    style={{ marginTop: 16 }}
+                >
+                    <Form.Item
+                        name="user_id"
+                        label="Jugador"
+                        rules={[{ required: true, message: 'Selecciona un jugador' }]}
+                    >
+                        <Select
+                            placeholder="Selecciona un jugador..."
+                            options={allUsers.map(u => ({
+                                value: u.id,
+                                label: u.username
+                            }))}
+                            showSearch
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="competition_name"
+                        label="Nombre de la Competición"
+                        rules={[{ required: true, message: 'Introduce el nombre de la competición' }]}
+                    >
+                        <Input placeholder="Ej: LEC WINTER 2025" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="date"
+                        label="Fecha"
+                    >
+                        <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+                    </Form.Item>
+
+                    <Form.Item
+                        name="league_id"
+                        label="Vincular a liga existente (opcional)"
+                    >
+                        <Select
+                            placeholder="No vincular a ninguna liga"
+                            allowClear
+                            options={allLeagues.map(l => ({
+                                value: l.id,
+                                label: l.name
+                            }))}
+                            showSearch
+                            filterOption={(input, option) =>
+                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                        />
+                    </Form.Item>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+                        <Button onClick={() => setIsFormModalOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={submitting}
+                            style={{
+                                background: 'linear-gradient(135deg, #d4a843 0%, #8b7030 100%)',
+                                borderColor: '#d4a843',
+                                color: '#07080d',
+                                fontWeight: 700
+                            }}
+                        >
+                            Añadir Trofeo
+                        </Button>
+                    </div>
+                </Form>
+            </Modal>
+        </div>
     );
 };
 

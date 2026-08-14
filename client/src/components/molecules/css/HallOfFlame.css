@@ -1,0 +1,761 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --hof-bg-deep: #07080d;
+  --hof-bg-surface: #11131a;
+  --hof-bg-card: #181b25;
+  --hof-bg-elevated: #1f2330;
+  --hof-gold: #d4a843;
+  --hof-gold-bright: #f5d576;
+  --hof-gold-dim: #8b7030;
+  --hof-silver: #a8b4c4;
+  --hof-silver-bright: #cdd6e4;
+  --hof-bronze: #b57a4a;
+  --hof-bronze-bright: #d4955e;
+  --hof-text: #eaedf3;
+  --hof-text-dim: #94a3b8;
+  --hof-accent-blue: #3b82f6;
+  --hof-flame-gradient: linear-gradient(135deg, #f5d576 0%, #d4a843 25%, #f43f5e 55%, #8b5cf6 100%);
+  --hof-border: rgba(255, 255, 255, 0.08);
+  --hof-glow-gold: rgba(212, 168, 67, 0.35);
+}
+
+.hof-container {
+  max-width: 1050px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+  position: relative;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--hof-text);
+}
+
+/* ─── Header ─── */
+.hof-header {
+  text-align: center;
+  margin-bottom: 56px;
+  position: relative;
+}
+
+.hof-header h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: 52px;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.hof-header h1 .hof-flame {
+  background: var(--hof-flame-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-style: italic;
+}
+
+.hof-header p {
+  color: var(--hof-text-dim);
+  font-size: 14px;
+  margin-top: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.hof-header-admin-btn {
+  position: absolute;
+  top: 4px;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--hof-gold) 0%, var(--hof-gold-dim) 100%);
+  border: none;
+  color: #07080d;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px var(--hof-glow-gold);
+}
+
+.hof-header-admin-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px var(--hof-glow-gold);
+  filter: brightness(1.1);
+}
+
+/* ─── Podium ─── */
+.hof-podium-section {
+  margin-bottom: 60px;
+}
+
+.hof-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 20px;
+}
+
+.hof-podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  flex: 0 0 160px;
+  max-width: 180px;
+}
+
+.hof-podium-slot:hover {
+  transform: translateY(-6px);
+}
+
+.hof-avatar-wrap {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.hof-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--hof-bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  border: 3px solid var(--hof-border);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.hof-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hof-podium-slot.first .hof-avatar {
+  width: 104px;
+  height: 104px;
+  border: 4px solid var(--hof-gold);
+  box-shadow: 0 0 35px var(--hof-glow-gold), inset 0 0 20px rgba(212, 168, 67, 0.15);
+  font-size: 36px;
+}
+
+.hof-podium-slot.second .hof-avatar {
+  border-color: var(--hof-silver);
+  box-shadow: 0 0 20px rgba(168, 180, 196, 0.2);
+}
+
+.hof-podium-slot.third .hof-avatar {
+  border-color: var(--hof-bronze);
+  box-shadow: 0 0 20px rgba(181, 122, 74, 0.2);
+}
+
+.hof-crown {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  font-size: 28px;
+  filter: drop-shadow(0 0 10px var(--hof-glow-gold));
+  animation: hofCrownBob 2.5s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes hofCrownBob {
+  0%, 100% {
+    transform: translateX(-50%) rotate(-8deg) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) rotate(-8deg) translateY(-4px);
+  }
+}
+
+.hof-podium-name {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.hof-podium-wins {
+  font-size: 13px;
+  color: var(--hof-text-dim);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.hof-podium-wins span {
+  color: var(--hof-gold-bright);
+  font-weight: 700;
+}
+
+.hof-podium-pedestal {
+  width: 100%;
+  border-radius: 14px 14px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 36px;
+  font-weight: 900;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hof-podium-pedestal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.hof-podium-slot.first .hof-podium-pedestal {
+  height: 150px;
+  background: linear-gradient(180deg, rgba(212, 168, 67, 0.22) 0%, rgba(212, 168, 67, 0.04) 100%);
+  color: var(--hof-gold);
+  border: 1px solid rgba(212, 168, 67, 0.3);
+  border-bottom: none;
+}
+
+.hof-podium-slot.first .hof-podium-pedestal::before {
+  background: var(--hof-gold-bright);
+  box-shadow: 0 0 12px var(--hof-glow-gold);
+}
+
+.hof-podium-slot.second .hof-podium-pedestal {
+  height: 105px;
+  background: linear-gradient(180deg, rgba(168, 180, 196, 0.16) 0%, rgba(168, 180, 196, 0.03) 100%);
+  color: var(--hof-silver-bright);
+  border: 1px solid rgba(168, 180, 196, 0.2);
+  border-bottom: none;
+}
+
+.hof-podium-slot.second .hof-podium-pedestal::before {
+  background: var(--hof-silver-bright);
+}
+
+.hof-podium-slot.third .hof-podium-pedestal {
+  height: 75px;
+  background: linear-gradient(180deg, rgba(181, 122, 74, 0.16) 0%, rgba(181, 122, 74, 0.03) 100%);
+  color: var(--hof-bronze-bright);
+  border: 1px solid rgba(181, 122, 74, 0.2);
+  border-bottom: none;
+}
+
+.hof-podium-slot.third .hof-podium-pedestal::before {
+  background: var(--hof-bronze-bright);
+}
+
+/* ─── Rest List ─── */
+.hof-rest-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  margin-bottom: 18px;
+  color: var(--hof-text-dim);
+  padding-left: 10px;
+  border-left: 3px solid var(--hof-gold-dim);
+  font-weight: 700;
+}
+
+.hof-rest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hof-rest-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--hof-bg-card);
+  border: 1px solid var(--hof-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.hof-rest-item:hover {
+  background: var(--hof-bg-elevated);
+  border-color: rgba(212, 168, 67, 0.25);
+  transform: translateX(4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.hof-rest-rank {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--hof-text-dim);
+  width: 32px;
+  text-align: center;
+  opacity: 0.5;
+}
+
+.hof-rest-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--hof-bg-elevated);
+  border: 2px solid var(--hof-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hof-rest-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hof-rest-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hof-rest-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.hof-rest-leagues {
+  font-size: 12px;
+  color: var(--hof-text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hof-rest-wins-badge {
+  background: rgba(212, 168, 67, 0.1);
+  border: 1px solid rgba(212, 168, 67, 0.22);
+  color: var(--hof-gold-bright);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ─── Player Detail Modal ─── */
+.hof-modal-header-player {
+  position: relative;
+  padding: 40px 28px 28px;
+  text-align: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 25%, rgba(212, 168, 67, 0.14) 0%, transparent 70%),
+              linear-gradient(180deg, rgba(212, 168, 67, 0.05) 0%, transparent 100%);
+}
+
+.hof-modal-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid var(--hof-gold);
+  margin: 0 auto 14px;
+  position: relative;
+  background: var(--hof-bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  box-shadow: 0 0 35px var(--hof-glow-gold);
+  overflow: hidden;
+}
+
+.hof-modal-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hof-modal-crown {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  font-size: 26px;
+  filter: drop-shadow(0 0 8px rgba(245, 213, 118, 0.6));
+  z-index: 2;
+}
+
+.hof-modal-player-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 30px;
+  font-weight: 900;
+  margin: 0;
+  color: #fff;
+}
+
+.hof-modal-player-subtitle {
+  color: var(--hof-gold);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.hof-modal-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.hof-stat-box {
+  background: var(--hof-bg-elevated);
+  border: 1px solid var(--hof-border);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+}
+
+.hof-stat-value {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--hof-gold-bright);
+}
+
+.hof-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--hof-text-dim);
+  margin-top: 3px;
+}
+
+.hof-modal-add-trophy {
+  display: flex;
+  justify-content: center;
+  padding: 0 24px 16px;
+}
+
+.hof-modal-add-trophy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  background: rgba(212, 168, 67, 0.1);
+  border: 1px solid rgba(212, 168, 67, 0.25);
+  color: var(--hof-gold-bright);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  width: 100%;
+  justify-content: center;
+}
+
+.hof-modal-add-trophy-btn:hover {
+  background: rgba(212, 168, 67, 0.18);
+  border-color: rgba(212, 168, 67, 0.4);
+}
+
+.hof-modal-conquests {
+  padding: 0 24px 28px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.hof-modal-conquests::-webkit-scrollbar {
+  width: 4px;
+}
+
+.hof-modal-conquests::-webkit-scrollbar-thumb {
+  background: var(--hof-gold-dim);
+  border-radius: 4px;
+}
+
+.hof-conquest-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--hof-text-dim);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hof-border);
+  font-weight: 600;
+}
+
+.hof-conquest-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hof-border);
+  font-size: 13px;
+  transition: padding-left 0.2s ease;
+}
+
+.hof-conquest-item:last-child {
+  border-bottom: none;
+}
+
+.hof-conquest-item:hover {
+  padding-left: 4px;
+}
+
+.hof-conquest-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--hof-gold);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px var(--hof-glow-gold);
+}
+
+.hof-conquest-name {
+  flex: 1;
+}
+
+.hof-conquest-link {
+  color: var(--hof-accent-blue);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+
+.hof-conquest-link:hover {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.hof-conquest-nolink {
+  color: var(--hof-text-dim);
+  cursor: default;
+}
+
+.hof-conquest-arrow {
+  font-size: 13px;
+  color: var(--hof-text-dim);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  transform: translateX(-4px);
+}
+
+.hof-conquest-item:hover .hof-conquest-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.hof-conquest-delete-btn {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all 0.2s ease;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.hof-conquest-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 680px) {
+  .hof-container {
+    padding: 20px 10px 60px;
+  }
+
+  .hof-header {
+    margin-bottom: 40px;
+  }
+
+  .hof-header h1 {
+    font-size: 32px;
+  }
+
+  .hof-header p {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .hof-header-admin-btn {
+    position: static;
+    margin: 0 auto 16px;
+    font-size: 12px;
+    padding: 7px 16px;
+  }
+
+  .hof-podium-section {
+    margin-bottom: 44px;
+  }
+
+  .hof-podium {
+    gap: 6px;
+    padding: 0 2px;
+  }
+
+  .hof-podium-slot {
+    flex: 1 1 0;
+    min-width: 85px;
+    max-width: 120px;
+  }
+
+  .hof-podium-slot.first .hof-avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+    border-width: 3px;
+  }
+
+  .hof-avatar {
+    width: 54px;
+    height: 54px;
+    font-size: 18px;
+    border-width: 2px;
+  }
+
+  .hof-crown {
+    font-size: 22px;
+    top: -16px;
+  }
+
+  .hof-podium-name {
+    font-size: 12px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .hof-podium-wins {
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+
+  .hof-podium-pedestal {
+    border-radius: 10px 10px 0 0;
+  }
+
+  .hof-podium-slot.first .hof-podium-pedestal {
+    height: 105px;
+    font-size: 24px;
+    padding-top: 12px;
+  }
+
+  .hof-podium-slot.second .hof-podium-pedestal {
+    height: 75px;
+    font-size: 20px;
+    padding-top: 10px;
+  }
+
+  .hof-podium-slot.third .hof-podium-pedestal {
+    height: 52px;
+    font-size: 17px;
+    padding-top: 8px;
+  }
+
+  .hof-rest-title {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  .hof-rest-item {
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  .hof-rest-rank {
+    font-size: 16px;
+    width: 22px;
+  }
+
+  .hof-rest-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .hof-rest-name {
+    font-size: 13px;
+  }
+
+  .hof-rest-leagues {
+    font-size: 11px;
+    max-width: 130px;
+  }
+
+  .hof-rest-wins-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    flex-shrink: 0;
+  }
+
+  /* Modal Mobile */
+  .hof-modal-header-player {
+    padding: 30px 16px 20px;
+  }
+
+  .hof-modal-avatar {
+    width: 76px;
+    height: 76px;
+    font-size: 28px;
+  }
+
+  .hof-modal-player-name {
+    font-size: 22px;
+  }
+
+  .hof-modal-stats {
+    padding: 14px 16px;
+    gap: 8px;
+  }
+
+  .hof-stat-box {
+    padding: 10px 8px;
+    border-radius: 10px;
+  }
+
+  .hof-stat-value {
+    font-size: 20px;
+  }
+
+  .hof-modal-conquests {
+    padding: 0 16px 20px;
+    max-height: 200px;
+  }
+
+  .hof-conquest-item {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+}

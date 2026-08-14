@@ -21,6 +21,7 @@ import {
     StarOutlined,
     MenuOutlined,
     BarChartOutlined,
+    FireOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
@@ -35,7 +36,20 @@ const getMenuItems = (isAdmin, navigate) => {
         // { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
         // { label: 'Clasificación', key: '/clasification', icon: <BarChartOutlined />, onClick: () => navigate('/clasification') },
         { label: 'Predicciones', key: '/predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
-        // { label: 'Hall of Flame', key: '/hall-of-flame', icon: <StarOutlined />, onClick: () => navigate('/hall-of-flame') },
+        {
+            label: (
+                <span className="hof-menu-item-wrapper">
+                    <span className="hof-menu-prefix">Hall of </span>
+                    <span className="hof-flame-holder">
+                        <span className="hof-flame-base">Flame</span>
+                        <span className="hof-flame-fire" aria-hidden="true">Flame</span>
+                    </span>
+                </span>
+            ),
+            key: '/hall-of-flame',
+            icon: <FireOutlined className="hof-menu-fire-icon" />,
+            onClick: () => navigate('/hall-of-flame')
+        },
         { label: '¿Esta Ganando Guille?', key: '/is-guille-winning', icon: <ThunderboltOutlined />, onClick: () => navigate('/is-guille-winning') },
     ];
 
