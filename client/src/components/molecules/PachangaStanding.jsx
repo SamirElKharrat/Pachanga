@@ -62,9 +62,9 @@ const PachangaStanding = () => {
     // Load users for admin modal
     const openAddPointModal = async (preselectedUserId = null) => {
         try {
-            if (allUsers.length === 0) {
+            if (!Array.isArray(allUsers) || allUsers.length === 0) {
                 const users = await API.get('/users/get');
-                setAllUsers(users || []);
+                setAllUsers(Array.isArray(users) ? users : []);
             }
             form.resetFields();
             if (preselectedUserId) {
@@ -402,7 +402,7 @@ const PachangaStanding = () => {
                     >
                         <Select
                             placeholder="Selecciona jugador"
-                            options={allUsers.map(u => ({
+                            options={(Array.isArray(allUsers) ? allUsers : []).map(u => ({
                                 value: u.id,
                                 label: u.username
                             }))}

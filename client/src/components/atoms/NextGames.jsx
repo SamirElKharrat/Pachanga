@@ -65,9 +65,10 @@ const NextGames = () => {
             setLoading(true);
             try {
                 const response = await API.get('/matches/getByWeek/');
+                const gamesList = Array.isArray(response) ? response : [];
                 const now = new Date();
 
-                const updatedGames = await Promise.all(response.map(async game => {
+                const updatedGames = await Promise.all(gamesList.map(async game => {
                     const matchDate = new Date(game.date);
                     if (matchDate <= now && game.status === 'scheduled') {
                         try {
@@ -80,7 +81,8 @@ const NextGames = () => {
                     return game;
                 }));
 
-                const participations = await API.get('/leagueParticipations/get/');
+                const participationsRes = await API.get('/leagueParticipations/get/').catch(() => []);
+                const participations = Array.isArray(participationsRes) ? participationsRes : [];
                 const leagueIds = participations.map(p => p.league_id);
 
                 const filtered = updatedGames

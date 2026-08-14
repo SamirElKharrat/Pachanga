@@ -18,7 +18,8 @@ const HISTORICAL_DATA = [
             'LEC WINTER 2025',
             'FIRST STAND 2025',
             'LEC SUMMER 2025',
-            'PACHANGA 2025'
+            'PACHANGA 2025',
+            'LEC SPRING SPLIT 2026'
         ]
     },
     {
@@ -42,7 +43,8 @@ const HISTORICAL_DATA = [
         leagues: [
             'MSI 2023',
             'MSI 2025',
-            'FIRST STAND 2026'
+            'FIRST STAND 2026',
+            'MSI 2026'
         ]
     },
     {

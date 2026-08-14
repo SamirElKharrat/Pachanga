@@ -76,6 +76,9 @@ PachangaPoint.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
 League.hasMany(PachangaPoint, { as: 'PachangaPoints', foreignKey: 'league_id' });
 
 
+const hallController = require('./controllers/hallController');
+const pachangaController = require('./controllers/pachangaController');
+
 // Routes
 app.use(routes);
 
@@ -87,8 +90,24 @@ const syncDatabase = async () => {
     console.log('Conexión a la base de datos establecida correctamente.');
 
     // Sincronizar modelos
-    await db.sync({ force: false }); // Usar { force: true } solo en desarrollo para recrear tablas
+    await db.sync({ force: false });
     console.log('Modelos sincronizados correctamente.');
+
+    // Auto-inicialización segura en arranque (Render & local)
+    try {
+      if (hallController.seedHistoricalHallIfEmpty) {
+        await hallController.seedHistoricalHallIfEmpty();
+      }
+      if (hallController.syncFinishedLeagueWinners) {
+        await hallController.syncFinishedLeagueWinners();
+      }
+      if (pachangaController.syncAllFinishedLeagues) {
+        await pachangaController.syncAllFinishedLeagues();
+      }
+      console.log('Datos de Hall of Flame y Clasificación sincronizados.');
+    } catch (syncErr) {
+      console.error('Error durante la inicialización de datos:', syncErr);
+    }
 
     // Iniciar el servidor
     app.listen(PORT, () => {

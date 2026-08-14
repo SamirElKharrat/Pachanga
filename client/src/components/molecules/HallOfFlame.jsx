@@ -58,10 +58,12 @@ const HallOfFlame = () => {
                 API.get('/users/get').catch(() => []),
                 API.get('/leagues/get').catch(() => [])
             ]);
-            setAllUsers(usersData || []);
-            setAllLeagues(leaguesData || []);
+            setAllUsers(Array.isArray(usersData) ? usersData : []);
+            setAllLeagues(Array.isArray(leaguesData) ? leaguesData : []);
         } catch (error) {
             console.error("Error fetching auxiliary data for form:", error);
+            setAllUsers([]);
+            setAllLeagues([]);
         }
     };
 
@@ -457,7 +459,7 @@ const HallOfFlame = () => {
                     >
                         <Select
                             placeholder="Selecciona un jugador..."
-                            options={allUsers.map(u => ({
+                            options={(Array.isArray(allUsers) ? allUsers : []).map(u => ({
                                 value: u.id,
                                 label: u.username
                             }))}
@@ -490,7 +492,7 @@ const HallOfFlame = () => {
                         <Select
                             placeholder="No vincular a ninguna liga"
                             allowClear
-                            options={allLeagues.map(l => ({
+                            options={(Array.isArray(allLeagues) ? allLeagues : []).map(l => ({
                                 value: l.id,
                                 label: l.name
                             }))}
