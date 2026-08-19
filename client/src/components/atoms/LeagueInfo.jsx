@@ -148,7 +148,6 @@ const LeagueInfo = ({ leagueId }) => {
                 <div className="league-champion-banner">
                     <Flex align="center" gap={18}>
                         <div className="league-champion-avatar-wrap">
-                            <span className="league-champion-crown">1</span>
                             <Avatar
                                 src={getAvatarSrc(champion.User.logo_url)}
                                 icon={<UserOutlined />}
@@ -189,9 +188,6 @@ const LeagueInfo = ({ leagueId }) => {
 
                                     return (
                                         <div key={item.id || item.user_id} className={`league-standing-row ${rowClass}`}>
-                                            <div className={`league-rank-badge ${rankClass}`}>
-                                                {rank === 1 && isFinished ? '👑' : rank}
-                                            </div>
                                             <Avatar
                                                 src={getAvatarSrc(item.User?.logo_url)}
                                                 icon={<UserOutlined />}
