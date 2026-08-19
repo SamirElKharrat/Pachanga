@@ -1,5 +1,5 @@
 import { Skeleton, Typography, Avatar, theme, Card, Space, Divider, Flex } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { API } from '../../services/api';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { showAlert } from './AlertInfo';
@@ -12,7 +12,7 @@ const { Text } = Typography;
  * @param {string} dateStr - ISO date string of the match.
  * @returns {Object} Helper object with label, time and theme color.
  */
-const getMatchTimeInfo = (dateStr) => {
+const getMatchTimeInfo = (dateStr, token) => {
     const matchDate = new Date(dateStr);
     const now = new Date();
 
@@ -29,18 +29,19 @@ const getMatchTimeInfo = (dateStr) => {
     const timeStr = matchDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
     if (isToday) {
-        return { label: 'HOY', time: timeStr, color: '#3b82f6' };
+        return { label: 'HOY', time: timeStr, color: token.colorPrimary };
     } else if (isTomorrow) {
-        return { label: 'MAÑANA', time: timeStr, color: '#3b82f6' };
+        return { label: 'MAÑANA', time: timeStr, color: token.colorPrimary };
     } else {
         const dayStr = matchDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }).toUpperCase();
-        return { label: dayStr, time: timeStr, color: 'rgba(255, 255, 255, 0.4)' };
+        return { label: dayStr, time: timeStr, color: token.colorTextTertiary || 'rgba(255, 255, 255, 0.45)' };
     }
 };
 
 /**
  * Component that displays a scrollable compact row of upcoming and live matches.
  * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
+ * Fully styled using Ant Design components and Design Tokens.
  * 
  * @returns {React.ReactElement|null} The NextGames horizontal list or null if no games.
  */
@@ -48,6 +49,9 @@ const NextGames = () => {
     const { token } = theme.useToken();
     const [loading, setLoading] = useState(false);
     const [nextGames, setNextGames] = useState([]);
+    const [isHovered, setIsHovered] = useState(false);
+    const scrollRef = useRef(null);
+    const scrollDirectionRef = useRef(1); // 1 = right, -1 = left
     const location = useLocation();
     const nav = useNavigate();
 
@@ -59,6 +63,47 @@ const NextGames = () => {
         window.addEventListener('resize', handler);
         return () => window.removeEventListener('resize', handler);
     }, []);
+
+    // Automatic carousel oscillation effect (every 3 seconds)
+    useEffect(() => {
+        if (nextGames.length <= 1) return;
+
+        const interval = setInterval(() => {
+            if (isHovered) return; // Pause scrolling on user hover/touch
+
+            const el = scrollRef.current;
+            if (!el) return;
+
+            const maxScroll = el.scrollWidth - el.clientWidth;
+            if (maxScroll <= 15) return; // Everything fits on screen, no scroll needed
+
+            const cardWidth = isMobile ? 212 : 252; // minWidth + gap
+            const currentScroll = el.scrollLeft;
+
+            // Re-align direction if near boundaries
+            if (currentScroll >= maxScroll - 15) {
+                scrollDirectionRef.current = -1;
+            } else if (currentScroll <= 15) {
+                scrollDirectionRef.current = 1;
+            }
+
+            if (scrollDirectionRef.current === 1) {
+                const target = Math.min(maxScroll, currentScroll + cardWidth);
+                el.scrollTo({ left: target, behavior: 'smooth' });
+                if (target >= maxScroll - 10) {
+                    scrollDirectionRef.current = -1;
+                }
+            } else {
+                const target = Math.max(0, currentScroll - cardWidth);
+                el.scrollTo({ left: target, behavior: 'smooth' });
+                if (target <= 10) {
+                    scrollDirectionRef.current = 1;
+                }
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [nextGames.length, isMobile, isHovered]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -97,7 +142,6 @@ const NextGames = () => {
                 setNextGames(filtered.slice(0, 6));
             } catch (error) {
                 console.error("Error fetching next games:", error);
-                //showAlert('error', "No se pudieron cargar los próximos partidos");
             } finally {
                 setLoading(false);
             }
@@ -105,21 +149,26 @@ const NextGames = () => {
         fetchData();
     }, [location.key]);
 
-    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 60, borderRadius: 12 }} /></div>;
+    if (loading) {
+        return (
+            <div style={{ padding: `0 ${token.paddingMD}px`, marginTop: token.marginMD, marginBottom: token.marginMD }}>
+                <Skeleton.Button active block style={{ height: 60, borderRadius: token.borderRadiusLG }} />
+            </div>
+        );
+    }
     if (nextGames.length === 0) return null;
 
     return (
-        <div className="next-games-container px-3 mb-4">
+        <div style={{ padding: `0 ${token.paddingMD}px`, marginTop: token.marginMD, marginBottom: token.marginMD }}>
             <style>{`
+                .next-games-scroll {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
                 .next-games-scroll::-webkit-scrollbar {
-                    height: 5px;
-                }
-                .next-games-scroll::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.15);
-                    border-radius: 4px;
-                }
-                .next-games-scroll::-webkit-scrollbar-track {
-                    background: transparent;
+                    display: none;
+                    width: 0;
+                    height: 0;
                 }
             `}</style>
 
@@ -128,29 +177,36 @@ const NextGames = () => {
                 fontSize: 11,
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                color: 'rgba(255, 255, 255, 0.5)',
+                color: token.colorTextSecondary,
                 letterSpacing: '0.08em',
-                marginBottom: 10
+                marginBottom: token.marginXS
             }}>
                 Próximos Partidos
             </Text>
 
             <div
+                ref={scrollRef}
                 className="next-games-scroll"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                onTouchStart={() => setIsHovered(true)}
+                onTouchEnd={() => setIsHovered(false)}
                 style={{
                     display: 'flex',
-                    gap: 12,
+                    gap: token.marginSM,
                     overflowX: 'auto',
-                    paddingBottom: 8,
-                    scrollbarWidth: 'thin',
-                    msOverflowStyle: 'auto',
+                    paddingBottom: 4,
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
                 }}
             >
                 {nextGames.map((match) => {
                     const isLive = match.status === 'live';
+                    const liveColor = token.colorSuccess || '#10b981';
                     const timeInfo = isLive
-                        ? { label: 'EN VIVO', time: '--:--', color: '#10b981' }
-                        : getMatchTimeInfo(match.date);
+                        ? { label: 'EN VIVO', time: '--:--', color: liveColor }
+                        : getMatchTimeInfo(match.date, token);
 
                     if (isMobile) {
                         // Mobile View: Stacked compact matchups
@@ -165,17 +221,17 @@ const NextGames = () => {
                                         nav('/predictions/');
                                     }
                                 }}
-                                styles={{ body: { padding: '10px 14px' } }}
+                                styles={{ body: { padding: `${token.paddingXS}px ${token.paddingSM}px` } }}
                                 style={{
-                                    background: 'rgba(30, 41, 59, 0.4)',
-                                    border: `1px solid ${token.colorBorder}`,
+                                    background: token.colorBgContainer,
+                                    border: `1px solid ${token.colorBorderSecondary}`,
                                     borderLeft: `3px solid ${timeInfo.color}`,
-                                    borderRadius: 12,
+                                    borderRadius: token.borderRadiusLG,
                                     flexShrink: 0,
                                     minWidth: 200,
                                 }}
                             >
-                                <Space size={12} align="center">
+                                <Space size={token.marginSM} align="center">
                                     {/* Left Col: Badge status / time */}
                                     <Space direction="vertical" size={2} align="center" style={{ minWidth: 52 }}>
                                         <Text style={{
@@ -190,26 +246,26 @@ const NextGames = () => {
                                         <Text style={{
                                             fontSize: 12,
                                             fontWeight: 700,
-                                            color: isLive ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
+                                            color: isLive ? liveColor : token.colorText,
                                             lineHeight: 1.2
                                         }}>
                                             {timeInfo.time}
                                         </Text>
                                     </Space>
 
-                                    <Divider type="vertical" style={{ borderColor: 'rgba(255, 255, 255, 0.1)', height: 36, margin: 0 }} />
+                                    <Divider type="vertical" style={{ borderColor: token.colorSplit, height: 36, margin: 0 }} />
 
                                     {/* Right Col: Stacked Teams */}
                                     <Flex vertical gap={4} style={{ minWidth: 95 }}>
                                         <Flex align="center" gap={6}>
                                             <Avatar src={match.Teams?.[0]?.logo_url} size={16} shape="square" style={{ background: 'transparent' }} />
-                                            <Text strong style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.9)', maxWidth: 75 }} ellipsis>
+                                            <Text strong style={{ fontSize: 12, color: token.colorText, maxWidth: 75 }} ellipsis>
                                                 {match.Teams?.[0]?.name}
                                             </Text>
                                         </Flex>
                                         <Flex align="center" gap={6}>
                                             <Avatar src={match.Teams?.[1]?.logo_url} size={16} shape="square" style={{ background: 'transparent' }} />
-                                            <Text strong style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.9)', maxWidth: 75 }} ellipsis>
+                                            <Text strong style={{ fontSize: 12, color: token.colorText, maxWidth: 75 }} ellipsis>
                                                 {match.Teams?.[1]?.name}
                                             </Text>
                                         </Flex>
@@ -231,17 +287,17 @@ const NextGames = () => {
                                     nav('/predictions/');
                                 }
                             }}
-                            styles={{ body: { padding: '8px 16px', display: 'flex', alignItems: 'center' } }}
+                            styles={{ body: { padding: `${token.paddingXS}px ${token.paddingMD}px`, display: 'flex', alignItems: 'center' } }}
                             style={{
-                                background: 'rgba(30, 41, 59, 0.4)',
-                                border: `1px solid ${token.colorBorder}`,
+                                background: token.colorBgContainer,
+                                border: `1px solid ${token.colorBorderSecondary}`,
                                 borderLeft: `3px solid ${timeInfo.color}`,
-                                borderRadius: 12,
+                                borderRadius: token.borderRadiusLG,
                                 flexShrink: 0,
                                 minWidth: 240,
                             }}
                         >
-                            <Space split={<Divider type="vertical" style={{ borderColor: 'rgba(255, 255, 255, 0.1)', height: 30 }} />}>
+                            <Space split={<Divider type="vertical" style={{ borderColor: token.colorSplit, height: 30 }} />}>
                                 {/* Left Col: Badge status / time */}
                                 <Space direction="vertical" size={0} align="center" style={{ minWidth: 60 }}>
                                     <Text style={{
@@ -255,7 +311,7 @@ const NextGames = () => {
                                     <Text style={{
                                         fontSize: 12,
                                         fontWeight: 700,
-                                        color: isLive ? '#10b981' : 'rgba(255, 255, 255, 0.9)'
+                                        color: isLive ? liveColor : token.colorText
                                     }}>
                                         {timeInfo.time}
                                     </Text>
@@ -265,12 +321,12 @@ const NextGames = () => {
                                 <Space align="center" size={8}>
                                     <Space size={6} align="center">
                                         <Avatar src={match.Teams?.[0]?.logo_url} size={20} shape="square" style={{ background: 'transparent' }} />
-                                        <Text strong style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.9)' }}>{match.Teams?.[0]?.name}</Text>
+                                        <Text strong style={{ fontSize: 13, color: token.colorText }}>{match.Teams?.[0]?.name}</Text>
                                     </Space>
-                                    <Text style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.4)', fontWeight: 500 }}>vs</Text>
+                                    <Text type="secondary" style={{ fontSize: 11, fontWeight: 500 }}>vs</Text>
                                     <Space size={6} align="center">
                                         <Avatar src={match.Teams?.[1]?.logo_url} size={20} shape="square" style={{ background: 'transparent' }} />
-                                        <Text strong style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.9)' }}>{match.Teams?.[1]?.name}</Text>
+                                        <Text strong style={{ fontSize: 13, color: token.colorText }}>{match.Teams?.[1]?.name}</Text>
                                     </Space>
                                 </Space>
                             </Space>
