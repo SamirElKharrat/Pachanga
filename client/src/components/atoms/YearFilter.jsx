@@ -8,7 +8,7 @@ const LABEL_STYLE = {
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(var(--tint),0.5)',
 };
 
 const WRAPPER_STYLE = {
@@ -57,9 +57,9 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
         userSelect: 'none',
         whiteSpace: 'nowrap',
         border: 'none',
-        background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'transparent',
-        color: isActive ? '#fff' : 'rgba(255, 255, 255, 0.5)',
-        boxShadow: isActive ? '0 2px 8px rgba(37, 99, 235, 0.4)' : 'none',
+        background: isActive ? 'linear-gradient(135deg, var(--accent), var(--accent-mid))' : 'transparent',
+        color: isActive ? 'var(--on-accent)' : 'rgba(var(--tint), 0.5)',
+        boxShadow: isActive ? '0 2px 8px rgba(var(--accent-mid-rgb), 0.4)' : 'none',
         flexShrink: 0,
     });
 
@@ -83,9 +83,9 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
                 }
                 .premium-select .ant-select-selector {
                     background: rgba(0, 0, 0, 0.25) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border: 1px solid rgba(var(--tint), 0.08) !important;
                     border-radius: 10px !important;
-                    color: #fff !important;
+                    color: var(--on-accent) !important;
                     height: 42px !important;
                     display: flex !important;
                     align-items: center !important;
@@ -93,16 +93,16 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
                     transition: all 0.2s ease !important;
                 }
                 .premium-select:hover .ant-select-selector {
-                    border-color: rgba(59, 130, 246, 0.5) !important;
-                    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2) !important;
+                    border-color: rgba(var(--accent-rgb), 0.5) !important;
+                    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.2) !important;
                 }
                 .premium-select .ant-select-selection-item {
-                    color: #fff !important;
+                    color: var(--on-accent) !important;
                     font-weight: 600 !important;
                     font-size: 13px !important;
                 }
                 .premium-select .ant-select-arrow {
-                    color: rgba(255, 255, 255, 0.4) !important;
+                    color: rgba(var(--tint), 0.4) !important;
                 }
                 .year-segmented-container::-webkit-scrollbar {
                     display: none;
@@ -124,12 +124,12 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
                         onClick={() => handleClick(null)}
                         onMouseEnter={e => {
                             if (selectedYear !== null) {
-                                e.currentTarget.style.color = '#fff';
+                                e.currentTarget.style.color = 'var(--on-accent)';
                             }
                         }}
                         onMouseLeave={e => {
                             if (selectedYear !== null) {
-                                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                                e.currentTarget.style.color = 'rgba(var(--tint), 0.5)';
                             }
                         }}
                     >
@@ -144,12 +144,12 @@ export default function YearFilter({ leagues = [], selectedYear, onYearChange })
                             onClick={() => handleClick(year)}
                             onMouseEnter={e => {
                                 if (selectedYear !== year) {
-                                    e.currentTarget.style.color = '#fff';
+                                    e.currentTarget.style.color = 'var(--on-accent)';
                                 }
                             }}
                             onMouseLeave={e => {
                                 if (selectedYear !== year) {
-                                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
+                                    e.currentTarget.style.color = 'rgba(var(--tint), 0.5)';
                                 }
                             }}
                         >

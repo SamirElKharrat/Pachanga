@@ -1,9 +1,10 @@
-import { Card, Form, Input, Button, Typography, Image, Space, theme, Checkbox } from 'antd';
+import { Card, Form, Input, Button, Typography, Space, theme, Checkbox } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
 import { useNavigate } from 'react-router-dom';
+import BrandMark from './BrandMark';
 
 const { Title, Text } = Typography;
 
@@ -68,16 +69,7 @@ const AuthForm = ({ method }) => {
             }}>
 
             <div className="mb-5 text-center">
-                <Image
-                    preview={false}
-                    src="/pachanga_logo_blanco.webp"
-                    width={180}
-                    style={{ 
-                        cursor: 'pointer',
-                        filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none'
-                    }}
-                    onClick={() => nav('/')}
-                />
+                <BrandMark logoWidth={180} crestSize={96} wordmark onClick={() => nav('/')} />
             </div>
 
             <Card
@@ -147,7 +139,7 @@ const AuthForm = ({ method }) => {
 
                     {!isRegister && (
                         <Form.Item name="keepSession" valuePropName="checked" style={{ marginBottom: 16 }}>
-                            <Checkbox style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Mantener sesión iniciada</Checkbox>
+                            <Checkbox style={{ color: 'rgba(var(--tint), 0.7)' }}>Mantener sesión iniciada</Checkbox>
                         </Form.Item>
                     )}
 

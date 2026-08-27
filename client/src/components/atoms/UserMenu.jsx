@@ -25,6 +25,7 @@ import {
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
+import BrandMark from './BrandMark';
 
 const { Content, Sider, Header } = Layout;
 const { Text } = Typography;
@@ -74,21 +75,8 @@ const UserMenu = ({ children }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     // Context & settings
-    const { themePreference, changeTheme, isLightMode, gifsEnabled, toggleGifs, getAvatarSrc, modoCrazy, changeModoCrazy } = useTheme();
-
-    const handleCrazyModeToggle = (checked) => {
-        if (checked) {
-            const confirmed = window.confirm('⚠️ ADVERTENCIA DE SALUD VISUAL ⚠️\n\n¿Estás completamente seguro de que quieres volverte loco? Esta acción activará un diseño bizarro, feo, caótico y perjudicial para la vista.');
-            if (confirmed) {
-                changeModoCrazy(true);
-            } else {
-                // Return switch to false state
-                changeModoCrazy(false);
-            }
-        } else {
-            changeModoCrazy(false);
-        }
-    };
+    const { themePreference, changeTheme, isLightMode, gifsEnabled, toggleGifs, getAvatarSrc,
+        isWorlds, worldsSeason, changeModoWorlds } = useTheme();
 
     const nav = useNavigate();
     const location = useLocation();
@@ -111,6 +99,15 @@ const UserMenu = ({ children }) => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, [nav]);
+
+    // La marca de agua del modo Worlds va fija a la ventana, pero el contenido
+    // está desplazado por la barra lateral. Sin esto, el escudo aparece descentrado
+    // hacia la izquierda. Se publica la anchura real para que el CSS la descuente.
+    useEffect(() => {
+        const ancho = isMobile ? 0 : (collapsed ? 80 : 240);
+        document.documentElement.style.setProperty('--shell-offset', `${ancho}px`);
+        return () => document.documentElement.style.setProperty('--shell-offset', '0px');
+    }, [isMobile, collapsed]);
 
     const userMenuItems = [
         { key: 'profile', label: 'Mi Perfil', icon: <UserOutlined />, onClick: () => nav('/user') },
@@ -144,13 +141,10 @@ const UserMenu = ({ children }) => {
                     if (isMobile) setDrawerOpen(false);
                 }}
             >
-                <Image
-                    width={(collapsed && !isMobile) ? 32 : 120}
-                    preview={false}
-                    src="/pachanga_logo_blanco.webp"
-                    alt="Pachanga Logo"
-                    className="pachanga-logo-img"
-                    style={{ filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none' }}
+                <BrandMark
+                    logoWidth={(collapsed && !isMobile) ? 32 : 120}
+                    crestSize={(collapsed && !isMobile) ? 32 : 56}
+                    wordmark={!(collapsed && !isMobile)}
                 />
             </div>
 
@@ -295,15 +289,7 @@ const UserMenu = ({ children }) => {
                         onClick={() => setDrawerOpen(true)}
                         style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     />
-                    <Image
-                        width={100}
-                        preview={false}
-                        src="/pachanga_logo_blanco.webp"
-                        alt="Pachanga Logo"
-                        className="pachanga-logo-img"
-                        style={{ filter: token.colorBgBase === '#f8fafc' ? 'invert(1)' : 'none', cursor: 'pointer' }}
-                        onClick={() => nav("/")}
-                    />
+                    <BrandMark logoWidth={100} crestSize={32} onClick={() => nav("/")} />
                     <Avatar
                         size={32}
                         icon={<UserOutlined />}
@@ -324,18 +310,48 @@ const UserMenu = ({ children }) => {
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0, paddingTop: 4 }}>
 
+                    {/* ── Modo Worlds ──
+                        Solo aparece mientras hay mundial en curso. El resto del año esta
+                        fila no existe, para no dejar en Opciones un interruptor que no
+                        hace nada once meses de cada doce. */}
+                    {worldsSeason && (
+                        <>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', gap: 14 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <TrophyOutlined style={{ fontSize: 17, color: 'var(--accent)' }} />
+                                    <div>
+                                        <Text strong style={{ display: 'block', fontSize: 14 }}>Modo Worlds</Text>
+                                        <Text type="secondary" style={{ fontSize: 11 }}>
+                                            Activo mientras dure {worldsSeason.league?.name || 'el mundial'}. Apágalo para volver a tu tema de siempre.
+                                        </Text>
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={isWorlds}
+                                    onChange={v => changeModoWorlds(v)}
+                                    checkedChildren="Sí"
+                                    unCheckedChildren="No"
+                                />
+                            </div>
+                            <Divider style={{ margin: 0 }} />
+                        </>
+                    )}
+
                     {/* Apariencia */}
-                    <div style={{ padding: '16px 0' }}>
+                    <div style={{ padding: '16px 0', opacity: isWorlds ? 0.45 : 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                            <BgColorsOutlined style={{ fontSize: 17, color: '#3b82f6' }} />
+                            <BgColorsOutlined style={{ fontSize: 17, color: 'var(--accent)' }} />
                             <div>
                                 <Text strong style={{ display: 'block', fontSize: 14 }}>Apariencia del sitio web</Text>
-                                <Text type="secondary" style={{ fontSize: 11 }}>Elige el tema de la interfaz</Text>
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                    {isWorlds ? 'No disponible mientras el modo Worlds esté activo' : 'Elige el tema de la interfaz'}
+                                </Text>
                             </div>
                         </div>
                         <Radio.Group
                             value={themePreference}
                             onChange={e => changeTheme(e.target.value)}
+                            disabled={isWorlds}
                             style={{ display: 'flex', gap: 8 }}
                         >
                             {[
@@ -368,7 +384,7 @@ const UserMenu = ({ children }) => {
                     {/* Gifs */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <PlayCircleOutlined style={{ fontSize: 17, color: '#10b981' }} />
+                            <PlayCircleOutlined style={{ fontSize: 17, color: 'var(--success)' }} />
                             <div>
                                 <Text strong style={{ display: 'block', fontSize: 14 }}>Habilitar gifs</Text>
                                 <Text type="secondary" style={{ fontSize: 11 }}>Controla si se muestran GIFs animados</Text>
@@ -382,25 +398,6 @@ const UserMenu = ({ children }) => {
                         />
                     </div>
 
-                    <Divider style={{ margin: 0 }} />
-
-                    {/* Modo loco */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <ThunderboltOutlined style={{ fontSize: 17, color: '#f59e0b' }} />
-                            <div>
-                                <Text strong style={{ display: 'block', fontSize: 14 }}>Modo loco</Text>
-                                <Text type="secondary" style={{ fontSize: 11 }}>Activa efectos visuales extremos</Text>
-                            </div>
-                        </div>
-                        <Switch
-                            checked={modoCrazy}
-                            onChange={handleCrazyModeToggle}
-                            checkedChildren="Sí"
-                            unCheckedChildren="No"
-                            style={modoCrazy ? { background: '#f59e0b' } : {}}
-                        />
-                    </div>
 
                 </div>
             </Modal>

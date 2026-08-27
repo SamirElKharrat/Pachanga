@@ -18,7 +18,7 @@
   margin-bottom: 28px;
   flex-wrap: wrap;
   gap: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(var(--tint), 0.08);
   padding-bottom: 20px;
 }
 
@@ -27,14 +27,14 @@
   font-weight: 900;
   letter-spacing: -0.02em;
   margin: 0 !important;
-  background: linear-gradient(135deg, #ffffff 30%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--white) 30%, var(--accent-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   display: inline-block;
 }
 
 .pachanga-sub {
-  color: #94a3b8;
+  color: var(--text-dim);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -50,15 +50,15 @@
 
 /* Primary Button (Standard Pachanga Blue) */
 .pachanga-admin-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  color: var(--on-accent);
   border: none;
   padding: 8px 18px;
   border-radius: 8px;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -67,7 +67,7 @@
 
 .pachanga-admin-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.45);
   filter: brightness(1.1);
 }
 
@@ -80,8 +80,8 @@
 }
 
 .pachanga-prize-card {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid rgba(var(--tint), 0.08);
   border-radius: 16px;
   padding: 20px 24px;
   display: flex;
@@ -93,28 +93,28 @@
 
 .pachanga-prize-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(var(--tint), 0.18);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .pachanga-prize-card.first {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, #1e293b 100%);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08) 0%, var(--bg-surface) 100%);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.1);
 }
 
 .pachanga-prize-label {
   font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-dim);
   font-weight: 700;
 }
 
 .pachanga-prize-value {
   font-size: 28px;
   font-weight: 900;
-  color: #ffffff;
+  color: var(--white);
   margin-top: 4px;
   line-height: 1;
 }
@@ -122,15 +122,15 @@
 .pachanga-prize-tag {
   font-size: 12px;
   font-weight: 700;
-  color: #60a5fa;
+  color: var(--accent-light);
 }
 
 .pachanga-prize-tag.silver {
-  color: #cbd5e1;
+  color: var(--text-muted);
 }
 
 .pachanga-prize-tag.bronze {
-  color: #94a3b8;
+  color: var(--text-dim);
 }
 
 /* ─── Standings Section ─── */
@@ -139,7 +139,7 @@
   font-weight: 800;
   letter-spacing: -0.01em;
   margin-bottom: 16px;
-  color: #f8fafc;
+  color: var(--text-strong);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -153,8 +153,8 @@
 }
 
 .pachanga-player-card {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid rgba(var(--tint), 0.08);
   border-radius: 14px;
   padding: 14px 20px;
   display: flex;
@@ -164,24 +164,24 @@
 }
 
 .pachanga-player-card:hover {
-  background: #243044;
+  background: var(--bg-surface-2);
   transform: translateX(4px);
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(var(--tint), 0.15);
 }
 
 .pachanga-player-card.rank-1 {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, #1e293b 65%);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.1) 0%, var(--bg-surface) 65%);
 }
 
 .pachanga-player-card.rank-2 {
-  border-color: rgba(203, 213, 225, 0.2);
-  background: linear-gradient(90deg, rgba(203, 213, 225, 0.06) 0%, #1e293b 65%);
+  border-color: rgba(var(--text-muted-rgb), 0.2);
+  background: linear-gradient(90deg, rgba(var(--text-muted-rgb), 0.06) 0%, var(--bg-surface) 65%);
 }
 
 .pachanga-player-card.rank-3 {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, #1e293b 65%);
+  border-color: rgba(var(--tint), 0.1);
+  background: linear-gradient(90deg, rgba(var(--tint), 0.04) 0%, var(--bg-surface) 65%);
 }
 
 .pachanga-pc-left {
@@ -198,37 +198,37 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--tint), 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: var(--text-dim);
   flex-shrink: 0;
 }
 
 .pachanga-player-card.rank-1 .pachanga-pc-pos {
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .pachanga-player-card.rank-2 .pachanga-pc-pos {
-  background: #64748b;
-  color: #ffffff;
+  background: var(--bg-neutral);
+  color: var(--white);
 }
 
 .pachanga-player-card.rank-3 .pachanga-pc-pos {
-  background: #475569;
-  color: #ffffff;
+  background: var(--bg-elevated-2);
+  color: var(--white);
 }
 
 .pachanga-pc-avatar {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--tint), 0.12);
   flex-shrink: 0;
 }
 
 .pachanga-player-card.rank-1 .pachanga-pc-avatar {
-  border: 2px solid #3b82f6;
-  box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.35);
 }
 
 .pachanga-pc-meta {
@@ -239,7 +239,7 @@
 .pachanga-pc-name {
   font-size: 15px;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--text-strong);
 }
 
 .pachanga-pc-badges {
@@ -250,13 +250,13 @@
 }
 
 .pachanga-pc-chip {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(var(--tint), 0.05);
+  border: 1px solid rgba(var(--tint), 0.08);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 6px;
-  color: #94a3b8;
+  color: var(--text-dim);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -265,7 +265,7 @@
 .pachanga-chip-delete {
   background: transparent;
   border: none;
-  color: #f87171;
+  color: var(--danger-light);
   cursor: pointer;
   font-size: 10px;
   padding: 0 2px;
@@ -287,14 +287,14 @@
 .pachanga-pc-pts-num {
   font-size: 24px;
   font-weight: 900;
-  color: #f8fafc;
+  color: var(--text-strong);
   line-height: 1;
 }
 
 .pachanga-pc-pts-sub {
   font-size: 10px;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-dim);
   margin-top: 3px;
   letter-spacing: 0.5px;
 }
@@ -309,8 +309,8 @@
 }
 
 .pachanga-bottom-card {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid rgba(var(--tint), 0.08);
   border-radius: 16px;
   padding: 22px;
   display: flex;
@@ -321,7 +321,7 @@
 .pachanga-bottom-card h4 {
   font-size: 15px;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--text-strong);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -330,7 +330,7 @@
 
 .pachanga-rules-summary-list {
   padding-left: 18px;
-  color: #cbd5e1;
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.65;
   margin-bottom: 16px;
@@ -341,9 +341,9 @@
 }
 
 .pachanga-read-more-btn {
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  color: #60a5fa;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  color: var(--accent-light);
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 12px;
@@ -357,9 +357,9 @@
 }
 
 .pachanga-read-more-btn:hover {
-  background: rgba(59, 130, 246, 0.22);
-  border-color: #3b82f6;
-  color: #93c5fd;
+  background: rgba(var(--accent-rgb), 0.22);
+  border-color: var(--accent);
+  color: var(--accent-lighter);
   transform: translateY(-2px);
 }
 
@@ -367,12 +367,12 @@
   border-style: dashed;
   text-align: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(var(--tint), 0.015);
 }
 
 .pachanga-stats-tag {
   font-size: 11px;
-  color: #3b82f6;
+  color: var(--accent);
   letter-spacing: 1px;
   text-transform: uppercase;
   font-weight: 800;
@@ -383,7 +383,7 @@
 .pachanga-rules-modal-body {
   font-size: 14px;
   line-height: 1.75;
-  color: #cbd5e1;
+  color: var(--text-muted);
   max-height: 70vh;
   overflow-y: auto;
   padding-right: 8px;
@@ -392,9 +392,9 @@
 .pachanga-rules-modal-body h3 {
   font-size: 15px;
   font-weight: 800;
-  color: #f8fafc;
+  color: var(--text-strong);
   margin: 20px 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(var(--tint), 0.08);
   padding-bottom: 4px;
 }
 
@@ -412,13 +412,13 @@
 }
 
 .pachanga-notice-box {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(var(--tint), 0.03);
+  border: 1px solid rgba(var(--tint), 0.08);
   border-radius: 10px;
   padding: 14px 18px;
   margin: 16px 0;
   font-size: 13px;
-  color: #cbd5e1;
+  color: var(--text-muted);
 }
 
 /* ─── Responsive ─── */

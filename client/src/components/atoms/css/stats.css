@@ -17,9 +17,10 @@
   --s-ink-2: #cbd5e1;
   --s-ink-3: #94a3b8;
   --s-accent: #3b82f6;
+  --s-accent-rgb: 59, 130, 246;
   --s-accent-2: #60a5fa;
-  --s-accent-soft: rgba(59, 130, 246, 0.12);
-  --s-accent-line: rgba(59, 130, 246, 0.35);
+  --s-accent-soft: rgba(var(--s-accent-rgb), 0.12);
+  --s-accent-line: rgba(var(--s-accent-rgb), 0.35);
   --s-gold: #f5d576;
   --s-gold-soft: rgba(212, 168, 67, 0.12);
   --s-gold-line: rgba(212, 168, 67, 0.35);
@@ -44,9 +45,10 @@
   --s-ink-2: #334155;
   --s-ink-3: #64748b;
   --s-accent: #3b82f6;
+  --s-accent-rgb: 59, 130, 246;
   --s-accent-2: #2563eb;
-  --s-accent-soft: rgba(59, 130, 246, 0.10);
-  --s-accent-line: rgba(59, 130, 246, 0.35);
+  --s-accent-soft: rgba(var(--s-accent-rgb), 0.10);
+  --s-accent-line: rgba(var(--s-accent-rgb), 0.35);
   --s-gold: #a1740a;
   --s-gold-soft: rgba(180, 132, 20, 0.10);
   --s-gold-line: rgba(180, 132, 20, 0.30);
@@ -55,6 +57,37 @@
   --s-shadow: 0 4px 16px rgba(15, 23, 42, 0.07);
   --s-ok: #047857;
   --s-bad: #be123c;
+}
+
+/* Modo Worlds. Mismo mecanismo que .is-light: solo se redefinen los valores, la
+   hoja es la misma. Los colores tienen que decir lo mismo que styles/worlds.css.
+
+   Ojo con --s-gold: aquí no es «un dorado bonito», es el color que marca el
+   primer puesto y el mejor dato. Como en Worlds el acento YA es oro, se sube a
+   pergamino para que siga destacando sobre el resto en vez de fundirse con él. */
+.pstats.is-worlds {
+  --s-surface: #101118;
+  --s-surface-2: #171922;
+  --s-glass: rgba(240, 230, 210, 0.022);
+  --s-glass-2: rgba(240, 230, 210, 0.05);
+  --s-line: rgba(240, 230, 210, 0.085);
+  --s-line-2: rgba(240, 230, 210, 0.145);
+  --s-ink: #f0e6d2;
+  --s-ink-2: #c4bfb2;
+  --s-ink-3: #a9a498;
+  --s-accent: #c89b3c;
+  --s-accent-rgb: 200, 155, 60;
+  --s-accent-2: #c8aa6e;
+  --s-accent-soft: rgba(200, 155, 60, 0.12);
+  --s-accent-line: rgba(200, 155, 60, 0.35);
+  --s-gold: #f0e6d2;
+  --s-gold-soft: rgba(240, 230, 210, 0.12);
+  --s-gold-line: rgba(240, 230, 210, 0.35);
+  --s-grid: rgba(240, 230, 210, 0.07);
+  --s-track: rgba(240, 230, 210, 0.07);
+  --s-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --s-ok: #0ac8b9;
+  --s-bad: #f58a8d;
 }
 
 /* ─── Contenedor del módulo ─── */
@@ -485,10 +518,10 @@
   background: var(--s-track);
 }
 
-.pstats-heat i[data-v="1"] { background: rgba(59, 130, 246, 0.26); }
-.pstats-heat i[data-v="2"] { background: rgba(59, 130, 246, 0.48); }
-.pstats-heat i[data-v="3"] { background: rgba(59, 130, 246, 0.72); }
-.pstats-heat i[data-v="4"] { background: #3b82f6; }
+.pstats-heat i[data-v="1"] { background: rgba(var(--s-accent-rgb), 0.26); }
+.pstats-heat i[data-v="2"] { background: rgba(var(--s-accent-rgb), 0.48); }
+.pstats-heat i[data-v="3"] { background: rgba(var(--s-accent-rgb), 0.72); }
+.pstats-heat i[data-v="4"] { background: var(--s-accent); }
 
 /* Un hueco sin partidos no es lo mismo que una semana jugada sin acertar nada. */
 .pstats-heat i.na,
@@ -508,10 +541,10 @@
 }
 
 .pstats-heat-legend i { width: 13px; height: 13px; min-height: 0; aspect-ratio: auto; }
-.pstats-heat-legend i[data-v="1"] { background: rgba(59, 130, 246, 0.26); }
-.pstats-heat-legend i[data-v="2"] { background: rgba(59, 130, 246, 0.48); }
-.pstats-heat-legend i[data-v="3"] { background: rgba(59, 130, 246, 0.72); }
-.pstats-heat-legend i[data-v="4"] { background: #3b82f6; }
+.pstats-heat-legend i[data-v="1"] { background: rgba(var(--s-accent-rgb), 0.26); }
+.pstats-heat-legend i[data-v="2"] { background: rgba(var(--s-accent-rgb), 0.48); }
+.pstats-heat-legend i[data-v="3"] { background: rgba(var(--s-accent-rgb), 0.72); }
+.pstats-heat-legend i[data-v="4"] { background: var(--s-accent); }
 .pstats-heat-sep { display: inline-flex; align-items: center; gap: 5px; margin-left: 12px; }
 
 /* ─── Recorrido con puntos ─── */

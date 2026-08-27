@@ -40,6 +40,21 @@ const League = sequelize.define('League', {
         type: DataTypes.STRING,
         allowNull: true
     },
+    // Which skin the whole site wears while this competition is alive.
+    //
+    //   'default'  la web de siempre
+    //   'worlds'   el tema del mundial
+    //
+    // Es lo ÚNICO que enciende el modo Worlds. A partir de ahí no hay que tocar
+    // nada más: manda el estado de la liga —que ya se mueve solo con las fechas
+    // de inicio y fin— y la web vuelve a la normalidad en cuanto pasa a
+    // 'finished'. Se guarda como texto y no como ENUM a propósito: añadir un
+    // tema nuevo no debería costar una migración.
+    theme: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'default'
+    },
     // Whether this competition adds up to the Pachanga season. Worlds has its own
     // prizes and is set to false; everything else counts.
     counts_for_pachanga: {

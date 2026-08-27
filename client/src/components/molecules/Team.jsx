@@ -103,8 +103,8 @@ export default function Team() {
             <Card
                 className="selectors-card"
                 style={{
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    background: 'rgba(var(--tint), 0.02)',
+                    border: '1px solid rgba(var(--tint), 0.06)',
                     borderRadius: 16,
                     marginBottom: 24,
                     marginTop: 16
@@ -112,7 +112,7 @@ export default function Team() {
                 styles={{ body: { padding: '16px 20px' } }}
             >
                 <Flex vertical>
-                    <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                    <Text strong style={{ display: 'block', marginBottom: 10, fontSize: 11, textTransform: 'uppercase', color: 'rgba(var(--tint),0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
                     {loading && leagues.length === 0 ? <Skeleton.Button active /> : (
                         <SegmentedControl 
                             options={filteredLeagues.map(l => ({ value: l.id, label: l.name }))}
@@ -144,7 +144,7 @@ export default function Team() {
                                 hoverable
                                 className="shadow-sm h-100 text-center"
                                 cover={
-                                    <Flex align="center" justify="center" style={{ height: 160, padding: 16, background: 'rgba(255,255,255,0.02)' }}>
+                                    <Flex align="center" justify="center" style={{ height: 160, padding: 16, background: 'rgba(var(--tint),0.02)' }}>
                                         <Image
                                             src={team.logo_url}
                                             alt={team.name}
@@ -152,7 +152,7 @@ export default function Team() {
                                                 maxWidth: 120, 
                                                 maxHeight: 120, 
                                                 objectFit: 'contain',
-                                                filter: isLightMode ? 'none' : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.15))'
+                                                filter: isLightMode ? 'none' : 'drop-shadow(0 0 8px rgba(var(--tint), 0.25)) drop-shadow(0 0 2px rgba(var(--tint), 0.15))'
                                             }}
                                             preview={false}
                                             onClick={() => window.open("https://lol.fandom.com/wiki/" + team.name)}

@@ -44,7 +44,7 @@ const PredictionTable = ({ result, matches }) => {
                                 size={44}
                                 style={{ 
                                     opacity: winnerId === team1?.id ? 1 : 0.25,
-                                    border: winnerId === team1?.id ? '2px solid rgba(59, 130, 246, 0.6)' : 'none',
+                                    border: winnerId === team1?.id ? '2px solid rgba(var(--accent-rgb), 0.6)' : 'none',
                                     padding: 2,
                                     background: token.colorFillAlter
                                 }}
@@ -56,7 +56,7 @@ const PredictionTable = ({ result, matches }) => {
                                 size={44}
                                 style={{ 
                                     opacity: winnerId === team2?.id ? 1 : 0.25,
-                                    border: winnerId === team2?.id ? '2px solid rgba(59, 130, 246, 0.6)' : 'none',
+                                    border: winnerId === team2?.id ? '2px solid rgba(var(--accent-rgb), 0.6)' : 'none',
                                     padding: 2,
                                     background: token.colorFillAlter
                                 }}
@@ -66,7 +66,7 @@ const PredictionTable = ({ result, matches }) => {
                         {/* Result section */}
                         <div className="ms-auto" style={{ minWidth: 60, textAlign: 'right' }}>
                             {record.prediction?.description && (
-                                <Text strong style={{ fontSize: 18, color: '#3b82f6', letterSpacing: '1px' }}>
+                                <Text strong style={{ fontSize: 18, color: 'var(--accent)', letterSpacing: '1px' }}>
                                     {record.prediction.description}
                                 </Text>
                             )}

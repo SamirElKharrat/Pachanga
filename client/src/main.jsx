@@ -15,6 +15,8 @@ import User from './components/molecules/User'
 import HallOfFlame from './components/molecules/HallOfFlame'
 import PachangaStanding from './components/molecules/PachangaStanding'
 import IsGuilleWinning from './components/molecules/IsGuilleWinning'
+import './styles/tokens.css';
+import './styles/worlds.css';
 import './index.css';
 import './components/atoms/AlertInfo' // Importamos para inicializar la configuración
 import AlertProvider from './components/atoms/AlertInfo'

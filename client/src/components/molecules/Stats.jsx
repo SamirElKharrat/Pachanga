@@ -5,7 +5,7 @@ import { UserOutlined, ArrowLeftOutlined, DownloadOutlined } from '@ant-design/i
 import { API } from '../../services/api';
 import useIsMobile from '../../hooks/useIsMobile';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
-import { chartPalette, colorForUser, distinctColorsFor } from '../../styles/theme';
+import { paletteFor, colorForUser, distinctColorsFor } from '../../styles/theme';
 import KpiTile from '../atoms/stats/KpiTile';
 import BulletBar from '../atoms/stats/BulletBar';
 import LineChart from '../atoms/stats/LineChart';
@@ -44,7 +44,8 @@ const signed = (n, d = 1) => (n == null ? '—' : `${n >= 0 ? '+' : '−'}${Math
 export default function Stats() {
     const [params, setParams] = useSearchParams();
     const navigate = useNavigate();
-    const { isLightMode, getAvatarSrc } = useAppTheme();
+    const { isLightMode, isWorlds, resolvedTheme, getAvatarSrc } = useAppTheme();
+    const chart = paletteFor(resolvedTheme);
     const esMovil = useIsMobile();
     // Ant Design da el tamaño por prop, no por CSS, así que esto no se puede resolver
     // con una media query: en móvil los controles pasan de 24 a 32 px de alto.
@@ -101,7 +102,7 @@ export default function Stats() {
 
     const players = data ? data.players : [];
     const allIds = players.map(p => p.user.id);
-    const colorOf = useCallback((id) => colorForUser(id, allIds, isLightMode), [allIds, isLightMode]);
+    const colorOf = useCallback((id) => colorForUser(id, allIds, resolvedTheme), [allIds, resolvedTheme]);
 
     // Quién se mira en la ficha y quiénes se comparan, con el primero como defecto.
     const focusId = Number(params.get('jugador')) || (players[0] && players[0].user.id);
@@ -158,7 +159,7 @@ export default function Stats() {
         if (boton) boton.focus();
     }, [tab, setParam]);
 
-    const root = `pstats${isLightMode ? ' is-light' : ''}`;
+    const root = `pstats${isLightMode ? ' is-light' : ''}${isWorlds ? ' is-worlds' : ''}`;
 
     if (loading) {
         return (
@@ -308,13 +309,13 @@ export default function Stats() {
             ) : (
                 <div style={{ marginTop: 18 }}>
                     {tab === 'jugadores' && <TabJugadores players={players} scope={scope} getAvatarSrc={getAvatarSrc} ctl={ctl} esMovil={esMovil} />}
-                    {tab === 'resumen' && <TabResumen overview={overview} players={players} allIds={allIds} colorOf={colorOf} getAvatarSrc={getAvatarSrc} isLightMode={isLightMode} esMovil={esMovil} />}
+                    {tab === 'resumen' && <TabResumen overview={overview} players={players} allIds={allIds} colorOf={colorOf} getAvatarSrc={getAvatarSrc} chart={chart} themeName={resolvedTheme} esMovil={esMovil} />}
                     {tab === 'ligas' && <TabLigas meta={meta} year={year || scope.year} getAvatarSrc={getAvatarSrc} onPick={(id) => setParam({ liga: id })} />}
                     {tab === 'jugador' && (
                         <TabJugador
                             detail={detail} detailFailed={detailFailed} players={players}
                             focusId={focusId} scope={scope} colorOf={colorOf}
-                            getAvatarSrc={getAvatarSrc} ctl={ctl}
+                            getAvatarSrc={getAvatarSrc} ctl={ctl} chart={chart}
                             onPick={(id) => setParam({ jugador: id })}
                             onCompare={(id) => setParam({ tab: 'comparar', a: id })}
                             onScope={() => setParam({ liga: null })}
@@ -324,7 +325,7 @@ export default function Stats() {
                         <TabComparar
                             detail={detail} detailFailed={detailFailed} players={players}
                             aId={aId} bId={bId} scope={scope}
-                            allIds={allIds} isLightMode={isLightMode} getAvatarSrc={getAvatarSrc} ctl={ctl}
+                            allIds={allIds} themeName={resolvedTheme} getAvatarSrc={getAvatarSrc} ctl={ctl}
                             onPick={(which, id) => setParam({ [which]: id })}
                             onScope={() => setParam({ liga: null })}
                         />
@@ -483,13 +484,13 @@ function TabJugadores({ players, scope, getAvatarSrc, ctl, esMovil }) {
 //  Resumen
 // ═══════════════════════════════════════════════════════════════════════════
 
-function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, isLightMode, esMovil }) {
+function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, themeName, esMovil }) {
     const { totals, leaders, progression, byFormat } = overview;
 
     // Los colores se reparten entre los tres que se pintan, no por índice global: con
     // más de seis jugadores los índices dan la vuelta y salían dos líneas iguales.
     const shown = (progression.series || []).slice(0, 3);
-    const palette = distinctColorsFor(shown.map(s => s.user.id), allIds, isLightMode);
+    const palette = distinctColorsFor(shown.map(s => s.user.id), allIds, themeName);
     const top = shown.map(s => {
         const c = palette[s.user.id];
         return {
@@ -501,10 +502,10 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, isLightM
     });
 
     const origins = [
-        { key: 'base', name: 'Ganador', color: chartPalette.series[0] },
-        { key: 'exact', name: 'Marcador', color: chartPalette.series[1] },
-        { key: 'streak', name: 'Pleno', color: chartPalette.series[2] },
-        { key: 'favorite', name: 'Favorito', color: chartPalette.series[3] },
+        { key: 'base', name: 'Ganador', color: chart.series[0] },
+        { key: 'exact', name: 'Marcador', color: chart.series[1] },
+        { key: 'streak', name: 'Pleno', color: chart.series[2] },
+        { key: 'favorite', name: 'Favorito', color: chart.series[3] },
     ];
 
     return (
@@ -721,7 +722,7 @@ function TabLigas({ meta, year, getAvatarSrc, onPick }) {
 //  Ficha de jugador
 // ═══════════════════════════════════════════════════════════════════════════
 
-function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, getAvatarSrc, ctl, onPick, onCompare, onScope }) {
+function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, getAvatarSrc, ctl, chart, onPick, onCompare, onScope }) {
     const picker = (
         <div className="pstats-filters" style={{ marginBottom: 14 }}>
             <span className="pstats-filter-label">Jugador</span>
@@ -766,10 +767,10 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
     const c = colorOf(player.id);
 
     const origins = [
-        { key: 'base', name: 'Ganador', color: chartPalette.series[0], value: breakdown.base },
-        { key: 'exact', name: 'Marcador', color: chartPalette.series[1], value: breakdown.exact },
-        { key: 'streak', name: 'Pleno', color: chartPalette.series[2], value: breakdown.streak },
-        { key: 'favorite', name: 'Favorito', color: chartPalette.series[3], value: breakdown.favorite },
+        { key: 'base', name: 'Ganador', color: chart.series[0], value: breakdown.base },
+        { key: 'exact', name: 'Marcador', color: chart.series[1], value: breakdown.exact },
+        { key: 'streak', name: 'Pleno', color: chart.series[2], value: breakdown.streak },
+        { key: 'favorite', name: 'Favorito', color: chart.series[3], value: breakdown.favorite },
     ];
     const bestLeaguePoints = Math.max(1, ...byLeague.map(b => b.pointsOfficial));
 
@@ -865,14 +866,14 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 {teams.best && (
-                                    <div className="pstats-moment" style={{ '--m-mark': chartPalette.series[3], '--m-text': chartPalette.text[0] }}>
+                                    <div className="pstats-moment" style={{ '--m-mark': chart.series[3], '--m-text': chart.text[3] }}>
                                         <div className="pstats-moment-kind">Se le da bien</div>
                                         <div className="pstats-moment-main">{teams.best.name} · {teams.best.correct} de {teams.best.appearances}</div>
                                         <div className="pstats-moment-foot">{pct(teams.best.accuracy)} de acierto parcial</div>
                                     </div>
                                 )}
                                 {teams.worst && (
-                                    <div className="pstats-moment" style={{ '--m-mark': chartPalette.series[4], '--m-text': chartPalette.text[0] }}>
+                                    <div className="pstats-moment" style={{ '--m-mark': chart.series[4], '--m-text': chart.text[4] }}>
                                         <div className="pstats-moment-kind">Su bestia negra</div>
                                         <div className="pstats-moment-main">{teams.worst.name} · {teams.worst.correct} de {teams.worst.appearances}</div>
                                         <div className="pstats-moment-foot">{pct(teams.worst.accuracy)} de acierto parcial</div>
@@ -901,7 +902,7 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
 //  Comparar
 // ═══════════════════════════════════════════════════════════════════════════
 
-function TabComparar({ detail, detailFailed, players, aId, bId, scope, allIds, isLightMode, getAvatarSrc, ctl, onPick, onScope }) {
+function TabComparar({ detail, detailFailed, players, aId, bId, scope, allIds, themeName, getAvatarSrc, ctl, onPick, onScope }) {
     const pickers = (which, value) => (
         <Select
             size={ctl}
@@ -954,7 +955,7 @@ function TabComparar({ detail, detailFailed, players, aId, bId, scope, allIds, i
     }
 
     const { a, b, headToHead, byLeague, divergent } = detail;
-    const pair = distinctColorsFor([a.user.id, b.user.id], allIds, isLightMode);
+    const pair = distinctColorsFor([a.user.id, b.user.id], allIds, themeName);
     const ca = pair[a.user.id];
     const cb = pair[b.user.id];
 

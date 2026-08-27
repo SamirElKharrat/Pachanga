@@ -94,9 +94,9 @@ const IsGuilleWinning = () => {
                 style={{
                     fontSize: 'clamp(80px, 15vw, 180px)',
                     margin: 0,
-                    color: isWinning === 'SÍ' ? '#52c41a' : '#ff4d4f',
+                    color: isWinning === 'SÍ' ? 'var(--success-vivid)' : 'var(--danger-vivid)',
                     lineHeight: 1,
-                    textShadow: isWinning === 'SÍ' ? '0 0 60px rgba(82,196,26,0.4)' : '0 0 60px rgba(255,77,79,0.4)'
+                    textShadow: isWinning === 'SÍ' ? '0 0 60px rgba(var(--success-vivid-rgb),0.4)' : '0 0 60px rgba(var(--danger-vivid-rgb),0.4)'
                 }}
             >
                 {isWinning}

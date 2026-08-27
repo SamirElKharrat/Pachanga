@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button, Space, Tag, Card, Typography, Image, theme, Flex } from 'antd';
 import { CalendarOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -30,7 +31,7 @@ const CardInfo = ({
     actionText
 }) => {
     const { token } = theme.useToken();
-    const isLight = token.colorBgBase === '#f8fafc';
+    const { isLightMode: isLight } = useTheme();
 
     const renderStatusTag = () => {
         if (!status) return null;
@@ -106,7 +107,7 @@ const CardInfo = ({
                                 objectFit: 'contain',
                                 filter: isLight 
                                     ? 'drop-shadow(0 0 8px rgba(0, 0, 0, 0.08))' 
-                                    : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.15))'
+                                    : 'drop-shadow(0 0 8px rgba(var(--tint), 0.25)) drop-shadow(0 0 2px rgba(var(--tint), 0.15))'
                             }}
                         />
                     </Flex>

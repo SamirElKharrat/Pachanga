@@ -1,0 +1,308 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODO WORLDS — «Legacy»
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Todo lo de este archivo cuelga de `html[data-theme="worlds"]`, que solo se
+   marca cuando hay mundial en curso y el usuario no lo ha apagado. Sin ese
+   atributo, ni una sola regla de aquí llega a aplicarse: la web normal no puede
+   verse afectada por este archivo ni por error.
+
+   Redefine los tokens de `tokens.css`. Los valores tienen que decir lo mismo que
+   `pachangaWorldsTheme` en `theme.js` — ese cubre los componentes de Antd, este
+   cubre el CSS propio de la casa (Hall of Flame, Clasificación, Ligas). Si se
+   toca un color en uno, hay que tocarlo en el otro.
+
+   La forma no cambia. Ni un radio, ni un borde, ni una sombra: los radios de las
+   tarjetas siguen siendo los de siempre y los bordes siguen siendo translúcidos.
+   Lo único que se mueve es la temperatura.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="worlds"] {
+  /* ── Tinte ────────────────────────────────────────────────────────────────
+     Pergamino en lugar de blanco. Retiñe de golpe todos los cristales y bordes
+     translúcidos de la web, que es lo que más cambia la sensación. */
+  --tint: 240, 230, 210;
+
+  /* ── Superficies ─────────────────────────────────────────────────────── */
+  --bg-base: #08080b;
+  --bg-surface: #101118;
+  --bg-surface-rgb: 16, 17, 24;
+  --bg-surface-2: #171922;
+  --bg-surface-deep: #0b0c10;
+  --bg-elevated: #1c1e28;
+  --bg-elevated-2: #262932;
+  --bg-neutral: #3a3d47;
+
+  /* ── Texto ───────────────────────────────────────────────────────────── */
+  --white: #f0e6d2;             /* pergamino: el «blanco» de este tema */
+  --text-strong: #f0e6d2;
+  --text-bright: #e8e6e1;
+  --text: #e8e6e1;
+  --text-muted: #c4bfb2;
+  --text-muted-rgb: 196, 191, 178;
+  --text-dim: #a9a498;
+  --text-dim-rgb: 169, 164, 152;
+  --text-faint: #7c776d;
+  --text-faint-rgb: 124, 119, 109;
+  --text-dim-2: #8a857a;
+  --slate-blue-rgb: 169, 164, 152;
+  --on-accent: #14100a;         /* el oro pide texto oscuro, no blanco */
+  --on-medal: #14100a;
+
+  /* ── Acento — paleta oficial del cliente de League of Legends ────────── */
+  --accent: #c89b3c;            /* Gold 3 */
+  --accent-rgb: 200, 155, 60;
+  --accent-deep: #785a28;       /* Gold 5 */
+  --accent-mid: #a6802f;
+  --accent-mid-rgb: 166, 128, 47;
+  --accent-light: #c8aa6e;      /* Gold 2 */
+  --accent-lighter: #dcc489;
+
+  /* ── Estados de predicción ────────────────────────────────────────────────
+     El pleno se paga en oro: es el mejor resultado del sistema y el único sitio
+     donde el color del acento significa «has ganado algo». */
+  --pred-pleno: #c89b3c;
+  --pred-pleno-rgb: 200, 155, 60;
+  --pred-acierto: #0ac8b9;
+  --pred-acierto-rgb: 10, 200, 185;
+  --pred-fallo: #e05257;
+  --pred-fallo-rgb: 224, 82, 87;
+  --pred-pendiente: #6e6a61;
+
+  /* ── Semánticos ──────────────────────────────────────────────────────── */
+  --success: #0ac8b9;
+  --success-rgb: 10, 200, 185;
+  --success-light: #4fdace;
+  --warning: #c89b3c;
+  --warning-rgb: 200, 155, 60;
+  --warning-light: #e9ce7c;
+  --warning-light-rgb: 233, 206, 124;
+  --warning-mid: #a6802f;
+  --warning-deep: #785a28;
+  --warning-deep-rgb: 120, 90, 40;
+  --danger: #e05257;
+  --danger-rgb: 224, 82, 87;
+  --danger-light: #f58a8d;
+  --success-vivid: #0ac8b9;
+  --success-vivid-rgb: 10, 200, 185;
+  --danger-vivid: #e05257;
+  --danger-vivid-rgb: 224, 82, 87;
+
+  /* ── Decorativos ─────────────────────────────────────────────────────── */
+  --violet: #a78bfa;
+  --purple: #c8aa6e;
+  --yellow: #e9ce7c;
+  --rose: #f4677a;
+  --flame: #c89b3c;
+  --flame-rgb: 200, 155, 60;
+  --neutral-rgb: 240, 230, 210;
+
+  /* ── Medallas ────────────────────────────────────────────────────────── */
+  --medal-gold: #e9ce7c;
+  --medal-gold-rgb: 233, 206, 124;
+  --medal-gold-deep: #c89b3c;
+  --medal-gold-deep-rgb: 200, 155, 60;
+  --medal-silver: #bdb7a8;
+  --medal-silver-deep: #8e897c;
+  --medal-silver-deep-rgb: 142, 137, 124;
+  --medal-bronze: #a6813f;
+  --medal-bronze-deep: #785a28;
+  --medal-bronze-deep-rgb: 120, 90, 40;
+
+  /* ── Hall of Flame ────────────────────────────────────────────────────────
+     El resto de alias --hof-* se resuelven solos desde los tokens de arriba.
+     Este no: el degradado de la llama compone tres colores y a mano queda oro
+     fundido en vez de naranja→rojo→violeta. El mecanismo de encendido de abajo
+     arriba (el clip-path) no se toca. */
+  --hof-flame-gradient: linear-gradient(135deg, #e9ce7c 0%, #c89b3c 45%, #785a28 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Lo que no cabe en un token
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Oswald es la voz de la parrilla deportiva, pero solo para titular. En cuanto
+   pasa de ahí todo empieza a gritar, así que se queda en los títulos de vista y
+   nada más: los títulos de tarjeta («Clasificación», «Predicciones de la
+   Semana») siguen en Barlow, en caja normal, como hoy. */
+html[data-theme="worlds"] h1,
+html[data-theme="worlds"] h2,
+html[data-theme="worlds"] h3,
+html[data-theme="worlds"] .ant-typography h1,
+html[data-theme="worlds"] .ant-typography h2,
+html[data-theme="worlds"] .ant-typography h3,
+html[data-theme="worlds"] .ant-typography.ant-typography-h1,
+html[data-theme="worlds"] .ant-typography.ant-typography-h2,
+html[data-theme="worlds"] .ant-typography.ant-typography-h3 {
+  font-family: 'Oswald', 'Arial Narrow', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+/* El único gesto de forma del sistema: un subrayado dorado que se desvanece bajo
+   los titulares de vista. Una vez por pantalla, y solo donde hay un h1 o h2 de
+   página — no en cada tarjeta. */
+html[data-theme="worlds"] h1::after,
+html[data-theme="worlds"] h2::after {
+  content: "";
+  display: block;
+  width: 62px;
+  height: 2px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+/* Las cifras que se leen en columna van en Barlow Condensed, que es lo que
+   resuelve una tabla de nueve jugadores sin que se descuadre nada. */
+html[data-theme="worlds"] .pachanga-pc-points,
+html[data-theme="worlds"] .pachanga-prize-value,
+html[data-theme="worlds"] .hof-stat-value,
+html[data-theme="worlds"] .pstats-kpi-value {
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Estos tres contenedores fijan la tipografía a mano en su raíz —hoy piden
+   'Inter', que en realidad nunca se llegó a cargar y cae en la del sistema—, así
+   que el token de Antd no les llega. Sin esto, Hall of Flame, Clasificación y
+   Estadísticas se quedarían con otra letra que el resto de la web. */
+html[data-theme="worlds"] .pstats,
+html[data-theme="worlds"] .hof-container,
+html[data-theme="worlds"] .pachanga-container {
+  font-family: 'Barlow', system-ui, -apple-system, sans-serif;
+}
+
+/* El escudo del mundial no se sirve como imagen: se usa de máscara sobre un
+   degradado de oro. Así el mismo archivo vale para el logo de la barra lateral,
+   el favicon y la marca de agua, sin necesidad de una segunda versión.
+   Lo usa <BrandMark /> en la fase 5. */
+html[data-theme="worlds"] .worlds-crest {
+  background: linear-gradient(160deg, #f0e6d2 0%, #c89b3c 42%, #785a28 100%);
+  -webkit-mask-image: url('/worlds_crest.webp');
+          mask-image: url('/worlds_crest.webp');
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   La barra lateral, en modo retransmisión
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Antd marca el item activo con un rectángulo redondeado. Aquí se sustituye por
+   un filete dorado pegado al borde y un degradado que se desvanece, que es lo
+   que da el aire de parrilla deportiva. Los nombres van en versalitas.
+
+   Cubre también el cajón de móvil, que usa el mismo menú.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="worlds"] .ant-menu-inline .ant-menu-item {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 13px;
+  margin-inline: 0;
+  width: 100%;
+  border-radius: 0;
+  border-left: 2px solid transparent;
+}
+
+html[data-theme="worlds"] .ant-menu-inline .ant-menu-item-selected {
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.14), transparent 85%);
+}
+
+/* El nombre de la web bajo el escudo. No se retira el logo de La Pachanga: el
+   mundial es de Riot, la web es de la casa. */
+html[data-theme="worlds"] .worlds-wordmark {
+  display: block;
+  margin-top: 10px;
+  text-align: center;
+  font-family: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-light);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Hall of Flame
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Hay DOS llamas y no comparten degradado: la del titular de la vista usa
+   `--hof-flame-gradient` (ya redefinido arriba) y la del item del menú tiene el
+   suyo propio en index.css, con cuatro paradas para el recorte sobre el texto.
+
+   Sin esta regla, la del menú se quedaría a medias — oro, oro, rosa, violeta—
+   mientras la del titular ya es oro fundido. El mecanismo de encendido de abajo
+   arriba (el clip-path) no se toca: solo el color.
+
+   Ojo: `background` es un atajo y resetea `background-clip`, así que hay que
+   volver a declararlo o el degradado deja de recortarse sobre las letras.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="worlds"] .hof-flame-fire {
+  background: linear-gradient(135deg, #f0e6d2 0%, #e9ce7c 25%, #c89b3c 60%, #785a28 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   La marca de agua
+   ═══════════════════════════════════════════════════════════════════════════
+
+   El escudo, grande y muy tenue, detrás de todo. Va en el <body> y no en cada
+   vista: así no se mueve al hacer scroll, no se repite y sale igual en el login,
+   en «¿Está ganando Guille?» y en el resto.
+
+   Al 4,5 % de opacidad. Más que eso deja de ser fondo y empieza a competir con
+   los datos, que es lo que la gente viene a leer.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="worlds"] body {
+  background-color: var(--bg-base);
+}
+
+html[data-theme="worlds"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  /* El contenido no empieza en el borde de la ventana: la barra lateral se lo
+     come. `--shell-offset` lo publica UserMenu (240, 80 plegada, 0 en móvil) y
+     aquí se descuenta, para que el escudo quede centrado con lo que se lee y no
+     con el navegador. En el login no hay barra, y ahí vale 0. */
+  left: var(--shell-offset, 0px);
+  z-index: 0;
+  pointer-events: none;
+  background: var(--accent);
+  -webkit-mask-image: url('/worlds_crest.webp');
+          mask-image: url('/worlds_crest.webp');
+  -webkit-mask-size: min(64vh, 640px);
+          mask-size: min(64vh, 640px);
+  -webkit-mask-position: center 45%;
+          mask-position: center 45%;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  opacity: 0.045;
+}
+
+/* Para que se vea hay que quitar el fondo opaco de las capas que la tapan. La
+   barra lateral y la cabecera de móvil NO entran aquí: siguen sólidas, porque
+   el escudo asomando por detrás del menú sería ruido, no ambiente.
+   El `!important` es por el login, que fija su fondo en un `style` en línea. */
+html[data-theme="worlds"] .ant-layout,
+html[data-theme="worlds"] .ant-layout-content,
+html[data-theme="worlds"] .auth-page-container {
+  background: transparent !important;
+}
+
+html[data-theme="worlds"] .ant-layout-sider,
+html[data-theme="worlds"] .ant-layout-header {
+  background: var(--bg-surface-deep) !important;
+}

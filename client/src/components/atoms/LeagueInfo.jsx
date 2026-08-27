@@ -91,9 +91,9 @@ const LeagueInfo = ({ leagueId }) => {
                     shape="circle"
                     icon={<ArrowLeftOutlined />}
                     onClick={() => nav('/leagues')}
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    style={{ background: 'rgba(var(--tint),0.05)', border: '1px solid rgba(var(--tint),0.1)' }}
                 />
-                <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: 600 }}>
+                <Text style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>
                     Volver al listado de Ligas
                 </Text>
             </div>
@@ -121,20 +121,20 @@ const LeagueInfo = ({ leagueId }) => {
                         <Space direction="vertical" size={8} style={{ width: '100%' }}>
                             <Space size={16} wrap>
                                 <Space>
-                                    <CalendarOutlined style={{ color: '#3b82f6' }} />
-                                    <Text style={{ color: '#cbd5e1', fontSize: 13 }}>
+                                    <CalendarOutlined style={{ color: 'var(--accent)' }} />
+                                    <Text style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                                         {new Date(league.start_date).toLocaleDateString()} — {new Date(league.end_date).toLocaleDateString()}
                                     </Text>
                                 </Space>
                                 <Space>
-                                    <TeamOutlined style={{ color: '#10b981' }} />
-                                    <Text style={{ color: '#cbd5e1', fontSize: 13 }}>
+                                    <TeamOutlined style={{ color: 'var(--success)' }} />
+                                    <Text style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                                         {teams.length} Equipos
                                     </Text>
                                 </Space>
                                 <Space>
-                                    <UserOutlined style={{ color: '#f59e0b' }} />
-                                    <Text style={{ color: '#cbd5e1', fontSize: 13 }}>
+                                    <UserOutlined style={{ color: 'var(--warning)' }} />
+                                    <Text style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                                         {participants.length} Jugadores
                                     </Text>
                                 </Space>
@@ -155,8 +155,8 @@ const LeagueInfo = ({ leagueId }) => {
                                 icon={<UserOutlined />}
                                 size={68}
                                 style={{
-                                    border: '3px solid #f5d576',
-                                    boxShadow: '0 0 20px rgba(212, 168, 67, 0.4)'
+                                    border: '3px solid var(--medal-gold)',
+                                    boxShadow: '0 0 20px rgba(var(--medal-gold-deep-rgb), 0.4)'
                                 }}
                             />
                         </div>
@@ -177,7 +177,7 @@ const LeagueInfo = ({ leagueId }) => {
                 <Col xs={24} lg={12}>
                     <div className="league-section-card">
                         <div className="league-section-title">
-                            <TrophyOutlined style={{ color: isFinished ? '#f5d576' : '#3b82f6' }} />
+                            <TrophyOutlined style={{ color: isFinished ? 'var(--medal-gold)' : 'var(--accent)' }} />
                             <span>{isFinished ? 'Clasificación Final' : 'Clasificación Actual'}</span>
                         </div>
 
@@ -221,7 +221,7 @@ const LeagueInfo = ({ leagueId }) => {
                 <Col xs={24} lg={12}>
                     <div className="league-section-card">
                         <div className="league-section-title">
-                            <TeamOutlined style={{ color: '#10b981' }} />
+                            <TeamOutlined style={{ color: 'var(--success)' }} />
                             <span>Equipos Participantes ({teams.length})</span>
                         </div>
 
@@ -243,7 +243,7 @@ const LeagueInfo = ({ leagueId }) => {
                                                     className="league-team-logo"
                                                 />
                                             ) : (
-                                                <TeamOutlined style={{ fontSize: 28, color: '#94a3b8' }} />
+                                                <TeamOutlined style={{ fontSize: 28, color: 'var(--text-dim)' }} />
                                             )}
                                         </div>
                                         <div className="league-team-name" title={team.name}>

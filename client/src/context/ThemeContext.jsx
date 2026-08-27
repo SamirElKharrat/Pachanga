@@ -1,89 +1,189 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { ConfigProvider } from 'antd';
-import { pachangaTheme, pachangaLightTheme, pachangaCrazyTheme } from '../styles/theme';
+import { pachangaTheme, pachangaLightTheme, pachangaWorldsTheme } from '../styles/theme';
+import { resolveTheme } from '../styles/resolveTheme';
+import { API } from '../services/api';
 
 const ThemeContext = createContext();
+
+// Claves de localStorage, en un sitio para que no se dupliquen por ahí sueltas.
+const KEY_PREFERENCE   = 'pachanga_theme_preference';
+const KEY_GIFS         = 'pachanga_gifs_enabled';
+const KEY_WORLDS_CACHE = 'pachanga_worlds_season';
+const KEY_WORLDS_OPTOUT = 'pachanga_worlds_optout';
+
+/**
+ * Última respuesta conocida del servidor sobre si estamos en el mundial.
+ *
+ * Se guarda para poder pintar bien en el PRIMER render. Sin esto, cada recarga
+ * durante Worlds arranca con el tema normal y salta al del mundial medio segundo
+ * después, cuando responde la API: un parpadeo azul→oro en cada visita.
+ *
+ * La primera visita de un navegador sí parpadea, porque no hay nada que cachear.
+ * A partir de ahí, no.
+ */
+const readCachedSeason = () => {
+    try {
+        const raw = localStorage.getItem(KEY_WORLDS_CACHE);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;   // JSON corrupto: como si no hubiera cache
+    }
+};
 
 export const ThemeProvider = ({ children }) => {
     // Read from localStorage or default to 'system'
     const [themePreference, setThemePreference] = useState(() => {
-        return localStorage.getItem('pachanga_theme_preference') || 'system';
+        return localStorage.getItem(KEY_PREFERENCE) || 'system';
     });
 
     const [gifsEnabled, setGifsEnabled] = useState(() => {
-        return localStorage.getItem('pachanga_gifs_enabled') !== 'false';
+        return localStorage.getItem(KEY_GIFS) !== 'false';
     });
 
-    const [modoCrazy, setModoCrazy] = useState(() => {
-        return localStorage.getItem('pachanga_crazy_mode') === 'true';
+    // ── Temporada de Worlds ──────────────────────────────────────────────────
+    // `worldsSeason` es lo que dice el servidor: null o { theme, league }.
+    // `worldsOptOut` es lo que dice el usuario desde Opciones.
+    const [worldsSeason, setWorldsSeason] = useState(readCachedSeason);
+    const [worldsOptOut, setWorldsOptOut] = useState(() => {
+        return localStorage.getItem(KEY_WORLDS_OPTOUT) === 'true';
     });
 
-    // The actual ant design theme that will be applied
-    const [activeTheme, setActiveTheme] = useState(pachangaTheme);
-
-    // Apply the active theme based on preference and system settings
+    // Al arrancar, preguntar al servidor. El endpoint es público a propósito:
+    // el login también necesita saberlo y ahí todavía no hay sesión.
     useEffect(() => {
-        const updateTheme = () => {
-            if (modoCrazy) {
-                setActiveTheme(pachangaCrazyTheme);
-                return;
-            }
+        let cancelado = false;
 
-            if (themePreference === 'light') {
-                setActiveTheme(pachangaLightTheme);
-            } else if (themePreference === 'dark') {
-                setActiveTheme(pachangaTheme);
-            } else {
-                // System preference
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                setActiveTheme(prefersDark ? pachangaTheme : pachangaLightTheme);
-            }
-        };
+        API.get('/leagues/active-theme')
+            .then(data => {
+                if (cancelado) return;
 
-        updateTheme();
+                // Solo se hace caso a una respuesta que tenga la forma esperada.
+                // Un proxy mal configurado o una página de error devuelven 200 con
+                // HTML, y eso NO puede valer como «se acabó el mundial»: borraría
+                // el cache y, peor, la preferencia de quien lo hubiera apagado.
+                // Ante una respuesta rara, mejor quedarse como se estaba.
+                if (!data || typeof data !== 'object' || typeof data.theme !== 'string') return;
 
-        // If system, add listener for changes
-        if (themePreference === 'system') {
-            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-            const handleChange = () => updateTheme();
-            mediaQuery.addEventListener('change', handleChange);
-            return () => mediaQuery.removeEventListener('change', handleChange);
+                const activa = data.theme === 'worlds' ? data : null;
+                setWorldsSeason(activa);
+
+                if (activa) {
+                    localStorage.setItem(KEY_WORLDS_CACHE, JSON.stringify(activa));
+                } else {
+                    // El mundial ha terminado. Se limpia también la preferencia de
+                    // apagarlo, para que el año que viene nadie se quede fuera por
+                    // un clic que dio hace doce meses.
+                    localStorage.removeItem(KEY_WORLDS_CACHE);
+                    localStorage.removeItem(KEY_WORLDS_OPTOUT);
+                    setWorldsOptOut(false);
+                }
+            })
+            .catch(() => {
+                // Sin respuesta nos quedamos con lo cacheado. Que la piel no
+                // dependa de que la API conteste.
+            });
+
+        return () => { cancelado = true; };
+    }, []);
+
+    // Lo que dice el sistema operativo. Solo se mira cuando la preferencia es 'system'.
+    const [prefiereOscuro, setPrefiereOscuro] = useState(() =>
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+    );
+
+    useEffect(() => {
+        if (themePreference !== 'system') return;
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = (e) => setPrefiereOscuro(e.matches);
+        mq.addEventListener('change', onChange);
+        setPrefiereOscuro(mq.matches);
+        return () => mq.removeEventListener('change', onChange);
+    }, [themePreference]);
+
+    // La regla vive en styles/resolveTheme.js, que es una función pura y con test.
+    const resolvedTheme = useMemo(() => resolveTheme({
+        hayWorlds: !!worldsSeason,
+        worldsOptOut,
+        themePreference,
+        prefiereOscuro,
+    }), [worldsSeason, worldsOptOut, themePreference, prefiereOscuro]);
+
+    const isWorlds = resolvedTheme === 'worlds';
+    const isLightMode = resolvedTheme === 'light';
+
+    const activeTheme = useMemo(() => {
+        switch (resolvedTheme) {
+            case 'worlds': return pachangaWorldsTheme;
+            case 'light': return pachangaLightTheme;
+            default: return pachangaTheme;
         }
-    }, [themePreference, modoCrazy]);
+    }, [resolvedTheme]);
 
-    // Handle Bizarre Mode body class
+    // El gancho del que colgará todo el CSS del modo Worlds. Solo se marca cuando
+    // el mundial está activo; el resto del tiempo el atributo ni existe, de modo
+    // que ninguna regla nueva puede afectar a la web normal.
     useEffect(() => {
-        if (modoCrazy) {
-            document.body.classList.add('bizarre-mode');
+        const root = document.documentElement;
+        if (isWorlds) {
+            root.setAttribute('data-theme', 'worlds');
         } else {
-            document.body.classList.remove('bizarre-mode');
+            root.removeAttribute('data-theme');
         }
-    }, [modoCrazy]);
+    }, [isWorlds]);
+
+    // Las fuentes del mundial se piden solo cuando hace falta. Cargarlas siempre
+    // sería penalizar a todo el mundo once meses al año por un tema que dura uno.
+    // No se retiran al apagar el modo: quitar el <link> no descarga nada y solo
+    // provocaría volver a pedirlas si se vuelve a encender.
+    useEffect(() => {
+        if (!isWorlds) return;
+        if (document.getElementById('worlds-fonts')) return;
+        const link = document.createElement('link');
+        link.id = 'worlds-fonts';
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700'
+                  + '&family=Barlow:wght@300;400;500;600;700'
+                  + '&family=Barlow+Condensed:wght@500;600;700&display=swap';
+        document.head.appendChild(link);
+    }, [isWorlds]);
+
+    // El título de la pestaña. El favicon NO se toca: el escudo es una silueta
+    // negra sobre transparente y en una pestaña oscura sería invisible. Haría
+    // falta una versión en oro del archivo, y eso es una imagen nueva, no código.
+    useEffect(() => {
+        document.title = isWorlds ? 'La Pachanga · Worlds' : 'La Pachanga';
+    }, [isWorlds]);
 
     const changeTheme = (newTheme) => {
         setThemePreference(newTheme);
-        localStorage.setItem('pachanga_theme_preference', newTheme);
+        localStorage.setItem(KEY_PREFERENCE, newTheme);
     };
 
     const toggleGifs = (enabled) => {
         setGifsEnabled(enabled);
-        localStorage.setItem('pachanga_gifs_enabled', enabled);
+        localStorage.setItem(KEY_GIFS, enabled);
     };
 
-    const changeModoCrazy = (enabled) => {
-        setModoCrazy(enabled);
-        localStorage.setItem('pachanga_crazy_mode', enabled ? 'true' : 'false');
+    /** Apagar o volver a encender el modo Worlds desde Opciones. */
+    const changeModoWorlds = (enabled) => {
+        setWorldsOptOut(!enabled);
+        localStorage.setItem(KEY_WORLDS_OPTOUT, enabled ? 'false' : 'true');
     };
 
     return (
         <ThemeContext.Provider value={{
             themePreference,
             changeTheme,
-            isLightMode: activeTheme === pachangaLightTheme,
+            resolvedTheme,
+            isLightMode,
             gifsEnabled,
             toggleGifs,
-            modoCrazy,
-            changeModoCrazy
+            // ── Worlds ──
+            isWorlds,                                   // ¿se está viendo la piel del mundial?
+            worldsSeason,                               // ¿hay mundial en curso, lo mire quien lo mire?
+            worldsLeague: worldsSeason?.league ?? null, // nombre y escudo de la liga, para la marca
+            changeModoWorlds,
         }}>
             <ConfigProvider theme={activeTheme}>
                 {children}

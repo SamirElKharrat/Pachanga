@@ -6,9 +6,9 @@ import { useTheme as useAppTheme } from '../../context/ThemeContext';
 const { Text } = Typography;
 
 const STATUS_CONFIG = {
-    scheduled: { color: 'default', label: 'Programada', dotColor: '#64748b' },
-    live:      { color: 'success', label: 'En curso',   dotColor: '#10b981', pulse: true },
-    finished:  { color: 'blue',    label: 'Finalizada', dotColor: '#3b82f6' },
+    scheduled: { color: 'default', label: 'Programada', dotColor: 'var(--text-faint)' },
+    live:      { color: 'success', label: 'En curso',   dotColor: 'var(--success)', pulse: true },
+    finished:  { color: 'blue',    label: 'Finalizada', dotColor: 'var(--accent)' },
 };
 
 /**
@@ -46,8 +46,8 @@ function LeagueInfoPanel({ league, onShowRules }) {
             {cfg.pulse && (
                 <style>{`
                     @keyframes leaguePanelPulse {
-                        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
-                        50%      { opacity: 0.7; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+                        0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(var(--success-rgb),0.5); }
+                        50%      { opacity: 0.7; box-shadow: 0 0 0 6px rgba(var(--success-rgb),0); }
                     }
                 `}</style>
             )}
@@ -56,8 +56,8 @@ function LeagueInfoPanel({ league, onShowRules }) {
                 align={isMobile ? 'stretch' : 'center'}
                 gap={isMobile ? 12 : 16}
                 style={{
-                    background: isLightMode ? '#ffffff' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                    background: isLightMode ? '#ffffff' : 'rgba(var(--tint),0.03)',
+                    border: `1px solid ${isLightMode ? '#e2e8f0' : 'rgba(var(--tint),0.08)'}`,
                     boxShadow: isLightMode ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                     borderRadius: 16,
                     padding: '12px 20px',
@@ -77,7 +77,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                 flexShrink: 0,
                                 borderRadius: 8,
                                 background: 'transparent',
-                                filter: isLightMode ? 'none' : 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.25)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.15))'
+                                filter: isLightMode ? 'none' : 'drop-shadow(0 0 8px rgba(var(--tint), 0.25)) drop-shadow(0 0 2px rgba(var(--tint), 0.15))'
                             }}
                         />
                     )}
@@ -90,7 +90,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap',
-                                color: isLightMode ? '#0f172a' : 'rgba(255,255,255,0.9)',
+                                color: isLightMode ? '#0f172a' : 'rgba(var(--tint),0.9)',
                             }}
                         >
                             {league.name}
@@ -154,7 +154,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                 icon={<BookOutlined />}
                                 onClick={onShowRules}
                                 style={{
-                                    color: isLightMode ? '#64748b' : 'rgba(255,255,255,0.65)',
+                                    color: isLightMode ? '#64748b' : 'rgba(var(--tint),0.65)',
                                     fontSize: 13,
                                     borderRadius: 8,
                                 }}
@@ -169,7 +169,7 @@ function LeagueInfoPanel({ league, onShowRules }) {
                                 icon={<LinkOutlined />}
                                 onClick={() => window.open(league.leaguepedia_url, '_blank', 'noopener')}
                                 style={{
-                                    color: isLightMode ? '#64748b' : 'rgba(255,255,255,0.65)',
+                                    color: isLightMode ? '#64748b' : 'rgba(var(--tint),0.65)',
                                     fontSize: 13,
                                     borderRadius: 8,
                                 }}

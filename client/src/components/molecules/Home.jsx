@@ -24,10 +24,19 @@ function chunkArray(arr, size) {
 }
 
 const STATUS_COLORS = {
-    pending: { bg: 'rgba(255, 255, 255, 0.05)', border: 'rgba(255, 255, 255, 0.12)', text: '#94a3b8' },
-    correct: { bg: 'rgba(16, 185, 129, 0.12)', border: 'rgba(16, 185, 129, 0.35)', text: '#10b981' },
-    partial: { bg: 'rgba(250, 173, 20, 0.12)', border: 'rgba(250, 173, 20, 0.35)', text: '#faad14' },
-    wrong: { bg: 'rgba(239, 68, 68, 0.12)', border: 'rgba(239, 68, 68, 0.35)', text: '#ef4444' },
+    pending: { bg: 'rgba(var(--tint), 0.05)', border: 'rgba(var(--tint), 0.12)', text: 'var(--text-dim)' },
+    correct: { bg: 'rgba(var(--success-rgb), 0.12)', border: 'rgba(var(--success-rgb), 0.35)', text: 'var(--success)' },
+    partial: { bg: 'rgba(var(--pred-acierto-rgb), 0.12)', border: 'rgba(var(--pred-acierto-rgb), 0.35)', text: 'var(--pred-acierto)' },
+    wrong: { bg: 'rgba(var(--danger-rgb), 0.12)', border: 'rgba(var(--danger-rgb), 0.35)', text: 'var(--danger)' },
+};
+
+// Colores del puesto en la clasificación lateral. El resplandor es el mismo tono
+// al 33 % — que es lo que valía el `55` hexadecimal que se concatenaba antes.
+const RANK_STYLES = {
+    1: { bg: 'var(--warning-light)', glow: 'rgba(var(--warning-light-rgb), 0.333)' },
+    2: { bg: 'var(--text-dim)',      glow: 'rgba(var(--text-dim-rgb), 0.333)' },
+    3: { bg: 'var(--warning-deep)',  glow: 'rgba(var(--warning-deep-rgb), 0.333)' },
+    default: { bg: 'var(--bg-elevated)', glow: null },
 };
 
 // ── Helper to get a participant's prediction + status for a match ────────────
@@ -59,14 +68,14 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                     icon={<UserOutlined />}
                     size={32}
                     style={{
-                        border: isCurrent ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.15)',
-                        boxShadow: isCurrent ? '0 0 10px rgba(59,130,246,0.3)' : 'none'
+                        border: isCurrent ? '2px solid var(--accent)' : '1px solid rgba(var(--tint),0.15)',
+                        boxShadow: isCurrent ? '0 0 10px rgba(var(--accent-rgb),0.3)' : 'none'
                     }}
                 />
                 <Text style={{
                     fontSize: 13,
                     fontWeight: 700,
-                    color: isCurrent ? '#3b82f6' : 'rgba(255,255,255,0.85)',
+                    color: isCurrent ? 'var(--accent)' : 'rgba(var(--tint),0.85)',
                     letterSpacing: '0.02em'
                 }}>
                     {participation.User?.username} {isCurrent && '(Tú)'}
@@ -147,8 +156,8 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
         <Flex vertical gap={8} style={{ marginBottom: 24 }}>
             {/* User header for mobile block */}
             <Space align="center" size={10} style={{ padding: '0 4px 4px' }}>
-                <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={26} style={{ border: isCurrent ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.1)' }} />
-                <Text strong style={{ fontSize: 13, color: isCurrent ? '#3b82f6' : 'inherit' }}>{participation.User?.username}</Text>
+                <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={26} style={{ border: isCurrent ? '2px solid var(--accent)' : '1px solid rgba(var(--tint),0.1)' }} />
+                <Text strong style={{ fontSize: 13, color: isCurrent ? 'var(--accent)' : 'inherit' }}>{participation.User?.username}</Text>
             </Space>
 
             {matchGroup.map(match => {
@@ -175,7 +184,7 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
                             <Avatar src={match.Teams?.[0]?.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
                             <Text type="secondary" style={{ fontSize: 9, fontWeight: 900, opacity: 0.3 }}>VS</Text>
                             <Avatar src={match.Teams?.[1]?.logo_url} shape="square" size={18} style={{ borderRadius: 3, background: 'transparent' }} />
-                            <Text strong style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', marginLeft: 2 }}>
+                            <Text strong style={{ fontSize: 11, color: 'rgba(var(--tint), 0.45)', marginLeft: 2 }}>
                                 {shortLabel}
                             </Text>
                         </Flex>
@@ -216,7 +225,7 @@ function MatchGroupBlock(props) {
         : (
             <Card
                 styles={{ body: { padding: '16px 20px' } }}
-                style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, marginBottom: 24 }}
+                style={{ background: 'rgba(var(--tint),0.01)', border: '1px solid rgba(var(--tint),0.05)', borderRadius: 16, marginBottom: 24 }}
             >
                 <DesktopMatchGroupBlock {...props} />
             </Card>
@@ -452,14 +461,14 @@ function Home() {
                             </Button>
                         }
                         style={{
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            background: 'rgba(var(--tint), 0.02)',
+                            border: '1px solid rgba(var(--tint), 0.06)',
                             borderRadius: 16,
                             marginBottom: 0
                         }}
                     >
                         {filtersCollapsed ? (
-                            <Space split={<span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
+                            <Space split={<span style={{ color: 'rgba(var(--tint),0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     Año: <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedYear || 'Todos'}</span>
                                 </Text>
@@ -484,7 +493,7 @@ function Home() {
                                 {/* LIGA SELECCIONADA */}
                                 <Col xs={24}>
                                     <Flex vertical gap={8}>
-                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(var(--tint),0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
                                         {loading && leagues.length === 0 ? (
                                             <Skeleton.Button active block style={{ height: 32 }} />
                                         ) : (
@@ -501,7 +510,7 @@ function Home() {
                                 {/* SEMANA */}
                                 <Col xs={24}>
                                     <Flex vertical gap={8}>
-                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Semana</Text>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(var(--tint),0.5)', letterSpacing: '0.08em' }}>Semana</Text>
                                         {loading && weeks.length === 0 ? (
                                             <Skeleton.Button active block style={{ height: 32 }} />
                                         ) : (
@@ -543,7 +552,7 @@ function Home() {
                                     <Button
                                         type="text"
                                         size="small"
-                                        icon={<FilterOutlined style={{ color: '#ef4444' }} />}
+                                        icon={<FilterOutlined style={{ color: 'var(--danger)' }} />}
                                         onClick={handleClearAll}
                                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     />
@@ -559,8 +568,8 @@ function Home() {
                                 {selectedParticipants.length > 0 && (
                                     <div style={{
                                         padding: '12px 14px',
-                                        borderBottom: '1px solid rgba(255,255,255,0.06)',
-                                        background: 'rgba(255,255,255,0.01)'
+                                        borderBottom: '1px solid rgba(var(--tint),0.06)',
+                                        background: 'rgba(var(--tint),0.01)'
                                     }}>
                                         <Flex wrap="wrap" gap={6}>
                                             {selectedParticipants.map(p => (
@@ -570,9 +579,9 @@ function Home() {
                                                     onClose={() => handleRemoveParticipant(p)}
                                                     color="success"
                                                     style={{
-                                                        background: 'rgba(16, 185, 129, 0.12)',
-                                                        border: '1px solid rgba(16, 185, 129, 0.25)',
-                                                        color: '#10b981',
+                                                        background: 'rgba(var(--success-rgb), 0.12)',
+                                                        border: '1px solid rgba(var(--success-rgb), 0.25)',
+                                                        color: 'var(--success)',
                                                         borderRadius: 4,
                                                         fontSize: 10,
                                                         fontWeight: 700,
@@ -595,19 +604,19 @@ function Home() {
                                         const isCurrent = currentUser?.id === item.id;
                                         const isSelected = selectedParticipants.some(p => p.id === item.id);
                                         const rank = item.rank ?? 999;
-                                        const rankColor =
-                                            rank === 1 ? '#fbbf24' :
-                                                rank === 2 ? '#94a3b8' :
-                                                    rank === 3 ? '#b45309' : '#334155';
+                                        // El fondo y su resplandor van por separado: antes el glow se
+                                        // construía concatenando el alfa al hex (`${rankColor}55`), y eso
+                                        // deja de funcionar en cuanto el color es una variable CSS.
+                                        const rankStyle = RANK_STYLES[rank] ?? RANK_STYLES.default;
 
                                         // Movement indicator
                                         const movement = item.movement;
                                         const movementEl = movement === 'up'
-                                            ? <span style={{ color: '#10b981', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▲</span>
+                                            ? <span style={{ color: 'var(--success)', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▲</span>
                                             : movement === 'down'
-                                                ? <span style={{ color: '#ef4444', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▼</span>
+                                                ? <span style={{ color: 'var(--danger)', fontSize: 13, fontWeight: 900, lineHeight: 1 }}>▼</span>
                                                 : movement === 'same'
-                                                    ? <span style={{ color: '#64748b', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>—</span>
+                                                    ? <span style={{ color: 'var(--text-faint)', fontSize: 13, fontWeight: 700, lineHeight: 1 }}>—</span>
                                                     : null; // first week or no data
 
                                         return (
@@ -618,11 +627,11 @@ function Home() {
                                                     padding: '10px 12px',
                                                     cursor: (isCurrent) ? 'default' : 'pointer',
                                                     background: isSelected
-                                                        ? 'rgba(16, 185, 129, 0.08)'
-                                                        : (isCurrent ? 'rgba(59,130,246,0.05)' : 'transparent'),
+                                                        ? 'rgba(var(--success-rgb), 0.08)'
+                                                        : (isCurrent ? 'rgba(var(--accent-rgb),0.05)' : 'transparent'),
                                                     borderLeft: isSelected
-                                                        ? '3px solid #10b981'
-                                                        : (isCurrent ? '3px solid #3b82f6' : '3px solid transparent'),
+                                                        ? '3px solid var(--success)'
+                                                        : (isCurrent ? '3px solid var(--accent)' : '3px solid transparent'),
                                                     transition: 'all 0.2s',
                                                 }}
                                             >
@@ -633,11 +642,11 @@ function Home() {
                                                         justify="center"
                                                         style={{
                                                             width: 26, height: 26,
-                                                            background: rankColor,
+                                                            background: rankStyle.bg,
                                                             borderRadius: 6,
                                                             fontWeight: 800, fontSize: 11,
-                                                            color: rank <= 3 ? '#000' : '#fff',
-                                                            boxShadow: rank <= 3 ? `0 0 8px ${rankColor}55` : 'none',
+                                                            color: rank <= 3 ? 'var(--black)' : 'var(--white)',
+                                                            boxShadow: rankStyle.glow ? `0 0 8px ${rankStyle.glow}` : 'none',
                                                             flexShrink: 0,
                                                         }}
                                                     >
@@ -650,7 +659,7 @@ function Home() {
                                                     <Avatar src={getAvatarSrc(item.User.logo_url)} icon={<UserOutlined />} size={32} />
                                                     <Flex vertical style={{ flex: 1, minWidth: 0 }}>
                                                         <Text strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            {item.User.username} {isCurrent && <span style={{ color: '#3b82f6', fontSize: 11, fontWeight: 700 }}>(Tú)</span>}
+                                                            {item.User.username} {isCurrent && <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 700 }}>(Tú)</span>}
                                                         </Text>
                                                         {favTeam && (
                                                             <Tooltip title={favTeam.name}>

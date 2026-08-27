@@ -319,8 +319,8 @@ const HallOfFlame = () => {
                 style={{ maxWidth: 'calc(100vw - 24px)', margin: '0 auto' }}
                 styles={{
                     content: {
-                        background: token.colorBgContainer || '#11131a',
-                        border: `1px solid ${token.colorBorder || 'rgba(255,255,255,0.08)'}`,
+                        background: token.colorBgContainer || 'var(--bg-surface-deep)',
+                        border: `1px solid ${token.colorBorder || 'rgba(var(--tint),0.08)'}`,
                         borderRadius: 24,
                         padding: 0,
                         overflow: 'hidden'

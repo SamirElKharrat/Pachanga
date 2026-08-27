@@ -196,14 +196,14 @@ const Prediction = () => {
                             </Button>
                         }
                         style={{
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            border: '1px solid rgba(255, 255, 255, 0.06)',
+                            background: 'rgba(var(--tint), 0.02)',
+                            border: '1px solid rgba(var(--tint), 0.06)',
                             borderRadius: 16,
                             marginBottom: 0
                         }}
                     >
                         {filtersCollapsed ? (
-                            <Space split={<span style={{ color: 'rgba(255,255,255,0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
+                            <Space split={<span style={{ color: 'rgba(var(--tint),0.15)' }}>|</span>} style={{ width: '100%' }} wrap>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     Año: <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedYear || 'Todos'}</span>
                                 </Text>
@@ -228,7 +228,7 @@ const Prediction = () => {
                                 {/* LIGA SELECCIONADA */}
                                 <Col xs={24}>
                                     <Flex vertical gap={8}>
-                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(var(--tint),0.5)', letterSpacing: '0.08em' }}>Liga Seleccionada</Text>
                                         {loading && leagues.length === 0 ? (
                                             <Skeleton.Button active block style={{ height: 32 }} />
                                         ) : (
@@ -245,7 +245,7 @@ const Prediction = () => {
                                 {/* SEMANA */}
                                 <Col xs={24}>
                                     <Flex vertical gap={8}>
-                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>
+                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(var(--tint),0.5)', letterSpacing: '0.08em' }}>
                                             <CalendarOutlined style={{ marginRight: 6 }} />
                                             Semana
                                         </Text>

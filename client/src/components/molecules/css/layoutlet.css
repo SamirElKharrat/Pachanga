@@ -1,11 +1,5 @@
 /* Cleaned up CSS for Pachanga - Leveraging Ant Design Theme */
-:root {
-    --bg-primary: #0F172A;
-    --bg-secondary: #1E293B;
-    --bg-tertiary: #334155;
-    --primary: #3B82F6;
-    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Los tokens --bg-*, --primary y --transition viven ahora en styles/tokens.css. */
 
 body {
     margin: 0;
@@ -35,7 +29,7 @@ main {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: var(--bg-elevated-2);
 }
 
 /* Utility Classes */

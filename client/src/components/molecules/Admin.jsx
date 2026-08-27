@@ -48,8 +48,8 @@ const Admin = () => {
                     table="leagues"
                     relation={['teams']}
                     name="Liga"
-                    fields={['text', 'date', 'date', 'file', 'multiselect', 'select']}
-                    names={['name', 'start_date', 'end_date', 'logo_url', 'teams', 'status']}
+                    fields={['text', 'date', 'date', 'file', 'multiselect', 'select', 'select']}
+                    names={['name', 'start_date', 'end_date', 'logo_url', 'teams', 'status', 'theme']}
                 />
             )
         },

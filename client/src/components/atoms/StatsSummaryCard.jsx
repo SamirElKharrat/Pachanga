@@ -3,7 +3,7 @@ import { Avatar, Button, Skeleton } from 'antd';
 import { UserOutlined, BarChartOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { API } from '../../services/api';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
-import { chartPalette, distinctColorsFor } from '../../styles/theme';
+import { paletteFor, distinctColorsFor } from '../../styles/theme';
 import KpiTile from './stats/KpiTile';
 import BulletBar from './stats/BulletBar';
 import LineChart from './stats/LineChart';
@@ -33,7 +33,8 @@ const dec = (n, d = 1) => (n == null ? '—' : n.toLocaleString('es-ES', { minim
  * @param {Function} [props.onSeeMore] - Si falta, el botón queda deshabilitado.
  */
 function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
-    const { isLightMode, getAvatarSrc } = useAppTheme();
+    const { isLightMode, isWorlds, resolvedTheme, getAvatarSrc } = useAppTheme();
+    const chart = paletteFor(resolvedTheme);
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
@@ -69,7 +70,7 @@ function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
         return () => { cancelled = true; };
     }, [variant, year, leagueId]);
 
-    const root = `pstats${isLightMode ? ' is-light' : ''}`;
+    const root = `pstats${isLightMode ? ' is-light' : ''}${isWorlds ? ' is-worlds' : ''}`;
 
     if (loading) {
         return (
@@ -158,7 +159,7 @@ function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
         // Restando la media se separan y ademas se lee de un vistazo quien va por
         // encima y quien por debajo.
         const shown = (progression.series || []).slice(0, 3);
-        const palette = distinctColorsFor(shown.map(s => s.user.id), allIds, isLightMode);
+        const palette = distinctColorsFor(shown.map(s => s.user.id), allIds, resolvedTheme);
         const top = shown.map(s => {
             const c = palette[s.user.id];
             return {
@@ -339,8 +340,8 @@ function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
                                             key={m.kind}
                                             kind={m.kind}
                                             moment={m}
-                                            mark={chartPalette.series[i]}
-                                            text={chartPalette.text[isLightMode ? 'light' : 'dark'][i]}
+                                            mark={chart.series[i]}
+                                            text={chart.text[i]}
                                         />
                                     );
                                 })}

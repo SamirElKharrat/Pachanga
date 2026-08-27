@@ -116,7 +116,7 @@ const LeagueHome = () => {
 
     return (
         <div className="p-3" style={{ width: '100%' }}>
-            <Title level={2} style={{ color: '#f8fafc', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 24 }}>
+            <Title level={2} style={{ color: 'var(--text-strong)', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 24 }}>
                 Explorar Ligas
             </Title>
 
@@ -134,7 +134,7 @@ const LeagueHome = () => {
                 <Row gutter={[24, 24]}>
                     {[1, 2, 3].map(i => (
                         <Col key={i} xs={24} sm={12} md={12} lg={8} xl={6}>
-                            <Card className="shadow-sm" style={{ borderRadius: '16px', background: 'rgba(255,255,255,0.02)' }}>
+                            <Card className="shadow-sm" style={{ borderRadius: '16px', background: 'rgba(var(--tint),0.02)' }}>
                                 <Skeleton active avatar paragraph={{ rows: 3 }} />
                             </Card>
                         </Col>
@@ -182,9 +182,9 @@ const LeagueHome = () => {
                                             className="text-center p-2 rounded cursor-pointer transition-all"
                                             style={{
                                                 borderRadius: 8,
-                                                boxShadow: selectedTeam === team.id ? '0 0 15px rgba(59, 130, 246, 0.4)' : 'none',
-                                                background: selectedTeam === team.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                                border: selectedTeam === team.id ? '1px solid #3b82f6' : '1px solid transparent'
+                                                boxShadow: selectedTeam === team.id ? '0 0 15px rgba(var(--accent-rgb), 0.4)' : 'none',
+                                                background: selectedTeam === team.id ? 'rgba(var(--accent-rgb), 0.1)' : 'transparent',
+                                                border: selectedTeam === team.id ? '1px solid var(--accent)' : '1px solid transparent'
                                             }}
                                             onClick={() => setSelectedTeam(selectedTeam === team.id ? null : team.id)}
                                         >

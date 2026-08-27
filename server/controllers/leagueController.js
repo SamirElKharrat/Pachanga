@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const League = require('../models/league');
 const Team = require('../models/team');
 const FavoriteTeam = require('../models/favoriteTeam');
@@ -22,6 +23,60 @@ exports.getAllLeagues = async (req, res) => {
         res.json(leagues);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * Qué piel debe llevar la web ahora mismo. Público a propósito.
+ *
+ * Va sin `authenticateJwtToken` porque quien más lo necesita es la pantalla de
+ * login, que todavía no tiene sesión y es justo donde más luce el escudo del
+ * mundial. Lo que devuelve —nombre, logo y fechas de una competición— es
+ * información pública de todos modos.
+ *
+ * La regla, entera:
+ *
+ *   1. la liga está marcada como el mundial            theme = 'worlds'
+ *   2. no se ha dado por terminada                     status != 'finished'
+ *   3. y no se ha pasado de su fecha de fin            now <= end_date
+ *
+ * El punto 3 es el cinturón de seguridad. El estado lo mueve
+ * `checkAndUpdateLeagues()` en el cliente, que solo corre cuando alguien abre la
+ * portada; si nadie entra en tres días después de la final, la liga seguiría
+ * marcada 'live' y la web seguiría dorada. Comparando también con la fecha, el
+ * tema se apaga el día que toca aunque la base de datos vaya con retraso.
+ */
+exports.getActiveTheme = async (req, res) => {
+    try {
+        const league = await League.findOne({
+            where: {
+                theme: 'worlds',
+                status: { [Op.ne]: 'finished' },
+                end_date: { [Op.gte]: new Date() }
+            },
+            order: [['start_date', 'DESC']],
+            attributes: ['id', 'name', 'logo_url', 'status', 'start_date', 'end_date']
+        });
+
+        if (!league) {
+            return res.json({ theme: 'default', league: null });
+        }
+
+        res.json({
+            theme: 'worlds',
+            league: {
+                id: league.id,
+                name: league.name,
+                logo_url: league.logo_url,
+                status: league.status,
+                start_date: league.start_date,
+                end_date: league.end_date
+            }
+        });
+    } catch (error) {
+        // Que la piel no tumbe la web: si esto falla, se responde "tema normal".
+        console.error('No se pudo resolver el tema activo:', error.message);
+        res.json({ theme: 'default', league: null });
     }
 };
 

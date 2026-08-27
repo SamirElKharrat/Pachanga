@@ -117,11 +117,11 @@ export default function User() {
                             justifyContent: 'center',
                             gap: 6,
                             background: activeTab === tab.key
-                                ? 'rgba(59,130,246,0.15)'
-                                : 'rgba(255,255,255,0.04)',
-                            color: activeTab === tab.key ? '#3b82f6' : 'inherit',
+                                ? 'rgba(var(--accent-rgb),0.15)'
+                                : 'rgba(var(--tint),0.04)',
+                            color: activeTab === tab.key ? 'var(--accent)' : 'inherit',
                             borderBottom: activeTab === tab.key
-                                ? '2px solid #3b82f6'
+                                ? '2px solid var(--accent)'
                                 : '2px solid transparent',
                             transition: 'all 0.2s',
                         }}
@@ -141,7 +141,7 @@ export default function User() {
                                 src={getAvatarSrc(previewImage)}
                                 icon={<UserOutlined />}
                                 size={88}
-                                style={{ border: '3px solid rgba(59,130,246,0.4)' }}
+                                style={{ border: '3px solid rgba(var(--accent-rgb),0.4)' }}
                             />
                             <Upload
                                 name="logo_url"
@@ -163,8 +163,8 @@ export default function User() {
                                         height: 28,
                                         borderRadius: '50%',
                                         border: 'none',
-                                        background: '#3b82f6',
-                                        color: '#fff',
+                                        background: 'var(--accent)',
+                                        color: 'var(--on-accent)',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -188,7 +188,7 @@ export default function User() {
                             label="Nombre de Usuario"
                             rules={[{ required: true, message: 'El nombre es obligatorio' }]}
                         >
-                            <Input size="large" prefix={<UserOutlined style={{ color: '#94a3b8' }} />} />
+                            <Input size="large" prefix={<UserOutlined style={{ color: 'var(--text-dim)' }} />} />
                         </Form.Item>
 
                         <Form.Item
@@ -196,7 +196,7 @@ export default function User() {
                             label="Email"
                             rules={[{ required: true, type: 'email', message: 'Ingresa un email válido' }]}
                         >
-                            <Input size="large" prefix={<UserOutlined style={{ color: '#94a3b8' }} />} />
+                            <Input size="large" prefix={<UserOutlined style={{ color: 'var(--text-dim)' }} />} />
                         </Form.Item>
 
                         <Button type="primary" size="large" htmlType="submit" loading={loading} block>
@@ -215,7 +215,7 @@ export default function User() {
                             label="Contraseña Actual"
                             rules={[{ required: true, message: 'Ingresa tu contraseña actual' }]}
                         >
-                            <Input.Password size="large" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} />
+                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
                         </Form.Item>
 
                         <Form.Item
@@ -223,7 +223,7 @@ export default function User() {
                             label="Nueva Contraseña"
                             rules={[{ required: true, min: 6, message: 'Mínimo 6 caracteres' }]}
                         >
-                            <Input.Password size="large" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} />
+                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
                         </Form.Item>
 
                         <Form.Item
@@ -240,7 +240,7 @@ export default function User() {
                                 }),
                             ]}
                         >
-                            <Input.Password size="large" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} />
+                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
                         </Form.Item>
 
                         <Button type="primary" size="large" htmlType="submit" loading={loading} block danger>

@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKENS DE COLOR
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Un único sitio donde vive el color de la web. Todo el CSS de componentes y
+   todo el `style={{}}` de los JSX tira de aquí, de modo que cambiar de tema
+   es cambiar este bloque y nada más.
+
+   Los valores son EXACTAMENTE los que había escritos a mano por el proyecto
+   antes de centralizarlos: esto no cambia cómo se ve nada. Lo que cambia es
+   que ahora se puede cambiar.
+
+   Ojo con dos cosas:
+
+   - `stats.css` NO usa estos tokens. Tiene los suyos (`--s-*`) sobre `.pstats`
+     y un bloque `.pstats.is-light`, que es el mismo patrón resuelto antes y
+     mejor. Se deja como está.
+
+   - Los tokens `*-rgb` existen para poder escribir `rgba(var(--x-rgb), .12)`.
+     Es la forma de que las transparencias también sigan al tema; si no, un
+     `rgba(59,130,246,.12)` suelto se queda azul para siempre.
+
+   Nota: el tema claro de Antd cambia los componentes de Antd, pero el CSS
+   propio de la web (Hall of Flame, Clasificación, Ligas) siempre se pintó con
+   valores oscuros y se sigue pintando igual. Eso ya era así antes; darle
+   soporte de tema claro es otra tarea, no esta.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Tinte ────────────────────────────────────────────────────────────────
+     El color del que salen todos los cristales y bordes translúcidos.
+     Cambiarlo retiñe la web entera de golpe. */
+  --tint: 255, 255, 255;
+
+  /* ── Superficies ─────────────────────────────────────────────────────── */
+  --bg-base: #0f172a;           /* lienzo de la app */
+  --bg-surface: #1e293b;        /* tarjeta, panel */
+  --bg-surface-rgb: 30, 41, 59;
+  --bg-surface-2: #243044;      /* tarjeta en hover */
+  --bg-surface-deep: #11131a;   /* reserva del modal cuando Antd no da color */
+  --bg-elevated: #334155;       /* input, panel sobre panel */
+  --bg-elevated-2: #475569;     /* scrollbar en hover, 3.er puesto */
+  --bg-neutral: #64748b;        /* 2.º puesto, insignias sin color */
+
+  /* ── Texto ───────────────────────────────────────────────────────────── */
+  --white: #ffffff;
+  --text-strong: #f8fafc;
+  --text-bright: #f1f5f9;
+  --text: #e2e8f0;
+  --text-muted: #cbd5e1;
+  --text-muted-rgb: 203, 213, 225;
+  --text-dim: #94a3b8;
+  --text-dim-rgb: 148, 163, 184;
+  --text-faint: #64748b;
+  --text-faint-rgb: 100, 116, 139;
+  --text-dim-2: #788296;      /* gris de los textos de apoyo de Clasificación */
+  --slate-blue-rgb: 154, 176, 218;  /* filetes y puntos del paginador de resultados */
+  --on-accent: #ffffff;         /* texto sobre el color de acento */
+  --on-medal: #07080d;          /* texto sobre una medalla */
+  --black: #000000;
+
+  /* ── Acento ──────────────────────────────────────────────────────────── */
+  --accent: #3b82f6;
+  --accent-rgb: 59, 130, 246;
+  --accent-deep: #1d4ed8;
+  --accent-mid: #2563eb;
+  --accent-mid-rgb: 37, 99, 235;
+  --accent-light: #60a5fa;
+  --accent-lighter: #93c5fd;
+
+  /* ── Estados de predicción ────────────────────────────────────────────────
+     Los cuatro estados que pinta la rejilla del Inicio. `pleno` es acertar
+     ganador Y marcador; `acierto` es solo el ganador. Los nombres van en
+     castellano a propósito: son los de la Pachanga, no los de ningún framework. */
+  --pred-pleno: #10b981;
+  --pred-pleno-rgb: 16, 185, 129;
+  --pred-acierto: #faad14;
+  --pred-acierto-rgb: 250, 173, 20;
+  --pred-fallo: #ef4444;
+  --pred-fallo-rgb: 239, 68, 68;
+  --pred-pendiente: #94a3b8;
+
+  /* ── Semánticos ──────────────────────────────────────────────────────── */
+  --success: #10b981;
+  --success-rgb: 16, 185, 129;
+  --success-light: #34d399;
+  --warning: #f59e0b;
+  --warning-rgb: 245, 158, 11;
+  --warning-light: #fbbf24;
+  --warning-light-rgb: 251, 191, 36;
+  --warning-mid: #d97706;
+  --warning-deep: #b45309;
+  --warning-deep-rgb: 180, 83, 9;
+  --danger: #ef4444;
+  --danger-rgb: 239, 68, 68;
+  --danger-light: #f87171;
+
+  /* El verde y el rojo de serie de Antd. Solo los usa «¿Está ganando Guille?»,
+     que nunca se alineó con la paleta de la casa. Se dejan tal cual para no
+     cambiar cómo se ve; unificarlos es una decisión de diseño, no un refactor. */
+  --success-vivid: #52c41a;
+  --success-vivid-rgb: 82, 196, 26;
+  --danger-vivid: #ff4d4f;
+  --danger-vivid-rgb: 255, 77, 79;
+
+  /* ── Decorativos ─────────────────────────────────────────────────────── */
+  --violet: #8b5cf6;
+  --purple: #a855f7;
+  --yellow: #facc15;
+  --rose: #f43f5e;
+  --flame: #f97316;
+  --flame-rgb: 249, 115, 22;
+  --neutral-rgb: 128, 128, 128;   /* la barra de scroll, que es gris a secas */
+
+  /* ── Medallas ────────────────────────────────────────────────────────── */
+  --medal-gold: #f5d576;
+  --medal-gold-rgb: 245, 213, 118;
+  --medal-gold-deep: #d4a843;
+  --medal-gold-deep-rgb: 212, 168, 67;
+  --medal-silver: #cdd6e4;
+  --medal-silver-deep: #a8b4c4;
+  --medal-silver-deep-rgb: 168, 180, 196;
+  --medal-bronze: #d4955e;
+  --medal-bronze-deep: #b57a4a;
+  --medal-bronze-deep-rgb: 181, 122, 74;
+
+  /* ── No es color, pero vive con el resto del sistema ──────────────────── */
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALIAS HEREDADOS
+
+   Nombres que ya usaban `layoutlet.css` y `HallOfFlame.css`. Se mantienen
+   apuntando a los tokens de arriba para no reescribir 760 líneas de Hall of
+   Flame de una sentada; lo que importa es que ya no hay ningún valor suelto.
+   Al tocar esos archivos, migrar el nombre y borrar el alias.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* layoutlet.css */
+  --bg-primary: var(--bg-base);
+  --bg-secondary: var(--bg-surface);
+  --bg-tertiary: var(--bg-elevated);
+  --primary: var(--accent);
+
+  /* HallOfFlame.css */
+  --hof-bg-deep: transparent;
+  --hof-bg-surface: var(--bg-surface);
+  --hof-bg-card: rgba(var(--bg-surface-rgb), 0.7);
+  --hof-bg-elevated: var(--bg-elevated);
+  --hof-gold: var(--warning);
+  --hof-gold-bright: var(--warning-light);
+  --hof-gold-dim: var(--warning-deep);
+  --hof-silver: var(--text-dim);
+  --hof-silver-bright: var(--text-muted);
+  --hof-bronze: var(--warning-mid);
+  --hof-bronze-bright: var(--warning);
+  --hof-text: var(--text-strong);
+  --hof-text-dim: var(--text-dim);
+  --hof-accent-blue: var(--accent);
+  --hof-flame-gradient: linear-gradient(135deg, var(--warning) 0%, var(--danger) 45%, var(--violet) 100%);
+  --hof-border: rgba(var(--tint), 0.08);
+  --hof-glow-gold: rgba(var(--warning-rgb), 0.25);
+  --hof-flame-icon: var(--flame);
+}

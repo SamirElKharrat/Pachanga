@@ -13,6 +13,8 @@ const { TextArea } = Input;
 const FORMAT_OPTIONS  = [{ value: 'BO1', label: 'BO1' }, { value: 'BO3', label: 'BO3' }, { value: 'BO5', label: 'BO5' }];
 const STATUS_OPTIONS  = [{ value: 'scheduled', label: 'Programado' }, { value: 'live', label: 'En vivo' }, { value: 'finished', label: 'Finalizado' }];
 const TYPE_OPTIONS    = [{ value: 'question', label: 'Pregunta' }, { value: 'score', label: 'Puntuación' }];
+// La piel que lleva la web mientras la liga esté viva. Se marca una vez al crearla.
+const THEME_OPTIONS   = [{ value: 'default', label: 'Normal' }, { value: 'worlds', label: 'Worlds — mundial' }];
 
 // Result options per match format
 const RESULT_OPTIONS = {
@@ -236,6 +238,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 if (name === 'format')   options = FORMAT_OPTIONS;
                 else if (name === 'status') options = STATUS_OPTIONS;
                 else if (name === 'type')   options = TYPE_OPTIONS;
+                else if (name === 'theme')  options = THEME_OPTIONS;
                 else if (name === 'winner') options = relationData.map(t => ({ value: t.id ?? t.value, label: t.name ?? t.label }));
                 else {
                     const relName = name === 'match_id' ? 'matches' : (name === 'leagues' ? 'leagues' : name);

@@ -258,7 +258,7 @@ const PachangaStanding = () => {
                     <div>
                         <h4>
                             <span>Normativa de la Pachanga {selectedYear}</span>
-                            <span style={{ fontSize: 11, color: '#788296', fontWeight: 600 }}>6 Competiciones</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-dim-2)', fontWeight: 600 }}>6 Competiciones</span>
                         </h4>
                         <ul className="pachanga-rules-summary-list">
                             <li><strong>Puntuación Pachanga:</strong> 1.º (5 pts) • 2.º (3 pts) • 3.º (1 pt) en cada liga oficial.</li>
@@ -292,7 +292,7 @@ const PachangaStanding = () => {
             <Modal
                 title={
                     <div style={{ padding: '6px 0 4px' }}>
-                        <Title level={4} style={{ margin: 0, color: '#f8fafc' }}>
+                        <Title level={4} style={{ margin: 0, color: 'var(--text-strong)' }}>
                             Normativa Oficial — Pachanga {selectedYear}
                         </Title>
                     </div>
@@ -320,7 +320,7 @@ const PachangaStanding = () => {
                         <li>Summer Split (LEC)</li>
                         <li>Worlds (Internacional) <em>(FabriFraude)</em></li>
                     </ul>
-                    <p style={{ fontSize: 13, color: '#788296' }}>Este año va a ser básicamente como el anterior en casi todo.</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-dim-2)' }}>Este año va a ser básicamente como el anterior en casi todo.</p>
 
                     <h3>2. Sistema de Puntos por Partidos</h3>
                     <ul>

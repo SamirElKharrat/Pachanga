@@ -1,22 +1,4 @@
-:root {
-  --hof-bg-deep: transparent;
-  --hof-bg-surface: #1e293b;
-  --hof-bg-card: rgba(30, 41, 59, 0.7);
-  --hof-bg-elevated: #334155;
-  --hof-gold: #f59e0b;
-  --hof-gold-bright: #fbbf24;
-  --hof-gold-dim: #b45309;
-  --hof-silver: #94a3b8;
-  --hof-silver-bright: #cbd5e1;
-  --hof-bronze: #d97706;
-  --hof-bronze-bright: #f59e0b;
-  --hof-text: #f8fafc;
-  --hof-text-dim: #94a3b8;
-  --hof-accent-blue: #3b82f6;
-  --hof-flame-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 45%, #8b5cf6 100%);
-  --hof-border: rgba(255, 255, 255, 0.08);
-  --hof-glow-gold: rgba(245, 158, 11, 0.25);
-}
+/* Los tokens --hof-* viven ahora en styles/tokens.css. */
 
 .hof-container {
   max-width: 1050px;
@@ -40,7 +22,7 @@
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0;
-  color: #f8fafc;
+  color: var(--text-strong);
 }
 
 .hof-header h1 .hof-flame {
@@ -69,20 +51,20 @@
   gap: 8px;
   padding: 8px 18px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
   border: none;
-  color: #ffffff;
+  color: var(--on-accent);
   font-family: inherit;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.25s ease;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
 }
 
 .hof-header-admin-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+  box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.45);
   filter: brightness(1.1);
 }
 
@@ -144,18 +126,18 @@
   width: 104px;
   height: 104px;
   border: 4px solid var(--hof-gold);
-  box-shadow: 0 0 35px var(--hof-glow-gold), inset 0 0 20px rgba(212, 168, 67, 0.15);
+  box-shadow: 0 0 35px var(--hof-glow-gold), inset 0 0 20px rgba(var(--medal-gold-deep-rgb), 0.15);
   font-size: 36px;
 }
 
 .hof-podium-slot.second .hof-avatar {
   border-color: var(--hof-silver);
-  box-shadow: 0 0 20px rgba(168, 180, 196, 0.2);
+  box-shadow: 0 0 20px rgba(var(--medal-silver-deep-rgb), 0.2);
 }
 
 .hof-podium-slot.third .hof-avatar {
   border-color: var(--hof-bronze);
-  box-shadow: 0 0 20px rgba(181, 122, 74, 0.2);
+  box-shadow: 0 0 20px rgba(var(--medal-bronze-deep-rgb), 0.2);
 }
 
 .hof-crown {
@@ -223,9 +205,9 @@
 
 .hof-podium-slot.first .hof-podium-pedestal {
   height: 150px;
-  background: linear-gradient(180deg, rgba(212, 168, 67, 0.22) 0%, rgba(212, 168, 67, 0.04) 100%);
+  background: linear-gradient(180deg, rgba(var(--medal-gold-deep-rgb), 0.22) 0%, rgba(var(--medal-gold-deep-rgb), 0.04) 100%);
   color: var(--hof-gold);
-  border: 1px solid rgba(212, 168, 67, 0.3);
+  border: 1px solid rgba(var(--medal-gold-deep-rgb), 0.3);
   border-bottom: none;
 }
 
@@ -236,9 +218,9 @@
 
 .hof-podium-slot.second .hof-podium-pedestal {
   height: 105px;
-  background: linear-gradient(180deg, rgba(168, 180, 196, 0.16) 0%, rgba(168, 180, 196, 0.03) 100%);
+  background: linear-gradient(180deg, rgba(var(--medal-silver-deep-rgb), 0.16) 0%, rgba(var(--medal-silver-deep-rgb), 0.03) 100%);
   color: var(--hof-silver-bright);
-  border: 1px solid rgba(168, 180, 196, 0.2);
+  border: 1px solid rgba(var(--medal-silver-deep-rgb), 0.2);
   border-bottom: none;
 }
 
@@ -248,9 +230,9 @@
 
 .hof-podium-slot.third .hof-podium-pedestal {
   height: 75px;
-  background: linear-gradient(180deg, rgba(181, 122, 74, 0.16) 0%, rgba(181, 122, 74, 0.03) 100%);
+  background: linear-gradient(180deg, rgba(var(--medal-bronze-deep-rgb), 0.16) 0%, rgba(var(--medal-bronze-deep-rgb), 0.03) 100%);
   color: var(--hof-bronze-bright);
-  border: 1px solid rgba(181, 122, 74, 0.2);
+  border: 1px solid rgba(var(--medal-bronze-deep-rgb), 0.2);
   border-bottom: none;
 }
 
@@ -289,7 +271,7 @@
 
 .hof-rest-item:hover {
   background: var(--hof-bg-elevated);
-  border-color: rgba(212, 168, 67, 0.25);
+  border-color: rgba(var(--medal-gold-deep-rgb), 0.25);
   transform: translateX(4px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
@@ -344,8 +326,8 @@
 }
 
 .hof-rest-wins-badge {
-  background: rgba(212, 168, 67, 0.1);
-  border: 1px solid rgba(212, 168, 67, 0.22);
+  background: rgba(var(--medal-gold-deep-rgb), 0.1);
+  border: 1px solid rgba(var(--medal-gold-deep-rgb), 0.22);
   color: var(--hof-gold-bright);
   font-weight: 700;
   font-size: 13px;
@@ -360,8 +342,8 @@
   padding: 40px 28px 28px;
   text-align: center;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 25%, rgba(212, 168, 67, 0.14) 0%, transparent 70%),
-              linear-gradient(180deg, rgba(212, 168, 67, 0.05) 0%, transparent 100%);
+  background: radial-gradient(ellipse at 50% 25%, rgba(var(--medal-gold-deep-rgb), 0.14) 0%, transparent 70%),
+              linear-gradient(180deg, rgba(var(--medal-gold-deep-rgb), 0.05) 0%, transparent 100%);
 }
 
 .hof-modal-avatar {
@@ -392,7 +374,7 @@
   left: 50%;
   transform: translateX(-50%) rotate(-8deg);
   font-size: 26px;
-  filter: drop-shadow(0 0 8px rgba(245, 213, 118, 0.6));
+  filter: drop-shadow(0 0 8px rgba(var(--medal-gold-rgb), 0.6));
   z-index: 2;
 }
 
@@ -401,7 +383,7 @@
   font-size: 30px;
   font-weight: 900;
   margin: 0;
-  color: #fff;
+  color: var(--white);
 }
 
 .hof-modal-player-subtitle {
@@ -455,9 +437,9 @@
   gap: 6px;
   padding: 8px 18px;
   border-radius: 8px;
-  background: rgba(59, 130, 246, 0.12);
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  color: #60a5fa;
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  color: var(--accent-light);
   font-family: inherit;
   font-weight: 600;
   font-size: 13px;
@@ -468,9 +450,9 @@
 }
 
 .hof-modal-add-trophy-btn:hover {
-  background: rgba(59, 130, 246, 0.22);
-  border-color: #3b82f6;
-  color: #93c5fd;
+  background: rgba(var(--accent-rgb), 0.22);
+  border-color: var(--accent);
+  color: var(--accent-lighter);
 }
 
 .hof-modal-conquests {
@@ -539,7 +521,7 @@
 }
 
 .hof-conquest-link:hover {
-  color: #60a5fa;
+  color: var(--accent-light);
   text-decoration: underline;
 }
 
@@ -562,9 +544,9 @@
 }
 
 .hof-conquest-delete-btn {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #f87171;
+  background: rgba(var(--danger-rgb), 0.08);
+  border: 1px solid rgba(var(--danger-rgb), 0.25);
+  color: var(--danger-light);
   border-radius: 6px;
   width: 22px;
   height: 22px;
@@ -580,9 +562,9 @@
 }
 
 .hof-conquest-delete-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.6);
-  color: #ef4444;
+  background: rgba(var(--danger-rgb), 0.2);
+  border-color: rgba(var(--danger-rgb), 0.6);
+  color: var(--danger);
   opacity: 1;
   transform: scale(1.1);
 }

@@ -2,10 +2,11 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Avatar, Button, Typography } from 'antd';
 import { CloseOutlined, UserOutlined, TrophyOutlined } from '@ant-design/icons';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Text } = Typography;
 
-const CONFETTI_COLORS = ['#facc15', '#3b82f6', '#10b981', '#ef4444', '#a855f7', '#f97316'];
+const CONFETTI_COLORS = ['var(--yellow)', 'var(--accent)', 'var(--success)', 'var(--danger)', 'var(--purple)', 'var(--flame)'];
 const CONFETTI_COUNT = 60;
 
 /**
@@ -42,6 +43,7 @@ function useConfettiPieces() {
  * @param {boolean}  props.isCurrentUserWinner - If true, displays 'Has ganado', else 'Ganador de'
  */
 function WinnerCelebration({ visible, onClose, leagueName, username, points, avatarUrl, isCurrentUserWinner }) {
+    const { isWorlds } = useTheme();
     const confettiPieces = useConfettiPieces();
     const [styleSheet, setStyleSheet] = useState(null);
 
@@ -60,8 +62,8 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                 50%      { transform: translateY(-18px); }
             }
             @keyframes winnerGlow {
-                0%, 100% { text-shadow: 0 0 20px rgba(251,191,36,0.4), 0 0 60px rgba(251,191,36,0.15); }
-                50%      { text-shadow: 0 0 30px rgba(251,191,36,0.6), 0 0 80px rgba(251,191,36,0.25); }
+                0%, 100% { text-shadow: 0 0 20px rgba(var(--warning-light-rgb),0.4), 0 0 60px rgba(var(--warning-light-rgb),0.15); }
+                50%      { text-shadow: 0 0 30px rgba(var(--warning-light-rgb),0.6), 0 0 80px rgba(var(--warning-light-rgb),0.25); }
             }
         `;
         document.head.appendChild(style);
@@ -126,10 +128,13 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             lineHeight: 1,
                             animation: 'winnerTrophyFloat 3s ease-in-out infinite',
                             marginBottom: 16,
-                            filter: 'drop-shadow(0 0 30px rgba(251,191,36,0.35))',
+                            filter: 'drop-shadow(0 0 30px rgba(var(--warning-light-rgb),0.35))',
                         }}
                     >
-                        🏆
+                        {isWorlds
+                            ? <span className="worlds-crest" role="img" aria-label="Campeonato Mundial"
+                                    style={{ width: 104, height: 104, display: 'block' }} />
+                            : '🏆'}
                     </motion.div>
 
                     {/* ── Title ── */}
@@ -141,7 +146,7 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             fontSize: 48,
                             fontWeight: 900,
                             letterSpacing: '0.04em',
-                            background: 'linear-gradient(to right, #fbbf24, #f59e0b, #d97706)',
+                            background: 'linear-gradient(to right, var(--warning-light), var(--warning), var(--warning-mid))',
                             WebkitBackgroundClip: 'text',
                             WebkitTextFillColor: 'transparent',
                             backgroundClip: 'text',
@@ -163,15 +168,15 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                         style={{
                             fontSize: 20,
                             fontWeight: 500,
-                            color: '#cbd5e1',
+                            color: 'var(--text-muted)',
                             marginBottom: 48,
                             textAlign: 'center',
                         }}
                     >
                         {isCurrentUserWinner ? (
-                            <>Has ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span></>
+                            <>Has ganado <span style={{ color: 'var(--warning-light)', fontWeight: 700 }}>{leagueName}</span></>
                         ) : (
-                            <><span style={{ color: '#fbbf24', fontWeight: 700 }}>{username}</span> ha ganado <span style={{ color: '#fbbf24', fontWeight: 700 }}>{leagueName}</span></>
+                            <><span style={{ color: 'var(--warning-light)', fontWeight: 700 }}>{username}</span> ha ganado <span style={{ color: 'var(--warning-light)', fontWeight: 700 }}>{leagueName}</span></>
                         )}
                     </motion.div>
 
@@ -184,8 +189,8 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             display: 'flex',
                             alignItems: 'center',
                             gap: 14,
-                            background: 'rgba(255,255,255,0.07)',
-                            border: '1px solid rgba(255,255,255,0.12)',
+                            background: 'rgba(var(--tint),0.07)',
+                            border: '1px solid rgba(var(--tint),0.12)',
                             borderRadius: 999,
                             padding: '10px 28px 10px 12px',
                             marginBottom: 40,
@@ -196,15 +201,15 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                             icon={<UserOutlined />}
                             size={48}
                             style={{
-                                border: '2px solid #fbbf24',
-                                boxShadow: '0 0 16px rgba(251,191,36,0.3)',
+                                border: '2px solid var(--warning-light)',
+                                boxShadow: '0 0 16px rgba(var(--warning-light-rgb),0.3)',
                             }}
                         />
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <Text style={{ fontSize: 18, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
+                            <Text style={{ fontSize: 18, fontWeight: 700, color: 'var(--white)', lineHeight: 1.2 }}>
                                 {username}
                             </Text>
-                            <Text style={{ fontSize: 14, color: '#fbbf24', fontWeight: 600 }}>
+                            <Text style={{ fontSize: 14, color: 'var(--warning-light)', fontWeight: 600 }}>
                                 <TrophyOutlined style={{ marginRight: 4 }} />
                                 {points} puntos
                             </Text>
@@ -227,9 +232,9 @@ function WinnerCelebration({ visible, onClose, leagueName, username, points, ava
                                 padding: '8px 36px',
                                 height: 'auto',
                                 fontWeight: 600,
-                                background: 'linear-gradient(135deg, #fbbf24, #d97706)',
+                                background: 'linear-gradient(135deg, var(--warning-light), var(--warning-mid))',
                                 border: 'none',
-                                color: '#000',
+                                color: 'var(--black)',
                                 fontSize: 15,
                             }}
                         >

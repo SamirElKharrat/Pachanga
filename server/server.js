@@ -145,6 +145,31 @@ const ensureStatsSchema = async () => {
 };
 
 /**
+ * Lo mismo que ensureStatsSchema, para League.theme.
+ *
+ * El modelo ya declara la columna, así que si el código llega a producción antes
+ * que `npm run migrate`, TODA consulta de ligas revienta y se cae la web entera.
+ * Esto cierra esa ventana: es idempotente, cuesta una consulta al arrancar y no
+ * hace nada en cuanto la migración se haya lanzado.
+ */
+const ensureLeagueTheme = async () => {
+  const [columns] = await db.query(
+    `SELECT column_name FROM information_schema.columns WHERE table_name = 'League'`
+  );
+
+  if (columns.some(c => c.column_name === 'theme')) return;
+
+  console.log('Añadiendo League.theme (la migración no se había lanzado)...');
+  await db.query(
+    `ALTER TABLE "League" ADD COLUMN theme VARCHAR(255) NOT NULL DEFAULT 'default'`
+  );
+  await db.query(
+    `UPDATE "League" SET theme = 'worlds' WHERE name ILIKE '%worlds%' OR name ILIKE '%mundial%'`
+  );
+  console.log('Columna añadida. El mundial queda marcado con el tema de Worlds.');
+};
+
+/**
  * Fills the stats tables the first time the server boots with them in place.
  *
  * Skips itself as soon as there is a single row, so it costs one COUNT on every
@@ -187,6 +212,7 @@ const syncDatabase = async () => {
     // Va fuera del try de abajo a propósito — con el esquema mal, el servidor no
     // debe arrancar y fingir que todo va bien.
     await ensureStatsSchema();
+    await ensureLeagueTheme();
 
     // Auto-inicialización segura en arranque (Render & local)
     try {
