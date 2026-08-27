@@ -298,3 +298,32 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQ
 ### Get matches without result
 GET http://localhost:3001/api/matches/getWithoutResult/1
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQHBhY2hhbmdhLmNvbSIsImlhdCI6MTc0Nzg2MTY3MywiZXhwIjoxNzQ3OTQ4MDczfQ.vQj7MmihJ09OoKALWPftj4M85l9tF0TMTnGrdhxkSos
+
+### ═══════════════════════════════════════════════════════════════════
+### ESTADÍSTICAS
+###
+### Todos aceptan el mismo ámbito:
+###   ?scope=pachanga&year=YYYY   la temporada entera, sin las que no puntúan
+###   ?leagueId=N                 una liga suelta, puntúe o no (así se ve Worlds)
+### ═══════════════════════════════════════════════════════════════════
+
+### Resumen · Pachanga completa
+GET http://localhost:3001/api/stats/overview?scope=pachanga&year=2026
+
+### Resumen · una liga
+GET http://localhost:3001/api/stats/overview?leagueId=3
+
+### Tabla de jugadores
+GET http://localhost:3001/api/stats/players?scope=pachanga&year=2026
+
+### Ficha de un jugador
+GET http://localhost:3001/api/stats/player/24?scope=pachanga&year=2026
+
+### Comparar dos jugadores
+GET http://localhost:3001/api/stats/compare?scope=pachanga&year=2026&a=24&b=1
+
+### Competiciones de una temporada
+GET http://localhost:3001/api/stats/leagues?year=2026
+
+### Momentos de una liga
+GET http://localhost:3001/api/stats/moments?leagueId=3

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layoutlet from './components/molecules/layoutlet'
 import ProtectedRoute from './components/route/ProtectedRoute'
+import Stats from './components/molecules/Stats'
 import Auth from './components/atoms/AuthForm'
 import Home from './components/molecules/Home'
 import AdminRoute from './components/route/AdminRoute'
@@ -33,6 +34,7 @@ function Root() {
                   <Route index element={<Home />} />
                   <Route path='/leagues' element={<League />} />
                   <Route path='/leagues/:id' element={<League />} />
+                  <Route path='/estadisticas' element={<Stats />} />
                   <Route path='/clasificacion' element={<PachangaStanding />} />
                   <Route path='/pachanga' element={<PachangaStanding />} />
                   {/* <Route path='/teams' element={<Team />} />

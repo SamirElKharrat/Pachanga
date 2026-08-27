@@ -300,9 +300,11 @@
 }
 
 /* ─── Bottom 2-Col Grid (Rules Summary + Stats Teaser) ─── */
+/* La normativa se quedó sola aquí cuando las estadísticas pasaron a ancho
+   completo, debajo. */
 .pachanga-bottom-grid {
   display: grid;
-  grid-template-columns: 1.45fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 

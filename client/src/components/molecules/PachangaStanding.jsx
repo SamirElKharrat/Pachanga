@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Typography, Avatar, Skeleton, Modal, Form, Input, Select, Button, Popconfirm, Empty, Space } from 'antd';
 import { UserOutlined, PlusOutlined, CloseOutlined, ArrowRightOutlined, BookOutlined, BarChartOutlined } from '@ant-design/icons';
 import { API } from '../../services/api';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import { showAlert } from '../atoms/AlertInfo';
+import StatsSummaryCard from '../atoms/StatsSummaryCard';
 import './css/PachangaStanding.css';
 
 const { Title, Text } = Typography;
@@ -22,6 +24,7 @@ const PachangaStanding = () => {
     const [submitting, setSubmitting] = useState(false);
 
     const [form] = Form.useForm();
+    const nav = useNavigate();
     const { getAvatarSrc } = useAppTheme();
 
     // Check admin status
@@ -272,13 +275,15 @@ const PachangaStanding = () => {
                     </button>
                 </div>
 
-                {/* Stats Teaser */}
-                <div className="pachanga-bottom-card pachanga-stats-card">
-                    <div className="pachanga-stats-tag">Próximamente</div>
-                    <h4 style={{ color: '#ffffff', margin: '6px 0 2px', justifyContent: 'center' }}>
-                        Estadísticas de Jugadores
-                    </h4>
-                </div>
+            </div>
+
+            {/* ─── Estadísticas de la temporada ─── */}
+            <div style={{ marginTop: 20 }}>
+                <StatsSummaryCard
+                    variant="pachanga"
+                    year={selectedYear}
+                    onSeeMore={() => nav(`/estadisticas?year=${selectedYear}`)}
+                />
             </div>
 
             {/* ═══════════════════════════════════════════ */}

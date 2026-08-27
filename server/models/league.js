@@ -39,6 +39,13 @@ const League = sequelize.define('League', {
     stats_url: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    // Whether this competition adds up to the Pachanga season. Worlds has its own
+    // prizes and is set to false; everything else counts.
+    counts_for_pachanga: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
     }
 }, {
     tableName: 'League',

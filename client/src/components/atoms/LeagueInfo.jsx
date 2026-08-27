@@ -11,6 +11,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../services/api';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
+import StatsSummaryCard from './StatsSummaryCard';
 import './css/LeagueInfo.css';
 
 const { Title, Text } = Typography;
@@ -261,12 +262,14 @@ const LeagueInfo = ({ leagueId }) => {
                 </Col>
             </Row>
 
-            {/* ─── League Statistics Teaser ─── */}
-            <div className="league-stats-card">
-                <div className="league-stats-tag">Próximamente</div>
-                <h4 style={{ color: '#ffffff', margin: '4px 0 0', fontSize: 16, fontWeight: 700 }}>
-                    Estadísticas de la Liga
-                </h4>
+            {/* ─── League Statistics ─── */}
+            <div style={{ marginTop: 24 }}>
+                <StatsSummaryCard
+                    variant="league"
+                    leagueId={leagueId}
+                    leagueName={league.name}
+                    onSeeMore={() => nav(`/estadisticas?liga=${leagueId}`)}
+                />
             </div>
         </div>
     );

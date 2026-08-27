@@ -47,6 +47,9 @@ const getMatchTimeInfo = (dateStr) => {
 const NextGames = () => {
     const { token } = theme.useToken();
     const [loading, setLoading] = useState(false);
+    // Si ya se cargó una vez. El esqueleto solo se enseña la primera: en las siguientes
+    // se deja lo que ya hay en pantalla mientras se refresca por detrás.
+    const [yaCargado, setYaCargado] = useState(false);
     const [nextGames, setNextGames] = useState([]);
     const location = useLocation();
     const nav = useNavigate();
@@ -100,12 +103,22 @@ const NextGames = () => {
                 //showAlert('error', "No se pudieron cargar los próximos partidos");
             } finally {
                 setLoading(false);
+                setYaCargado(true);
             }
         };
         fetchData();
-    }, [location.key]);
+        // Por ruta, no por `location.key`. Con la clave, cualquier cambio en la URL
+        // contaba como navegación —incluido pinchar una pestaña de Estadísticas, que
+        // solo toca la query— y volvía a pedir los partidos. Los de esta semana no
+        // cambian por eso.
+    }, [location.pathname]);
 
-    if (loading) return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 60, borderRadius: 12 }} /></div>;
+    // El esqueleto solo la primera vez. Enseñándolo en cada refresco, el bloque pasaba
+    // de 0 a 60 px y otra vez a su altura, y todo lo de debajo daba un salto: eso era
+    // el aparecer y desaparecer al cambiar de pestaña.
+    if (loading && !yaCargado) {
+        return <div className="px-3 mb-4"><Skeleton.Button active block style={{ height: 60, borderRadius: 12 }} /></div>;
+    }
     if (nextGames.length === 0) return null;
 
     return (

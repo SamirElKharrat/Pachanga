@@ -92,12 +92,16 @@ exports.loginUser = async (req, res) => {
     //Generate a token infinite live for now
     const token = jwt.sign({ email: user.email, role: user.role }, process.env.SECRET_KEY);
 
+    const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = {
       httpOnly: true,
-      domain: 'pachanga.lol',
-      secure: true,
+      secure: isProduction,
       sameSite: 'Lax'
     };
+
+    if (isProduction) {
+      cookieOptions.domain = 'pachanga.lol';
+    }
 
     if (keepSession) {
       cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -112,7 +116,16 @@ exports.loginUser = async (req, res) => {
 
 //Logout user
 exports.logoutUser = async (req, res) => {
-  res.clearCookie('token');
+  const isProduction = process.env.NODE_ENV === 'production';
+  const clearOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'Lax'
+  };
+  if (isProduction) {
+    clearOptions.domain = 'pachanga.lol';
+  }
+  res.clearCookie('token', clearOptions);
   res.json({ success: true, message: 'Logged out successfully' });
 };
 

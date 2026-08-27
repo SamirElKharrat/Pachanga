@@ -149,3 +149,89 @@ export const pachangaCrazyTheme = {
     },
   },
 };
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COLORES DE GRÁFICA
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Validados con el comprobador de daltonismo contra los dos fondos de la web
+   (#1e293b y #ffffff): banda de luminosidad, suelo de croma, ΔE bajo protanopía,
+   deuteranopía y tritanopía, y contraste ≥ 3:1. Todo en verde.
+
+   Dos juegos distintos y no intercambiables:
+
+   - `series` pinta MARCAS (barras, segmentos, celdas, líneas).
+   - `text` escribe. Un #3b82f6 da 2,5:1 sobre blanco: vale para una barra, no
+     para una etiqueta de 10 px.
+
+   El color sigue a la persona, no a su posición: se asigna por id de usuario
+   ordenado, así que filtrar o cambiar de ámbito no repinta a nadie. Como el
+   criterio validado es el del par adyacente, toda gráfica lleva además leyenda
+   y etiquetas directas, que es la codificación secundaria que eso exige.
+   ═══════════════════════════════════════════════════════════════════════════ */
+export const chartPalette = {
+  series: ['#3b82f6', '#b8860b', '#8b5cf6', '#059669', '#f43f5e', '#0891b2'],
+  text: {
+    dark:  ['#93c5fd', '#fcd34d', '#c4b5fd', '#6ee7b7', '#fda4af', '#67e8f9'],
+    light: ['#1d4ed8', '#854d0e', '#6d28d9', '#047857', '#be123c', '#155e75'],
+  },
+  // La media no es una categoría, es la referencia contra la que se lee el resto.
+  reference: { mark: '#64748b', dark: '#cbd5e1', light: '#475569' },
+};
+
+/**
+ * Color preferido de una persona. Se ordena por id, así que dar de alta a alguien
+ * nuevo no cambia el color de nadie.
+ *
+ * OJO: la paleta tiene 6 huecos y puede haber más jugadores. Esto NO garantiza que
+ * dos personas tengan colores distintos — para eso está `distinctColorsFor`, que es
+ * lo que hay que usar siempre que se pinten varias a la vez. Ampliar la paleta no es
+ * la solución: pasando de ocho tonos hay pares que un daltónico ya no separa.
+ *
+ * @param {number} userId
+ * @param {Array<number>} allUserIds - Todos los del ámbito.
+ * @param {boolean} [isLight]
+ * @returns {{mark: string, text: string, index: number}}
+ */
+export const colorForUser = (userId, allUserIds = [], isLight = false) => {
+  const order = [...new Set(allUserIds)].sort((a, b) => a - b);
+  const found = order.indexOf(userId);
+  const i = (found < 0 ? 0 : found) % chartPalette.series.length;
+  return {
+    index: i,
+    mark: chartPalette.series[i],
+    text: chartPalette.text[isLight ? 'light' : 'dark'][i],
+  };
+};
+
+/**
+ * Colores para un grupo que se pinta a la vez, garantizando que ninguno se repite.
+ *
+ * Cada uno se queda con su color preferido mientras esté libre; si ya lo ha cogido
+ * otro —pasa en cuanto hay más de seis jugadores y los índices dan la vuelta— coge el
+ * primer hueco disponible. Así el color sigue siendo estable en el caso normal y
+ * nunca hay dos líneas del mismo tono, que es lo que hacía indistinguibles a Samir y
+ * a Fabri.
+ *
+ * @param {Array<number>} userIds - En el orden en que se van a pintar.
+ * @param {Array<number>} allUserIds - Todos los del ámbito.
+ * @param {boolean} [isLight]
+ * @returns {Object} userId -> {mark, text, index}
+ */
+export const distinctColorsFor = (userIds, allUserIds = [], isLight = false) => {
+  const texts = chartPalette.text[isLight ? 'light' : 'dark'];
+  const taken = new Set();
+  const out = {};
+
+  for (const id of userIds) {
+    let i = colorForUser(id, allUserIds, isLight).index;
+    if (taken.has(i)) {
+      const free = chartPalette.series.findIndex((_, k) => !taken.has(k));
+      i = free === -1 ? i : free;   // con más de 6 a la vez ya no hay nada que hacer
+    }
+    taken.add(i);
+    out[id] = { index: i, mark: chartPalette.series[i], text: texts[i] };
+  }
+
+  return out;
+};

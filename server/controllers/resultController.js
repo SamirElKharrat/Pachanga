@@ -1,14 +1,24 @@
 const Result = require('../models/result');
 const Match = require('../models/match');
-const Prediction = require('../models/prediction');
-const LeagueParticipation = require('../models/leagueParticipation');
 const Team = require('../models/team');
-const User = require('../models/user');
-const FavoriteTeam = require('../models/favoriteTeam');
-const League = require('../models/league');
-const { startOfWeek, endOfWeek, getLeagueWeekNumber } = require('./weekController'); // Make sure getting a week number is possible
-const { calculatePredictionPoints } = require('../utils/pointsCalculator');
-const { Op } = require('sequelize');
+const statsAggregator = require('../utils/statsAggregator');
+
+/**
+ * Applies the points for the league week a match belongs to and refreshes its stats.
+ *
+ * Works by difference, not by adding: it compares what every prediction of that week
+ * is worth now against what it was worth before. Calling it twice for the same match
+ * moves nothing the second time, and a league nobody touches is never rewritten.
+ *
+ * Deliberately allowed to throw. Points are the whole point of closing a match, so a
+ * failure has to reach the admin rather than be swallowed — and retrying is safe.
+ *
+ * @param {number} matchId
+ */
+const applyPoints = async (matchId) => {
+    if (!matchId) return;
+    await statsAggregator.applyForMatch(matchId);
+};
 
 // Get all results
 exports.getAllResults = async (req, res) => {
@@ -66,153 +76,10 @@ exports.createResult = async (req, res) => {
     try {
         const result = await Result.create(req.body);
 
-        const match = await Match.findByPk(req.body.match_id, {
-            include: [{
-                model: Team,
-                as: 'Teams',
-                through: { attributes: [] }
-            }]
-        });
-
         // ALWAYS mark match as finished when a result is created
         await Match.update({ status: 'finished' }, { where: { id: req.body.match_id } });
 
-        const winner = req.body.winner;
-        const predictions = await Prediction.findAll({
-            where: { match_id: req.body.match_id },
-        });
-
-        if (predictions.length > 0) {
-            // Configuración para los plenos: Obtener los partidos de la semana
-            const weekStart = startOfWeek(match.date);
-            const weekEnd = endOfWeek(match.date);
-
-            // Compute an actual week number for the database relative to league start date.
-            const league = await League.findByPk(match.league_id);
-            const currentWeekNumber = getLeagueWeekNumber(league.start_date, match.date);
-
-            const weekMatches = await Match.findAll({
-                where: {
-                    league_id: match.league_id,
-                    date: {
-                        [Op.between]: [weekStart, weekEnd]
-                    }
-                },
-                order: [['date', 'ASC']]
-            });
-
-            const weekMatchIds = weekMatches.map(m => m.id);
-            const currentMatchIndex = weekMatchIds.indexOf(match.id);
-
-            // Fetch de resultados de los partidos de la semana hasta el actual
-            const resultsThisWeek = await Result.findAll({
-                where: {
-                    match_id: {
-                        [Op.in]: weekMatchIds.slice(0, currentMatchIndex + 1)
-                    }
-                }
-            });
-
-            const resultMap = {};
-            resultsThisWeek.forEach(r => {
-                resultMap[r.match_id] = { winner: r.winner, result: r.result };
-            });
-            // Ensure current match result is explicitly in map
-            resultMap[match.id] = { winner, result: req.body.result };
-
-            // Fetch optimizado: Traer todas las predicciones de la semana para evitar peticiones en el map
-            const allWeekPredictions = await Prediction.findAll({
-                where: {
-                    match_id: {
-                        [Op.in]: weekMatchIds.slice(0, currentMatchIndex + 1)
-                    }
-                }
-            });
-
-            // 1. Obtener TODOS los participantes de la liga (los que votaron y los que no)
-            const allParticipants = await LeagueParticipation.findAll({
-                where: {
-                    league_id: match.league_id,
-                    week: -1 // Obtener todos los usuarios de la liga
-                }
-            });
-
-            // 2. Procesar a TODOS los participantes
-            const leagueParticipationsPromises = allParticipants.map(async participant => {
-                const user_id = participant.user_id;
-
-                // Buscar si este usuario votó en este partido
-                const prediction = predictions.find(p => p.user_id === user_id);
-
-                let points = 0;
-                let predictionData = null;
-
-                if (prediction) {
-                    // Si votó, calcular sus puntos
-                    points = await calculatePredictionPoints({
-                        prediction,
-                        match,
-                        winner,
-                        resultStr: req.body.result,
-                        weekMatchIds,
-                        resultMap,
-                        allWeekPredictions
-                    });
-
-                    predictionData = prediction;
-
-                    // Actualizar los puntos de la predicción
-                    await prediction.update({ points });
-                }
-                // Si no votó, points = 0 (valor por defecto)
-
-                let lastweekPoints = 0;
-                if (currentWeekNumber > 1) {
-                    // Find the most recent week participation (not necessarily currentWeek-1,
-                    // since some weeks may have no matches and no participation row)
-                    const lastWeekParticipation = await LeagueParticipation.findOne({
-                        where: {
-                            user_id: user_id,
-                            league_id: match.league_id,
-                            week: {
-                                [Op.gt]: 0,
-                                [Op.lt]: currentWeekNumber
-                            }
-                        },
-                        order: [['week', 'DESC']]
-                    });
-                    lastweekPoints = lastWeekParticipation?.points || 0;
-                }
-
-                // Cargar o crear el LeagueParticipation de la semana correcta
-                const [participation, created] = await LeagueParticipation.findOrCreate({
-                    where: {
-                        user_id: user_id,
-                        league_id: match.league_id,
-                        week: currentWeekNumber
-                    },
-                    defaults: {
-                        points: lastweekPoints
-                    }
-                });
-
-                await participation.increment('points', { by: points });
-
-                // Acumular puntos en week = -1
-                await LeagueParticipation.increment(
-                    { points: points },
-                    {
-                        where: {
-                            user_id: user_id,
-                            league_id: match.league_id,
-                            week: -1
-                        }
-                    }
-                );
-            });
-
-            await Promise.all(leagueParticipationsPromises);
-        }
+        await applyPoints(req.body.match_id);
 
         res.status(201).json(result);
     } catch (error) {
@@ -232,6 +99,11 @@ exports.updateResult = async (req, res) => {
         if (result.match_id) {
             await Match.update({ status: 'finished' }, { where: { id: result.match_id } });
         }
+
+        // Corrections used to leave the old points in place. Now they move by the
+        // difference, which also drags any pleno the change breaks or creates.
+        await applyPoints(result.match_id);
+
         res.json(updatedResult);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -245,7 +117,13 @@ exports.deleteResult = async (req, res) => {
         if (!result) {
             return res.status(404).json({ error: 'Result not found' });
         }
+
+        const matchId = result.match_id; // needed after the row is gone
         await result.destroy();
+
+        // Removing a result takes its points back out, which never used to happen.
+        await applyPoints(matchId);
+
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: error.message });

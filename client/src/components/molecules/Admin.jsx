@@ -1,10 +1,11 @@
 import React from 'react';
 import { Card, Tabs, Typography } from 'antd';
 import AdminPanel from '../atoms/AdminPanel';
+import StatsRecalc from '../atoms/StatsRecalc';
 import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
-    ControlOutlined, FileTextOutlined
+    ControlOutlined, FileTextOutlined, BarChartOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -102,6 +103,11 @@ const Admin = () => {
                     names={['match_id', 'type', 'winner', 'description', 'points']}
                 />
             )
+        },
+        {
+            key: '8',
+            label: <span><BarChartOutlined /> Estadísticas</span>,
+            children: <StatsRecalc />
         }
     ];
 

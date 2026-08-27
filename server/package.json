@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "migrate": "npx sequelize-cli db:migrate"
+    "test:stats": "node scripts/testStatsAggregator.js",
+    "migrate": "npx sequelize-cli db:migrate",
+    "stats:backfill": "node scripts/backfillStats.js"
   },
   "author": "Samir El Kharrat Martín",
   "license": "ISC",
