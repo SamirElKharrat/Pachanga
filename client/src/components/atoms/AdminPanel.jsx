@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { API } from '../../services/api';
-import { Table, Button, Space, Row, Col, Input, Card, Divider, Typography, Popconfirm, Tag } from 'antd';
+import { Table, Button, Space, Row, Col, Input, Card, Divider, Typography, Popconfirm, Tag, List, Empty, Flex } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
     PlusOutlined,
     SearchOutlined,
     UndoOutlined,
-    TableOutlined
+    TableOutlined,
+    UnorderedListOutlined,
+    SendOutlined,
+    CloseOutlined
 } from '@ant-design/icons';
 import ModalInfo from './ModalInfo';
 import BasicForm from './BasicForm';
@@ -47,12 +50,22 @@ const AdminPanel = ({ table, names, fields, relation }) => {
     const [viewMode, setViewMode]           = useState('TABLE');
     const [maxTagCount, setMaxTagCount]     = useState(0);
     const [loading, setLoading]             = useState(false);
+    // La cola del modo masivo: lo que se ha ido añadiendo y todavía no se ha enviado.
+    const [queue, setQueue]                 = useState([]);
+    const [sending, setSending]             = useState(false);
 
     // ── Fetch main data ───────────────────────────────────────────────────────
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const response = await API.get(`/${table}/get`);
+
+            // Una respuesta con forma rara acababa en «response.map is not a
+            // function», que no dice nada de lo que ha pasado de verdad: casi siempre
+            // es que la ruta no existe todavía en el servidor que está corriendo.
+            if (!Array.isArray(response)) {
+                throw new Error('la respuesta del servidor no es una lista; comprueba que la ruta existe y que el servidor está reiniciado');
+            }
 
             const processed = response.map(item => {
                 const entry = { ...item };
@@ -245,7 +258,178 @@ const AdminPanel = ({ table, names, fields, relation }) => {
 
     const handleActionSuccess = () => { setViewMode('TABLE'); fetchData(); };
 
+    // ── Modo masivo ───────────────────────────────────────────────────────────
+    //
+    // Sirve para meter de un tirón las cosas que siempre vienen en tanda: los cinco
+    // partidos de una jornada, las dos preguntas de la semana. Se van añadiendo a
+    // una lista sin salir del formulario y se mandan todas al final.
+
+    /** Un resumen legible de una fila en cola, resolviendo ids a nombres si se puede. */
+    const summarize = (payload) => {
+        const etiqueta = (clave, valor) => {
+            if (valor === null || valor === undefined || valor === '') return null;
+            // Una URL de imagen no dice nada en una línea de texto.
+            if (clave === 'logo_url') return null;
+
+            // league_id viene de la relación `leagues`; los equipos, de `teams`.
+            const rel = clave === 'league_id' ? 'leagues' : (clave === 'teams' ? 'teams' : null);
+            const opciones = rel ? selectData.find(d => d.name === rel)?.data : null;
+            const nombre = (v) => opciones?.find(o => o.value === v)?.label ?? v;
+
+            if (Array.isArray(valor)) {
+                // «vs» solo entre equipos; en cualquier otra lista sería un disparate.
+                return valor.map(nombre).join(clave === 'teams' ? ' vs ' : ', ');
+            }
+            if (clave.includes('date') || clave.endsWith('_at')) {
+                const d = dayjs(valor);
+                if (d.isValid()) return d.format('DD-MM-YYYY HH:mm');
+            }
+            return String(nombre(valor));
+        };
+
+        return Object.entries(payload)
+            .map(([k, v]) => etiqueta(k, v))
+            .filter(Boolean)
+            .join(' · ');
+    };
+
+    /** Manda la cola entera, una a una, y se queda con lo que haya fallado. */
+    const sendQueue = async () => {
+        setSending(true);
+        const endpoint = table === 'users' ? '/users/register' : `/${table}/set`;
+        const fallidas = [];
+
+        for (const item of queue) {
+            try {
+                await API.post(endpoint, item.payload);
+            } catch (err) {
+                console.error('Bulk create failed for', item.payload, err);
+                fallidas.push(item);
+            }
+        }
+
+        const enviadas = queue.length - fallidas.length;
+        setQueue(fallidas);
+        setSending(false);
+
+        if (fallidas.length === 0) {
+            showAlert('success', `${enviadas} registros creados`);
+            setViewMode('TABLE');
+            fetchData();
+        } else {
+            // Las que fallaron se quedan en la lista para reintentarlas. Decir «hecho»
+            // cuando tres de cinco han entrado sería mentir, y encima sin dejar
+            // manera de saber cuáles.
+            showAlert('error', `${enviadas} creados, ${fallidas.length} con error. Los que fallaron siguen en la lista.`);
+            fetchData();
+        }
+    };
+
     // ── Render ────────────────────────────────────────────────────────────────
+    if (viewMode === 'BULK') {
+        return (
+            <Card
+                title={<Space><UnorderedListOutlined />Crear en tanda</Space>}
+                className="border-0 shadow-sm"
+                extra={
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        Rellena, añade a la lista y repite. Al final se envía todo.
+                    </Text>
+                }
+            >
+                {/* Formulario a la izquierda, cola a la derecha. En móvil se apila,
+                    con la cola debajo: ahí no hay sitio para dos columnas. */}
+                <Row gutter={[20, 20]}>
+                    <Col xs={24} lg={14}>
+                        <BasicForm
+                            fields={fields}
+                            names={names}
+                            table={table}
+                            selectData={selectData}
+                            maxTagCount={maxTagCount}
+                            onCancel={() => { setQueue([]); setViewMode('TABLE'); }}
+                            onCollect={(payload) => setQueue(prev => [...prev, { id: Date.now() + Math.random(), payload }])}
+                        />
+                    </Col>
+
+                    <Col xs={24} lg={10}>
+                        <div
+                            style={{
+                                border: '1px solid rgba(var(--tint), 0.08)',
+                                borderRadius: 10,
+                                padding: '14px 16px',
+                                background: 'rgba(var(--tint), 0.015)',
+                            }}
+                        >
+                            <Flex justify="space-between" align="center" gap={10} style={{ marginBottom: 12 }}>
+                                <Text strong style={{ fontSize: 13 }}>
+                                    En la lista{queue.length > 0 ? ` (${queue.length})` : ''}
+                                </Text>
+                                <Space size={6}>
+                                    <Button
+                                        size="small"
+                                        disabled={queue.length === 0 || sending}
+                                        onClick={() => setQueue([])}
+                                    >
+                                        Vaciar
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        size="small"
+                                        icon={<SendOutlined />}
+                                        loading={sending}
+                                        disabled={queue.length === 0}
+                                        onClick={sendQueue}
+                                    >
+                                        Enviar {queue.length > 0 ? queue.length : ''}
+                                    </Button>
+                                </Space>
+                            </Flex>
+
+                            {queue.length === 0 ? (
+                                <Empty
+                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                    description={<Text type="secondary" style={{ fontSize: 12 }}>Todavía no has añadido nada</Text>}
+                                    style={{ margin: '18px 0' }}
+                                />
+                            ) : (
+                                // Con tope de altura: una tanda larga no debe estirar
+                                // la página y dejar el formulario fuera de pantalla.
+                                <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+                                    <List
+                                        size="small"
+                                        dataSource={queue}
+                                        renderItem={(item, i) => (
+                                            <List.Item
+                                                style={{ paddingLeft: 0, paddingRight: 0 }}
+                                                actions={[
+                                                    <Button
+                                                        key="del"
+                                                        type="text"
+                                                        size="small"
+                                                        danger
+                                                        disabled={sending}
+                                                        icon={<CloseOutlined />}
+                                                        onClick={() => setQueue(prev => prev.filter(q => q.id !== item.id))}
+                                                    />
+                                                ]}
+                                            >
+                                                <Space size={8} style={{ minWidth: 0 }}>
+                                                    <Tag style={{ margin: 0 }}>{i + 1}</Tag>
+                                                    <Text style={{ fontSize: 12.5 }}>{summarize(item.payload)}</Text>
+                                                </Space>
+                                            </List.Item>
+                                        )}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </Col>
+                </Row>
+            </Card>
+        );
+    }
+
     if (viewMode === 'CREATE' || viewMode === 'EDIT') {
         return (
             <Card title={<Space><TableOutlined />{viewMode === 'CREATE' ? 'Nuevo Registro' : 'Editar Registro'}</Space>} className="border-0 shadow-sm">
@@ -267,19 +451,34 @@ const AdminPanel = ({ table, names, fields, relation }) => {
         <div>
             <Row justify="space-between" align="middle" gutter={[12, 12]} style={{ marginBottom: 16 }}>
                 <Col xs={24} sm={12}>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={async () => {
-                            setLoading(true);
-                            await loadRelations();
-                            setRecordToProcess(null);
-                            setViewMode('CREATE');
-                            setLoading(false);
-                        }}
-                    >
-                        Crear
-                    </Button>
+                    <Space>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={async () => {
+                                setLoading(true);
+                                await loadRelations();
+                                setRecordToProcess(null);
+                                setViewMode('CREATE');
+                                setLoading(false);
+                            }}
+                        >
+                            Crear
+                        </Button>
+                        <Button
+                            icon={<UnorderedListOutlined />}
+                            onClick={async () => {
+                                setLoading(true);
+                                await loadRelations();
+                                setRecordToProcess(null);
+                                setQueue([]);
+                                setViewMode('BULK');
+                                setLoading(false);
+                            }}
+                        >
+                            Crear en tanda
+                        </Button>
+                    </Space>
                 </Col>
                 <Col xs={24} sm={12} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <Search

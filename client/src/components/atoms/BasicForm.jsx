@@ -48,7 +48,7 @@ const parseFriendlyDate = (dateStr) => {
 /**
  * A dynamic form for admin CRUD operations.
  */
-const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCount, selectData }) => {
+const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCount, selectData, onCollect }) => {
     const [form]           = Form.useForm();
     const [fileList, setFileList]           = useState([]);
     const [relationData, setRelationData]   = useState([]);
@@ -160,6 +160,24 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
             if (table === 'predictions') {
                 const user = await API.getUserByToken();
                 values.user_id = user.id;
+            }
+
+            // Modo masivo: en vez de enviar, se entrega arriba y el formulario se
+            // queda como está. Que NO se vacíe es deliberado: metiendo los cinco
+            // partidos de una jornada, la liga y el formato se repiten y lo único que
+            // cambia son los equipos y la hora.
+            if (onCollect) {
+                onCollect(values);
+
+                // Los campos de fichero SÍ se vacían. Un logo no se repite entre dos
+                // registros, y dejarlo puesto haría que el siguiente subiera otra vez
+                // la misma imagen y acabara con una copia suya. El resto se queda.
+                fields.forEach((f, i) => {
+                    if (f === 'file') form.setFieldValue(names[i], undefined);
+                });
+
+                showAlert('success', 'Añadido a la lista');
+                return;
             }
 
             if (record) {
@@ -382,8 +400,8 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
 
                 <Space className="w-100 justify-content-end">
                     <Button onClick={onCancel} icon={<CloseOutlined />}>Cancelar</Button>
-                    <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
-                        {record ? 'Actualizar' : 'Guardar'}
+                    <Button type="primary" htmlType="submit" loading={loading} icon={onCollect ? <PlusOutlined /> : <SaveOutlined />}>
+                        {onCollect ? 'Añadir a la lista' : (record ? 'Actualizar' : 'Guardar')}
                     </Button>
                 </Space>
             </Form>
