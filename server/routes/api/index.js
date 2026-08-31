@@ -12,6 +12,8 @@ const uploadRoute = require("./upload");
 const hallRoute = require("./hall");
 const pachangaRoute = require("./pachanga");
 const statsRoute = require("./stats");
+const questionRoute = require("./question");
+const changelogRoute = require("./changelog");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -26,5 +28,7 @@ router.use("/upload", uploadRoute);
 router.use("/hall", hallRoute);
 router.use("/pachanga", pachangaRoute);
 router.use("/stats", statsRoute);
+router.use("/questions", questionRoute);
+router.use("/changelog", changelogRoute);
 
 module.exports = router;

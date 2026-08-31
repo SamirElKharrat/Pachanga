@@ -176,6 +176,15 @@ exports.calculatePredictionBreakdown = async ({
 };
 
 /**
+ * What one right answer to a weekly question is worth.
+ *
+ * Flat, and the same for every question: there is no partial credit to give — you
+ * either picked the right option or you did not. It lives here, next to the rest of
+ * the scoring, so the number exists in exactly one place.
+ */
+exports.QUESTION_POINTS = 4;
+
+/**
  * What a pleno of a given length is worth, in total.
  *
  * Straight from the 2026 rules: 3 seguidas dan 1 punto, 5 dan 2, más de 5 dan 3. A run

@@ -77,7 +77,7 @@ const PlayerWeekStat = sequelize.define('PlayerWeekStat', {
         allowNull: false,
         defaultValue: 0
     },
-    // Same total, split by where it came from. points = the sum of these four.
+    // Same total, split by where it came from. points = the sum of these five.
     points_base: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -94,6 +94,16 @@ const PlayerWeekStat = sequelize.define('PlayerWeekStat', {
         defaultValue: 0
     },
     points_favorite: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    // The week's questions. The only source that has nothing to do with a match, and
+    // the reason it has to be its own column rather than being folded into `points`:
+    // PlayerLeagueStat.points_manual is measured as everything in the standings that
+    // the stats cannot account for, so any point that skips this breakdown gets
+    // reported to the player as "added by hand".
+    points_question: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0

@@ -128,6 +128,7 @@ const foldByPlayer = (rows) => {
             pointsExact: 0,
             pointsStreak: 0,
             pointsFavorite: 0,
+            pointsQuestion: 0,
             pointsManual: 0,
             byLeague: []
         };
@@ -143,6 +144,7 @@ const foldByPlayer = (rows) => {
         acc.pointsExact += row.points_exact;
         acc.pointsStreak += row.points_streak;
         acc.pointsFavorite += row.points_favorite;
+        acc.pointsQuestion += row.points_question;
         acc.pointsManual += row.points_manual;
         if (row.best_run > acc.bestRun) acc.bestRun = row.best_run;
 
@@ -488,8 +490,9 @@ exports.getPlayer = async (req, res) => {
                 exact: player.pointsExact,
                 streak: player.pointsStreak,
                 favorite: player.pointsFavorite,
-                // Aparte de los cuatro de arriba: no es una quinta porción de la
-                // barra apilada, sino una línea suelta. Puede ser negativo.
+                question: player.pointsQuestion,
+                // Aparte de los cinco de arriba: no es una porción más de la barra
+                // apilada, sino una línea suelta. Puede ser negativo.
                 manual: player.pointsManual
             },
             weeks: await weekMap(userId, scope.leagueIds, leagueById),

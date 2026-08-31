@@ -17,6 +17,11 @@ const PachangaPoint = require('./models/pachangaPoint');
 const PlayerWeekStat = require('./models/playerWeekStat');
 const PlayerLeagueStat = require('./models/playerLeagueStat');
 const MatchStat = require('./models/matchStat');
+const Question = require('./models/question');
+const QuestionAnswer = require('./models/questionAnswer');
+// No tiene asociaciones: se requiere para que `db.sync` sepa que existe. Quitarlo
+// parece limpieza y deja la tabla sin crear en un despliegue nuevo.
+const Changelog = require('./models/changelog'); // eslint-disable-line no-unused-vars
 
 const app = express();
 const PORT = 3001;
@@ -112,6 +117,15 @@ MatchStat.belongsTo(Match, { as: 'Match', foreignKey: 'match_id' });
 Match.hasOne(MatchStat, { as: 'Stat', foreignKey: 'match_id' });
 MatchStat.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
 
+// Question relations — las preguntas de la jornada
+Question.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
+League.hasMany(Question, { as: 'Questions', foreignKey: 'league_id' });
+
+QuestionAnswer.belongsTo(Question, { as: 'Question', foreignKey: 'question_id' });
+Question.hasMany(QuestionAnswer, { as: 'Answers', foreignKey: 'question_id' });
+QuestionAnswer.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
+User.hasMany(QuestionAnswer, { as: 'QuestionAnswers', foreignKey: 'user_id' });
+
 
 const hallController = require('./controllers/hallController');
 const pachangaController = require('./controllers/pachangaController');
@@ -170,6 +184,28 @@ const ensureLeagueTheme = async () => {
 };
 
 /**
+ * Lo mismo que las dos de arriba, para `points_question`.
+ *
+ * `db.sync` crea las tablas Question y QuestionAnswer solas por ser nuevas, pero no
+ * añade columnas a PlayerWeekStat ni a PlayerLeagueStat, que ya existen. Y el
+ * agregador escribe esa columna en cuanto se cierra cualquier partido, así que sin
+ * ella no fallan las preguntas: falla el reparto de puntos entero.
+ */
+const ensureQuestionPoints = async () => {
+  const [columns] = await db.query(
+    `SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_name IN ('PlayerWeekStat', 'PlayerLeagueStat') AND column_name = 'points_question'`
+  );
+  const has = (table) => columns.some(c => c.table_name === table);
+
+  for (const table of ['PlayerWeekStat', 'PlayerLeagueStat']) {
+    if (has(table)) continue;
+    console.log(`Añadiendo ${table}.points_question (la migración no se había lanzado)...`);
+    await db.query(`ALTER TABLE "${table}" ADD COLUMN points_question INTEGER NOT NULL DEFAULT 0`);
+  }
+};
+
+/**
  * Fills the stats tables the first time the server boots with them in place.
  *
  * Skips itself as soon as there is a single row, so it costs one COUNT on every
@@ -213,6 +249,7 @@ const syncDatabase = async () => {
     // debe arrancar y fingir que todo va bien.
     await ensureStatsSchema();
     await ensureLeagueTheme();
+    await ensureQuestionPoints();
 
     // Auto-inicialización segura en arranque (Render & local)
     try {
