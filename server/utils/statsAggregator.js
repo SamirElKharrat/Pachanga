@@ -10,9 +10,11 @@ const LeagueParticipation = require('../models/leagueParticipation');
 const PlayerWeekStat = require('../models/playerWeekStat');
 const PlayerLeagueStat = require('../models/playerLeagueStat');
 const MatchStat = require('../models/matchStat');
+const Question = require('../models/question');
+const QuestionAnswer = require('../models/questionAnswer');
 
 const { startOfWeek } = require('../controllers/weekController');
-const { calculatePredictionBreakdown } = require('./pointsCalculator');
+const { calculatePredictionBreakdown, QUESTION_POINTS } = require('./pointsCalculator');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -60,13 +62,15 @@ const weekOf = (leagueStartDate, date) => {
 
 /**
  * Everyone who should have a row for this league: whoever joined it, plus anyone who
- * sent a prediction even if their participation row went missing.
+ * took part even if their participation row went missing — by sending a prediction or
+ * by answering a question.
  *
  * @param {number} leagueId
  * @param {Array<Object>} predictions - Predictions already loaded for this league.
+ * @param {Array<Object>} [answers] - Question answers already loaded for this week.
  * @returns {Promise<Array<number>>} User ids.
  */
-const rosterFor = async (leagueId, predictions) => {
+const rosterFor = async (leagueId, predictions, answers = []) => {
     const participants = await LeagueParticipation.findAll({
         where: { league_id: leagueId, week: -1 },
         attributes: ['user_id']
@@ -74,6 +78,7 @@ const rosterFor = async (leagueId, predictions) => {
 
     const ids = new Set(participants.map(p => p.user_id));
     predictions.forEach(p => ids.add(p.user_id));
+    answers.forEach(a => ids.add(a.user_id));
     return [...ids];
 };
 
@@ -97,17 +102,29 @@ const computeWeek = async (league, week) => {
     });
     const weekMatchIds = weekMatches.map(m => m.id);
 
-    if (weekMatchIds.length === 0) {
+    // Las preguntas de la jornada. Se cargan ANTES de decidir si la semana está
+    // vacía: una semana de parón puede no tener partidos y sí tener preguntas, y
+    // hasta que existieron las preguntas eso no podía pasar.
+    const weekQuestions = await Question.findAll({
+        where: { league_id: league.id, week },
+        order: [['id', 'ASC']]
+    });
+
+    if (weekMatchIds.length === 0 && weekQuestions.length === 0) {
         return {
             empty: true, weekMatchIds: [], weekRows: [], matchRows: [],
-            predictions: [], pointsByPrediction: new Map(), roster: []
+            predictions: [], pointsByPrediction: new Map(),
+            answers: [], pointsByAnswer: new Map(), roster: []
         };
     }
 
-    const [results, allPredictions, favorites] = await Promise.all([
+    const weekQuestionIds = weekQuestions.map(q => q.id);
+
+    const [results, allPredictions, favorites, answers] = await Promise.all([
         Result.findAll({ where: { match_id: { [Op.in]: weekMatchIds } } }),
         Prediction.findAll({ where: { match_id: { [Op.in]: weekMatchIds } } }),
-        FavoriteTeam.findAll({ where: { league_id: league.id } })
+        FavoriteTeam.findAll({ where: { league_id: league.id } }),
+        QuestionAnswer.findAll({ where: { question_id: { [Op.in]: weekQuestionIds } } })
     ]);
 
     // A handful of matches carry two predictions from the same person. Counting both
@@ -134,7 +151,7 @@ const computeWeek = async (league, week) => {
         (predictionsByMatch[p.match_id] = predictionsByMatch[p.match_id] || []).push(p);
     });
 
-    const roster = await rosterFor(league.id, predictions);
+    const roster = await rosterFor(league.id, predictions, answers);
 
     // Resolved matches only: an unplayed match is not "available" to anyone yet.
     const resolvedMatches = weekMatches.filter(m => resultMap[m.id]);
@@ -159,6 +176,7 @@ const computeWeek = async (league, week) => {
         points_exact: 0,
         points_streak: 0,
         points_favorite: 0,
+        points_question: 0,
         plenos: 0
     });
 
@@ -232,9 +250,40 @@ const computeWeek = async (league, week) => {
         });
     }
 
+    // ── Las preguntas de la jornada ──────────────────────────────────────────
+    //
+    // Nada que ver con los partidos: ni encadenan plenos ni dependen del orden, así
+    // que es un recuento suelto y plano. Una pregunta sin `correct_option` todavía no
+    // vale nada, y sus respuestas se quedan a cero hasta que se corrija.
+    //
+    // Igual que con las predicciones, TODA respuesta arranca a cero, para que una
+    // cuya pregunta se descorrigió deje de valer lo que valía en vez de conservarlo.
+    const pointsByAnswer = new Map();
+    answers.forEach(a => pointsByAnswer.set(a.id, 0));
+
+    const correctByQuestion = {};
+    weekQuestions.forEach(q => {
+        if (q.correct_option !== null) correctByQuestion[q.id] = q.correct_option;
+    });
+
+    for (const answer of answers) {
+        const correct = correctByQuestion[answer.question_id];
+        if (correct === undefined || answer.answer !== correct) continue;
+
+        pointsByAnswer.set(answer.id, QUESTION_POINTS);
+
+        if (!perUser[answer.user_id]) perUser[answer.user_id] = blank(answer.user_id);
+        perUser[answer.user_id].points += QUESTION_POINTS;
+        perUser[answer.user_id].points_question += QUESTION_POINTS;
+    }
+
     const weekRows = Object.values(perUser).map(row => ({ ...row, computed_at: new Date() }));
 
-    return { empty: false, weekMatchIds, weekRows, matchRows, predictions: allPredictions, pointsByPrediction, roster };
+    return {
+        empty: false, weekMatchIds, weekRows, matchRows,
+        predictions: allPredictions, pointsByPrediction,
+        answers, pointsByAnswer, roster
+    };
 };
 
 /**
@@ -354,7 +403,7 @@ exports.applyWeekPoints = async (leagueId, week) => {
 
     if (computed.empty) {
         await exports.rollUpLeague(leagueId);
-        return { week, changedPredictions: 0, playersAffected: 0, delta: 0 };
+        return { week, changedPredictions: 0, changedAnswers: 0, playersAffected: 0, delta: 0 };
     }
 
     // What changed, and by how much, for each player.
@@ -370,9 +419,27 @@ exports.applyWeekPoints = async (leagueId, week) => {
         changed.push({ id: prediction.id, points: now });
     }
 
+    // Las respuestas se mueven exactamente igual, y por la misma razón: marcar la
+    // correcta paga, cambiarla mueve la diferencia y quitarla devuelve los puntos.
+    // Las tres cosas salen solas de comparar contra lo que ya valía.
+    const changedAnswers = [];
+
+    for (const answer of computed.answers) {
+        const now = computed.pointsByAnswer.get(answer.id) || 0;
+        const before = answer.points || 0;
+        if (now === before) continue;
+
+        deltaByUser[answer.user_id] = (deltaByUser[answer.user_id] || 0) + (now - before);
+        changedAnswers.push({ id: answer.id, points: now });
+    }
+
     await sequelize.transaction(async (transaction) => {
         for (const c of changed) {
             await Prediction.update({ points: c.points }, { where: { id: c.id }, transaction });
+        }
+
+        for (const c of changedAnswers) {
+            await QuestionAnswer.update({ points: c.points }, { where: { id: c.id }, transaction });
         }
 
         await ensureParticipationRows(league.id, week, computed.roster, transaction);
@@ -398,6 +465,7 @@ exports.applyWeekPoints = async (leagueId, week) => {
     return {
         week,
         changedPredictions: changed.length,
+        changedAnswers: changedAnswers.length,
         playersAffected: Object.keys(deltaByUser).filter(u => deltaByUser[u] !== 0).length,
         delta: Object.values(deltaByUser).reduce((s, d) => s + d, 0)
     };
@@ -441,7 +509,8 @@ exports.rollUpLeague = async (leagueId) => {
             points_base: 0,
             points_exact: 0,
             points_streak: 0,
-            points_favorite: 0
+            points_favorite: 0,
+            points_question: 0
         };
 
         acc.matches_available += row.matches_available;
@@ -453,6 +522,7 @@ exports.rollUpLeague = async (leagueId) => {
         acc.points_exact += row.points_exact;
         acc.points_streak += row.points_streak;
         acc.points_favorite += row.points_favorite;
+        acc.points_question += row.points_question;
         acc.plenos += row.plenos;
         if (row.best_run > acc.best_run) acc.best_run = row.best_run;
     }
@@ -498,13 +568,22 @@ exports.recomputeLeague = async (leagueId) => {
     const league = await League.findByPk(leagueId);
     if (!league) throw new Error(`League ${leagueId} not found`);
 
-    const matches = await Match.findAll({
-        where: { league_id: leagueId },
-        attributes: ['id', 'date'],
-        order: [['date', 'ASC']]
-    });
+    const [matches, questions] = await Promise.all([
+        Match.findAll({
+            where: { league_id: leagueId },
+            attributes: ['id', 'date'],
+            order: [['date', 'ASC']]
+        }),
+        Question.findAll({ where: { league_id: leagueId }, attributes: ['week'] })
+    ]);
 
-    const weeks = [...new Set(matches.map(m => weekOf(league.start_date, m.date)))].sort((a, b) => a - b);
+    // Las jornadas a recalcular salen de las dos cosas. Sacarlas solo de los partidos
+    // —que es lo que se hacía— dejaría fuera una semana de parón con preguntas, y sus
+    // puntos no se repartirían nunca sin dar ningún error.
+    const weeks = [...new Set([
+        ...matches.map(m => weekOf(league.start_date, m.date)),
+        ...questions.map(q => q.week)
+    ])].sort((a, b) => a - b);
 
     // Clear first: a week that no longer has matches must not keep stale rows.
     await PlayerWeekStat.destroy({ where: { league_id: leagueId } });

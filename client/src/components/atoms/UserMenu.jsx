@@ -22,10 +22,12 @@ import {
     MenuOutlined,
     BarChartOutlined,
     FireOutlined,
+    InfoCircleOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
 import BrandMark from './BrandMark';
+import ChangelogModal from './ChangelogModal';
 
 const { Content, Sider, Header } = Layout;
 const { Text } = Typography;
@@ -71,6 +73,14 @@ const UserMenu = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState(null);
     const [optionsOpen, setOptionsOpen] = useState(false);
+    const [changelogOpen, setChangelogOpen] = useState(false);
+    const [changelog, setChangelog] = useState([]);
+    const [changelogLoading, setChangelogLoading] = useState(false);
+
+    // La versión que se enseña es la de la entrada más reciente: no hay ningún sitio
+    // aparte donde apuntarla, así que no puede contradecir a las novedades.
+    const appVersion = changelog.length > 0 ? changelog[0].version : null;
+
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -82,6 +92,23 @@ const UserMenu = ({ children }) => {
     const location = useLocation();
     const isAdmin = localStorage.getItem('admin') === 'true';
     const { token } = theme.useToken();
+
+    // Se pide al abrir Opciones y no al cargar la web: es lo único que la usa, y no
+    // hay motivo para gastar una llamada en cada visita.
+    useEffect(() => {
+        if (!optionsOpen || changelog.length > 0) return;
+        let cancelled = false;
+
+        setChangelogLoading(true);
+        API.get('/changelog/get')
+            // Array.isArray y no confiar en el 2xx: una respuesta con forma rara no
+            // debe llegar nunca al estado.
+            .then(data => { if (!cancelled) setChangelog(Array.isArray(data) ? data : []); })
+            .catch(() => { if (!cancelled) setChangelog([]); })
+            .finally(() => { if (!cancelled) setChangelogLoading(false); });
+
+        return () => { cancelled = true; };
+    }, [optionsOpen, changelog.length]);
 
     useEffect(() => {
         API.getUserByToken()
@@ -398,9 +425,32 @@ const UserMenu = ({ children }) => {
                         />
                     </div>
 
+                    <Divider style={{ margin: 0 }} />
+
+                    {/* Versión. El número sale de version.js, que es donde se escribe
+                        la lista de cambios; aquí no hay nada que mantener. */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', gap: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <InfoCircleOutlined style={{ fontSize: 17, color: 'var(--accent)' }} />
+                            <div>
+                                <Text strong style={{ display: 'block', fontSize: 14 }}>Versión de la Pachanga</Text>
+                                <Text type="secondary" style={{ fontSize: 11 }}>
+                                    {changelogLoading ? 'cargando…' : (appVersion || 'sin novedades')}
+                                </Text>
+                            </div>
+                        </div>
+                        <Button size="small" disabled={!appVersion} onClick={() => setChangelogOpen(true)}>Ver más</Button>
+                    </div>
 
                 </div>
             </Modal>
+
+            <ChangelogModal
+                open={changelogOpen}
+                onClose={() => setChangelogOpen(false)}
+                entries={changelog}
+                loading={changelogLoading}
+            />
 
             {/* Main content */}
             <Layout
