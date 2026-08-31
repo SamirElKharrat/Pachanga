@@ -13,6 +13,13 @@ const { TextArea } = Input;
 const FORMAT_OPTIONS  = [{ value: 'BO1', label: 'BO1' }, { value: 'BO3', label: 'BO3' }, { value: 'BO5', label: 'BO5' }];
 const STATUS_OPTIONS  = [{ value: 'scheduled', label: 'Programado' }, { value: 'live', label: 'En vivo' }, { value: 'finished', label: 'Finalizado' }];
 const TYPE_OPTIONS    = [{ value: 'question', label: 'Pregunta' }, { value: 'score', label: 'Puntuación' }];
+// Qué clase de cambio es una línea de las novedades. Se llama `kind` y no `type`
+// porque `type` ya está cogido por el de las predicciones, justo aquí arriba.
+const KIND_OPTIONS    = [
+    { value: 'new', label: 'Nuevo' },
+    { value: 'change', label: 'Cambio' },
+    { value: 'fix', label: 'Arreglo' },
+];
 // La piel que lleva la web mientras la liga esté viva. Se marca una vez al crearla.
 const THEME_OPTIONS   = [{ value: 'default', label: 'Normal' }, { value: 'worlds', label: 'Worlds — mundial' }];
 
@@ -138,6 +145,17 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
             // roles → role (backend reads req.body.role)
             if (values.roles) { values.role = values.roles; delete values.roles; }
 
+            // Un `option_select` que se vacía a propósito tiene que llegar como null
+            // y no perderse en el filtro de undefined de abajo: vaciar la respuesta
+            // correcta de una pregunta es lo que la descorrige y devuelve sus puntos.
+            // Antd deja en undefined lo que se borra, y undefined ahí significaría
+            // «no lo toques».
+            fields.forEach((f, i) => {
+                if (f === 'option_select' && values[names[i]] === undefined) {
+                    values[names[i]] = null;
+                }
+            });
+
             // Predictions need current user
             if (table === 'predictions') {
                 const user = await API.getUserByToken();
@@ -169,57 +187,60 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
     const renderFormItem = (field, index) => {
         const name  = names[index];
         const label = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        // OJO: `key` NO va aquí. React lo trata aparte del resto de props y avisa por
+        // consola en cuanto se le cuela dentro de un spread; cada `return` lo pone
+        // explícito.
         const commonProps = {
-            key: name, name, label,
+            name, label,
             rules: !record ? [{ required: true, message: `${label} es obligatorio` }] : [],
         };
 
         switch (field) {
             case 'text':
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <Input placeholder={`Ingresar ${label.toLowerCase()}`} style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
 
             case 'password':
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <Input.Password placeholder="Ingresar nueva contraseña" style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
 
             case 'boolean':
                 return (
-                    <Form.Item {...commonProps} valuePropName="checked">
+                    <Form.Item key={name} {...commonProps} valuePropName="checked">
                         <Switch checkedChildren="ON" unCheckedChildren="OFF" />
                     </Form.Item>
                 );
 
             case 'number':
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <Input type="number" placeholder={`Ingresar ${label.toLowerCase()}`} style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
 
             case 'date':
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <DatePicker showTime format="DD-MM-YYYY HH:mm" style={{ width: '100%', maxWidth: 400 }} />
                     </Form.Item>
                 );
 
             case 'textarea':
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <TextArea rows={4} placeholder={`Ingresar ${label.toLowerCase()}`} style={{ maxWidth: 400 }} />
                     </Form.Item>
                 );
 
             case 'file':
                 return (
-                    <Form.Item {...commonProps} valuePropName="fileList" getValueFromEvent={normFile}>
+                    <Form.Item key={name} {...commonProps} valuePropName="fileList" getValueFromEvent={normFile}>
                         <Upload listType="picture-card" maxCount={1} beforeUpload={() => false} accept="image/*">
                             <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues[name] !== currentValues[name]}>
                                 {({ getFieldValue }) => {
@@ -238,6 +259,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 if (name === 'format')   options = FORMAT_OPTIONS;
                 else if (name === 'status') options = STATUS_OPTIONS;
                 else if (name === 'type')   options = TYPE_OPTIONS;
+                else if (name === 'kind')   options = KIND_OPTIONS;
                 else if (name === 'theme')  options = THEME_OPTIONS;
                 else if (name === 'winner') options = relationData.map(t => ({ value: t.id ?? t.value, label: t.name ?? t.label }));
                 else {
@@ -247,7 +269,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 }
 
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <Select
                             placeholder={`Seleccionar ${label.toLowerCase()}`}
                             onSelect={(val) => handleSelect({ value: val, name })}
@@ -262,7 +284,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
 
             case 'multiselect':
                 return (
-                    <Form.Item {...commonProps}>
+                    <Form.Item key={name} {...commonProps}>
                         <Select
                             mode="multiple"
                             placeholder={`Seleccionar ${label.toLowerCase()}`}
@@ -277,11 +299,62 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                     </Form.Item>
                 );
 
+            // ── Lista de textos libre: las opciones de una pregunta ───────────
+            // `mode="tags"` deja escribir valores que no están en ninguna lista, que
+            // es justo lo que hace falta: las opciones se inventan al escribir la
+            // pregunta. El valor es un array de textos y va tal cual al JSONB.
+            case 'taglist':
+                return (
+                    <Form.Item key={name} {...commonProps} help="Escribe cada opción y pulsa Enter">
+                        <Select
+                            mode="tags"
+                            open={false}
+                            placeholder="Sí, No, G2…"
+                            tokenSeparators={[',']}
+                            style={{ width: '100%', maxWidth: 400 }}
+                        />
+                    </Form.Item>
+                );
+
+            // ── Elegir entre las opciones de este mismo formulario ────────────
+            // Mismo patrón que `result_select`, pero sin ir al servidor: las opciones
+            // están en otro campo del formulario, así que basta con volver a pintar
+            // cuando ese campo cambie.
+            //
+            // Nunca es obligatorio: la pregunta se crea sin corregir y se corrige
+            // días después.
+            case 'option_select':
+                return (
+                    <Form.Item key={name} noStyle shouldUpdate={(prev, cur) => prev.options !== cur.options}>
+                        {({ getFieldValue }) => {
+                            const opts = getFieldValue('options') || [];
+                            // Sin `key`: esto no sale de una lista, sale del render-prop
+                            // del Form.Item de fuera, que ya la lleva.
+                            return (
+                                <Form.Item
+                                    {...commonProps}
+                                    rules={[]}
+                                    help={opts.length ? 'Se deja en blanco hasta que acabe la jornada' : 'Escribe antes las opciones'}
+                                >
+                                    <Select
+                                        allowClear
+                                        placeholder="Sin corregir"
+                                        disabled={opts.length === 0}
+                                        options={opts.map(o => ({ value: o, label: o }))}
+                                        style={{ width: '100%', maxWidth: 400 }}
+                                    />
+                                </Form.Item>
+                            );
+                        }}
+                    </Form.Item>
+                );
+
             // ── NEW: Smart result select based on match format ────────────────
             case 'result_select': {
                 const resultOptions = RESULT_OPTIONS[selectedFormat] || [];
                 return (
                     <Form.Item
+                        key={name}
                         {...commonProps}
                         help={!selectedFormat ? 'Selecciona un partido primero para ver las opciones' : undefined}
                     >

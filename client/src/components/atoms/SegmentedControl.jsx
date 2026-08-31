@@ -5,11 +5,26 @@ import { Select, Avatar, Segmented, Space, Flex } from 'antd';
  * A sleek Segmented Control component with responsive mobile fallback.
  * On mobile (<768px) it renders an Ant Design Select dropdown instead.
  * 
- * @param {Object[]} options - Array of options { value, label, logo (optional) }
+ * @param {Object[]} options - Array of options { value, label, logo (optional), badge (optional) }
  * @param {string|number} value - Currently selected value
  * @param {Function} onChange - Callback on change
  * @param {boolean} disabled - Whether the control is disabled/loading
  */
+/**
+ * El punto de aviso de una opción. Existe para que lo que vive detrás de una pestaña
+ * no pase desapercibido: sin él, media liga no se enteraría de que hay preguntas.
+ */
+const Badge = () => (
+    <span
+        aria-hidden="true"
+        style={{
+            width: 6, height: 6, borderRadius: '50%', flex: '0 0 6px',
+            background: 'var(--pred-acierto)',
+            boxShadow: '0 0 0 3px rgba(var(--pred-acierto-rgb), 0.18)',
+        }}
+    />
+);
+
 export default function SegmentedControl({ options, value, onChange, disabled }) {
     const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
@@ -36,6 +51,7 @@ export default function SegmentedControl({ options, value, onChange, disabled })
                                 <Avatar src={opt.logo} size={16} shape="square" style={{ background: 'transparent', borderRadius: 3 }} />
                             )}
                             <span>{opt.label}</span>
+                            {opt.badge && <Badge />}
                         </Space>
                     ),
                     value: opt.value
@@ -59,6 +75,7 @@ export default function SegmentedControl({ options, value, onChange, disabled })
                                 <Avatar src={opt.logo} size={16} shape="square" style={{ background: 'transparent' }} />
                             )}
                             <span>{opt.label}</span>
+                            {opt.badge && <Badge />}
                         </Space>
                     ),
                     value: opt.value

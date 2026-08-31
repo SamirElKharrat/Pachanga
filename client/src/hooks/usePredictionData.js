@@ -55,6 +55,11 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
     const [historyMatches, setHistoryMatches]                     = useState([]);
     const [allResults, setAllResults]                             = useState([]);
     const [allUserPredictions, setAllUserPredictions]             = useState([]);
+    const [questions, setQuestions]                               = useState([]);
+    // Se toca para forzar una recarga de la jornada. Hace falta al enviar las
+    // respuestas: la pantalla tiene que pasar de formulario a vista bloqueada sin
+    // sacar al usuario de donde estaba.
+    const [nonce, setNonce]                                       = useState(0);
     const [loadingLeagues, setLoadingLeagues]                     = useState(true);
     const [loadingData, setLoadingData]                           = useState(false);
     const [error, setError]                                       = useState(null);
@@ -132,10 +137,14 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
                 const week = allWeeks.find(w => w.id === selectedWeek) ?? allWeeks[allWeeks.length - 1];
                 if (!week) return;
 
-                const [allUserPreds, allLeagueMatches, allRes] = await Promise.all([
+                const [allUserPreds, allLeagueMatches, allRes, weekQuestions] = await Promise.all([
                     API.get('/predictions/user').catch(() => []),
                     API.get('/matches/getByLeague/' + liga.id).catch(() => []),
                     API.get('/results/get').catch(() => []),
+                    // La misma numeración de semana que usa el servidor: 1 desde el
+                    // jueves de inicio de liga. Si esto se desalineara, las preguntas
+                    // saldrían en la jornada equivocada.
+                    API.get(`/questions/getByWeek/${liga.id}/${week.id}`).catch(() => []),
                 ]);
                 if (cancelled) return;
 
@@ -176,6 +185,7 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
                 setHistoryMatches(withResults);
                 setAllResults(allRes);
                 setAllUserPredictions(allUserPreds);
+                setQuestions(weekQuestions);
             } catch (err) {
                 console.error('[usePredictionData] week data fetch failed:', err);
                 if (!cancelled) setError(err.message);
@@ -186,7 +196,7 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
 
         fetchWeekData();
         return () => { cancelled = true; };
-    }, [selectedLeague, selectedWeek, leagues]);
+    }, [selectedLeague, selectedWeek, leagues, nonce]);
 
     return {
         leagues,
@@ -198,6 +208,8 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
         historyMatches,
         allResults,
         allUserPredictions,
+        questions,
+        reload: () => setNonce(n => n + 1),
         loading: loadingLeagues || loadingData,
         error,
     };

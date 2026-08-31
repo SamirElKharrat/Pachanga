@@ -506,6 +506,9 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, t
         { key: 'exact', name: 'Marcador', color: chart.series[1] },
         { key: 'streak', name: 'Pleno', color: chart.series[2] },
         { key: 'favorite', name: 'Favorito', color: chart.series[3] },
+        // El `key` es lo que da el campo (`points` + Question), así que esta lista y
+        // la del detalle de jugador tienen que decir lo mismo.
+        { key: 'question', name: 'Preguntas', color: chart.series[4] },
     ];
 
     return (
@@ -771,6 +774,10 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
         { key: 'exact', name: 'Marcador', color: chart.series[1], value: breakdown.exact },
         { key: 'streak', name: 'Pleno', color: chart.series[2], value: breakdown.streak },
         { key: 'favorite', name: 'Favorito', color: chart.series[3], value: breakdown.favorite },
+        // Las preguntas de la jornada. Es la única fuente que no sale de un partido,
+        // pero sí sale del agregador, así que es una porción más de la barra y no la
+        // línea suelta de abajo.
+        { key: 'question', name: 'Preguntas', color: chart.series[4], value: breakdown.question ?? 0 },
     ];
     const bestLeaguePoints = Math.max(1, ...byLeague.map(b => b.pointsOfficial));
 

@@ -39,6 +39,125 @@ const RANK_STYLES = {
     default: { bg: 'var(--bg-elevated)', glow: null },
 };
 
+/** Lo que vale acertar una pregunta. Igual que QUESTION_POINTS en el servidor. */
+const QUESTION_POINTS = 4;
+
+/**
+ * Cómo le fue a alguien en una pregunta.
+ *
+ * `missing` no es lo mismo que `wrong`: no responder no es fallar, es no jugar. Se
+ * ve igual de claro, pero no se pinta como un fallo.
+ *
+ * @returns {{status: 'correct'|'wrong'|'pending'|'missing', answer: string|null}}
+ */
+function getAnswerInfo(question, participation, answers) {
+    const userId = participation.User?.id ?? participation.user_id;
+    const mine = answers.find(a => a.question_id === question.id && a.user_id === userId);
+
+    if (!mine) return { status: 'missing', answer: null };
+    if (!question.correct_option) return { status: 'pending', answer: mine.answer };
+    return {
+        status: mine.answer === question.correct_option ? 'correct' : 'wrong',
+        answer: mine.answer,
+    };
+}
+
+/**
+ * La tira de respuestas que va debajo de la rejilla de partidos.
+ *
+ * Una sola para escritorio y móvil: las pastillas hacen wrap solas y no hay nada que
+ * cambiar entre los dos tamaños, así que duplicarla solo serviría para que se fueran
+ * pareciendo cada vez menos.
+ *
+ * OJO con `revealAnswers`. El Inicio ya esconde el bloque entero hasta que has hecho
+ * TUS predicciones, pero esa puerta mira los partidos, y las preguntas van por su
+ * lado: quien predijo todos los partidos y aún no ha respondido vería aquí lo que ha
+ * puesto el resto antes de mojarse. Se sigue viendo QUIÉN respondió —eso no da
+ * ventaja, y es lo que deja en evidencia al que pasó— pero no QUÉ.
+ *
+ * Una pregunta ya corregida se enseña siempre: la jornada acabó y no hay nada que
+ * proteger.
+ */
+function QuestionStrip({ questions, participation, answers, isCurrent, revealAnswers }) {
+    if (!questions || questions.length === 0) return null;
+
+    const infos = questions.map(q => ({
+        question: q,
+        ...getAnswerInfo(q, participation, answers),
+        hidden: !isCurrent && !revealAnswers && !q.correct_option,
+    }));
+    const settled = infos.filter(i => i.status === 'correct' || i.status === 'wrong');
+    const won = infos.filter(i => i.status === 'correct').length * QUESTION_POINTS;
+
+    return (
+        <div style={{ marginTop: 13, paddingTop: 11, borderTop: '1px dashed rgba(var(--tint), 0.10)' }}>
+            <Text
+                strong
+                style={{
+                    display: 'block', marginBottom: 8, fontSize: 9,
+                    letterSpacing: '0.13em', textTransform: 'uppercase', color: 'var(--text-faint)',
+                }}
+            >
+                Preguntas{settled.length > 0
+                    ? ` · +${won} de ${settled.length * QUESTION_POINTS}`
+                    : ' · sin corregir'}
+            </Text>
+
+            <Flex wrap="wrap" gap={8}>
+                {infos.map(({ question, status, answer, hidden }) => {
+                    const c = hidden ? STATUS_COLORS.pending : (STATUS_COLORS[status] ?? STATUS_COLORS.pending);
+                    const missing = status === 'missing';
+                    // Oculta pero respondida: se dice que respondió, no qué.
+                    const label = hidden
+                        ? (missing ? 'Sin responder' : 'Respondida')
+                        : (missing ? 'Sin responder' : answer);
+
+                    return (
+                        <Tooltip key={question.id} title={question.text}>
+                            <Flex
+                                align="center"
+                                gap={7}
+                                style={{
+                                    borderRadius: 9,
+                                    padding: '6px 11px',
+                                    maxWidth: '100%',
+                                    background: missing ? 'transparent' : c.bg,
+                                    border: missing
+                                        ? '1px dashed rgba(var(--pred-fallo-rgb), 0.35)'
+                                        : `1px solid ${c.border}`,
+                                }}
+                            >
+                                <div style={{ minWidth: 0 }}>
+                                    <Text
+                                        style={{
+                                            display: 'block', fontSize: 9.5, lineHeight: 1.2,
+                                            color: 'var(--text-faint)', maxWidth: 130,
+                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {question.text}
+                                    </Text>
+                                    <Text
+                                        strong
+                                        style={{
+                                            display: 'block', fontSize: 12, lineHeight: 1.3,
+                                            color: missing ? 'var(--pred-fallo)' : c.text,
+                                            fontStyle: (missing || hidden) ? 'italic' : 'normal',
+                                            fontWeight: (missing || hidden) ? 400 : 700,
+                                        }}
+                                    >
+                                        {label}
+                                    </Text>
+                                </div>
+                            </Flex>
+                        </Tooltip>
+                    );
+                })}
+            </Flex>
+        </div>
+    );
+}
+
 // ── Helper to get a participant's prediction + status for a match ────────────
 function getPredInfo(match, participation, predictions, results) {
     const pred = predictions.find(
@@ -56,7 +175,7 @@ function getPredInfo(match, participation, predictions, results) {
 }
 
 // ── Desktop: user-centric 6x6 grid of cards ──────────────────────────────────
-function DesktopMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser }) {
+function DesktopMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser, questions, questionAnswers, revealAnswers }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
     return (
@@ -143,12 +262,20 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                     );
                 })}
             </Flex>
+
+            <QuestionStrip
+                questions={questions}
+                participation={participation}
+                answers={questionAnswers}
+                isCurrent={isCurrent}
+                revealAnswers={revealAnswers}
+            />
         </Flex>
     );
 }
 
 // ── Mobile: vertically stacked matches for a single user ────────────────────
-function MobileMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser }) {
+function MobileMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser, questions, questionAnswers, revealAnswers }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
     const { token } = theme.useToken();
@@ -207,6 +334,14 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
                     </Flex>
                 );
             })}
+
+            <QuestionStrip
+                questions={questions}
+                participation={participation}
+                answers={questionAnswers}
+                isCurrent={isCurrent}
+                revealAnswers={revealAnswers}
+            />
         </Flex>
     );
 }
@@ -261,6 +396,8 @@ function Home() {
         results,
         favoriteTeams,
         weeks,
+        questions,
+        questionAnswers,
         loading,
         predictionsMade,
         currentUser,
@@ -269,6 +406,11 @@ function Home() {
     const filteredLeagues = selectedYear
         ? leagues.filter(l => new Date(l.start_date).getFullYear() === selectedYear)
         : leagues;
+
+    // ¿He respondido ya a todo lo que estaba abierto esta jornada? Hasta que sí, las
+    // respuestas ajenas sin corregir se tapan: la puerta de `predictionsMade` mira
+    // los partidos, y las preguntas se envían aparte.
+    const myQuestionsDone = questions.every(q => q.myAnswer || q.correct_option);
 
     useEffect(() => {
         if (filteredLeagues.length > 0 && (selectedLeague === null || !filteredLeagues.find(l => l.id === selectedLeague))) {
@@ -717,6 +859,9 @@ function Home() {
                                         predictions={predictions}
                                         results={results}
                                         currentUser={currentUser}
+                                        questions={questions}
+                                        questionAnswers={questionAnswers}
+                                        revealAnswers={myQuestionsDone}
                                     />
                                 ))}
                             </Flex>

@@ -120,7 +120,10 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                 
                 let resList = Array.isArray(response) ? response : [];
 
-                if (table === 'matches' && item === 'leagues') {
+                // Las preguntas se escriben para la jornada que viene, igual que se
+                // dan de alta los partidos: solo interesan las ligas vivas, y la más
+                // reciente primero.
+                if ((table === 'matches' || table === 'questions') && item === 'leagues') {
                     resList = resList.filter(l => l.status === 'scheduled' || l.status === 'live');
                     resList.sort((a, b) => (b.id || 0) - (a.id || 0));
                 }

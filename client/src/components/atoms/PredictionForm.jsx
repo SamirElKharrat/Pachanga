@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Select, Avatar, Tooltip, Button, Skeleton, Card, Space, Typography, Divider, theme } from 'antd';
-import { API } from '../../services/api';
+import { Row, Col, Select, Avatar, Skeleton, Card, Space, Typography, theme } from 'antd';
 import Coin from './Coin';
-import { useNavigate } from 'react-router-dom';
-import { showAlert } from './AlertInfo';
-import ModalInfo from './ModalInfo';
-import { SendOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -33,32 +28,23 @@ const getBOOptions = (format) => {
 };
 
 /**
- * Component for making predictions on a list of matches.
- * 
+ * Los partidos de la jornada, para rellenar.
+ *
+ * Solo recoge lo que se elige: no envía nada. La jornada se manda entera —partidos y
+ * preguntas a la vez— y eso solo puede orquestarlo quien ve las dos cosas, que es
+ * Prediction.jsx. Si el envío viviera aquí, «todo junto» sería imposible de
+ * garantizar.
+ *
  * @param {Object} props - Component props.
- * @param {boolean} props.send - Trigger to submit the form from outside.
- * @param {Function} props.setSend - Callback to reset the trigger.
  * @param {Array} props.data - The list of matches to predict.
- * @param {string|number} props.leagueId - The ID of the current league.
+ * @param {Function} props.onChange - Recibe { done, total, payload } cada vez que
+ *   cambia algo. `payload` es lo que hay que mandar a /predictions/set.
  * @returns {React.ReactElement} The PredictionForm component.
  */
-export default function PredictionForm({ send, setSend, data, leagueId }) {
+export default function PredictionForm({ data, onChange }) {
     const [selectedTeams, setSelectedTeams] = useState({});
     const [selectedResults, setSelectedResults] = useState({});
-    const [modalOpen, setModalOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const nav = useNavigate();
     const { token } = theme.useToken();
-
-    /**
-     * Effect to detect external trigger for submission.
-     */
-    useEffect(() => {
-        if (send) {
-            handleSubmit();
-            setSend(false);
-        }
-    }, [send]);
 
     /**
      * Handles selecting a team for a specific match.
@@ -73,54 +59,29 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
     };
 
     /**
-     * Finalizes the submission of all predictions.
+     * Informa hacia arriba de lo que hay relleno y de lo que habría que enviar.
+     *
+     * Un partido está completo cuando tiene ganador y —salvo en BO1, que no lo
+     * lleva— marcador.
      */
-    const sendPredictions = async () => {
-        try {
-            setIsSubmitting(true);
-            const user = await API.getUserByToken();
+    useEffect(() => {
+        if (!onChange) return;
 
-            const predictionPromises = data.map(match => {
-                const winnerId = selectedTeams[match.id];
-                const result = match.format === 'BO1' ? '1-0' : selectedResults[match.id];
+        const complete = data.filter(match =>
+            selectedTeams[match.id] && (match.format === 'BO1' || selectedResults[match.id])
+        );
 
-                return API.post('/predictions/set', {
-                    user_id: user.id,
-                    match_id: match.id,
-                    winner: winnerId,
-                    description: result,
-                    type: 'score'
-                });
-            });
-
-            await Promise.all(predictionPromises);
-            showAlert('success', "¡Predicciones enviadas con éxito!");
-            nav('/', { state: { leagueId } });
-        } catch (error) {
-            console.error("Error submitting predictions:", error);
-            //showAlert('error', "No se pudieron enviar las predicciones");
-        } finally {
-            setIsSubmitting(false);
-            setModalOpen(false);
-        }
-    };
-
-    /**
-     * Validates and initiatives the submission process.
-     */
-    const handleSubmit = (e) => {
-        if (e) e.preventDefault();
-
-        const allTeamsSelected = data.every(match => selectedTeams[match.id]);
-        const allResultsSelected = data.every(match => match.format === 'BO1' || selectedResults[match.id]);
-
-        if (!allTeamsSelected || !allResultsSelected) {
-            showAlert('error', "Debes completar todas las predicciones antes de enviar.");
-            return;
-        }
-
-        setModalOpen(true);
-    };
+        onChange({
+            done: complete.length,
+            total: data.length,
+            payload: complete.map(match => ({
+                match_id: match.id,
+                winner: selectedTeams[match.id],
+                description: match.format === 'BO1' ? '1-0' : selectedResults[match.id],
+                type: 'score'
+            }))
+        });
+    }, [selectedTeams, selectedResults, data, onChange]);
 
     return (
         <Skeleton loading={data.length === 0} active>
@@ -180,16 +141,6 @@ export default function PredictionForm({ send, setSend, data, leagueId }) {
                         </Row>
                     </Card>
                 ))}
-
-                <ModalInfo
-                    title="Confirmar Envío"
-                    description="¿Estás listo para enviar tus predicciones? No podrás cambiarlas una vez enviadas."
-                    open={modalOpen}
-                    onSuccess={sendPredictions}
-                    onClose={() => setModalOpen(false)}
-                    okText="Confirmar"
-                    cancelText="Cancelar"
-                />
             </div>
         </Skeleton>
     );

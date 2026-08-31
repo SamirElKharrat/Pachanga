@@ -15,6 +15,8 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
         results: [],
         favoriteTeams: [],
         weeks: [],
+        questions: [],
+        questionAnswers: [],
         currentUser: null,
         loading: true,
         predictionsMade: false
@@ -71,11 +73,20 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                 let matches = [];
                 let predictions = [];
                 let results = [];
+                let questions = [];
+                let questionAnswers = [];
                 let predictionsMade = false;
 
                 const weekData = weeks.find(w => w.id === selectedWeek) || weeks[weeks.length - 1];
-                
+
                 if (weekData) {
+                    // Fuera del `if (matches.length > 0)` de abajo a propósito: una
+                    // jornada puede tener preguntas y no tener partidos.
+                    [questions, questionAnswers] = await Promise.all([
+                        API.get(`/questions/getByWeek/${leagueId}/${weekData.id}`).catch(() => []),
+                        API.get(`/questions/answers/${leagueId}/${weekData.id}`).catch(() => []),
+                    ]);
+
                     const matchesResponse = await API.get(`/matches/getByWeek/${leagueId}/${weekData.start}T00:00:00/${weekData.end}T23:59:59`);
                     matches = matchesResponse.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -104,6 +115,8 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                     results,
                     favoriteTeams: formattedFavorites,
                     weeks,
+                    questions,
+                    questionAnswers,
                     currentUser: currentUserParticipant,
                     loading: false,
                     predictionsMade

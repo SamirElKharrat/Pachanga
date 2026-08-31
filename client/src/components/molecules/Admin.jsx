@@ -5,7 +5,8 @@ import StatsRecalc from '../atoms/StatsRecalc';
 import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
-    ControlOutlined, FileTextOutlined, BarChartOutlined
+    ControlOutlined, FileTextOutlined, BarChartOutlined,
+    QuestionCircleOutlined, NotificationOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -106,6 +107,35 @@ const Admin = () => {
         },
         {
             key: '8',
+            label: <span><QuestionCircleOutlined /> Preguntas</span>,
+            children: (
+                // Se crea con la correcta en blanco y se vuelve a editar al cerrar la
+                // jornada para marcarla: ese guardado es el que reparte los puntos.
+                <AdminPanel
+                    table="questions"
+                    relation={['leagues']}
+                    name="Pregunta"
+                    fields={['select', 'number', 'text', 'taglist', 'option_select']}
+                    names={['leagues', 'week', 'text', 'options', 'correct_option']}
+                />
+            )
+        },
+        {
+            key: '9',
+            label: <span><NotificationOutlined /> Novedades</span>,
+            children: (
+                // Una fila por cambio. La versión se repite en todas las líneas que
+                // pertenecen a ella: es la etiqueta que las agrupa al pintarlas.
+                <AdminPanel
+                    table="changelog"
+                    name="Novedad"
+                    fields={['text', 'date', 'select', 'textarea']}
+                    names={['version', 'release_date', 'kind', 'text']}
+                />
+            )
+        },
+        {
+            key: '10',
             label: <span><BarChartOutlined /> Estadísticas</span>,
             children: <StatsRecalc />
         }
