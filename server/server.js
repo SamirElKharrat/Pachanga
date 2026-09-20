@@ -22,6 +22,7 @@ const QuestionAnswer = require('./models/questionAnswer');
 // No tiene asociaciones: se requiere para que `db.sync` sepa que existe. Quitarlo
 // parece limpieza y deja la tabla sin crear en un despliegue nuevo.
 const Changelog = require('./models/changelog'); // eslint-disable-line no-unused-vars
+const Rule = require('./models/rule');
 
 const app = express();
 const PORT = 3001;
@@ -126,6 +127,9 @@ Question.hasMany(QuestionAnswer, { as: 'Answers', foreignKey: 'question_id' });
 QuestionAnswer.belongsTo(User, { as: 'User', foreignKey: 'user_id' });
 User.hasMany(QuestionAnswer, { as: 'QuestionAnswers', foreignKey: 'user_id' });
 
+// Rule relations
+Rule.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
+League.hasMany(Rule, { as: 'Rules', foreignKey: 'league_id' });
 
 const hallController = require('./controllers/hallController');
 const pachangaController = require('./controllers/pachangaController');

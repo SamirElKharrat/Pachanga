@@ -14,6 +14,7 @@ const pachangaRoute = require("./pachanga");
 const statsRoute = require("./stats");
 const questionRoute = require("./question");
 const changelogRoute = require("./changelog");
+const ruleRoute = require("./rule");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -30,5 +31,6 @@ router.use("/pachanga", pachangaRoute);
 router.use("/stats", statsRoute);
 router.use("/questions", questionRoute);
 router.use("/changelog", changelogRoute);
+router.use("/rules", ruleRoute);
 
 module.exports = router;
