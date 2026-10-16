@@ -828,7 +828,9 @@ function Home() {
                         loading={loading}
                         styles={{ body: { padding: '12px 10px' } }}
                     >
-                        {(!predictionsMade || matches.length === 0) ? (
+                        {/* Sin la jornada entera hecha —partidos Y preguntas— no se ve
+                            lo de los demás. */}
+                        {(!predictionsMade || !myQuestionsDone || matches.length === 0) ? (
                             <Flex justify="center" align="center" style={{ padding: '40px 16px' }}>
                                 {matches.length === 0 ? (
                                     <Empty description="No hay partidos programados para esta semana" />

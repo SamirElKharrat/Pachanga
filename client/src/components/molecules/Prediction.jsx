@@ -144,11 +144,11 @@ const Prediction = () => {
     const submitAll = async () => {
         setSubmitting(true);
         try {
-            if (questionDraft.payload.length > 0) {
+            if (questionsPending && questionDraft.payload.length > 0) {
                 await API.post('/questions/answer', { answers: questionDraft.payload });
             }
 
-            if (matchDraft.payload.length > 0) {
+            if (matchesPending && matchDraft.payload.length > 0) {
                 const user = await API.getUserByToken();
                 await Promise.all(matchDraft.payload.map(p =>
                     API.post('/predictions/set', { ...p, user_id: user.id })
@@ -447,13 +447,21 @@ const Prediction = () => {
                                 </Flex>
                             )}
 
-                            {tab === 'questions' ? (
-                                <QuestionForm
-                                    key={`q-${selectedLeague}-${selectedWeek}`}
-                                    questions={questions}
-                                    onChange={handleQuestionChange}
-                                />
-                            ) : hasPredicted ? (
+                            {/* Las dos mitades se quedan montadas y solo se oculta la
+                                que no se mira: desmontar un formulario al cambiar de
+                                pestaña tira lo que llevabas relleno. */}
+                            {hasQuestions && (
+                                <div style={{ display: tab === 'questions' ? 'block' : 'none' }}>
+                                    <QuestionForm
+                                        key={`q-${selectedLeague}-${selectedWeek}`}
+                                        questions={questions}
+                                        onChange={handleQuestionChange}
+                                    />
+                                </div>
+                            )}
+
+                            <div style={{ display: tab === 'questions' ? 'none' : 'block' }}>
+                            {hasPredicted ? (
                                 <PredictionTable
                                     result={userCurrentPredictions}
                                     matches={currentMatches}
@@ -475,6 +483,7 @@ const Prediction = () => {
                                     }
                                 />
                             )}
+                            </div>
                         </Skeleton>
                     </Card>
                 </Col>

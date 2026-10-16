@@ -63,8 +63,10 @@ html[data-theme="worlds"] {
      donde el color del acento significa «has ganado algo». */
   --pred-pleno: #c89b3c;
   --pred-pleno-rgb: 200, 155, 60;
-  --pred-acierto: #0ac8b9;
-  --pred-acierto-rgb: 10, 200, 185;
+  /* Amarillo, no turquesa: el turquesa es --success y el acierto parcial
+     tiene que distinguirse del pleno de un vistazo. */
+  --pred-acierto: #f2c94c;
+  --pred-acierto-rgb: 242, 201, 76;
   --pred-fallo: #e05257;
   --pred-fallo-rgb: 224, 82, 87;
   --pred-pendiente: #6e6a61;
