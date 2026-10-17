@@ -112,6 +112,16 @@ const Prediction = () => {
     const questionsPending = unanswered > 0;
     const anythingPending = matchesPending || questionsPending;
 
+    // `total > 0` porque hasta que el formulario avisa por primera vez el borrador
+    // está a 0 de 0, y eso no es «completo».
+    const matchesComplete = !matchesPending || (matchDraft.total > 0 && matchDraft.done >= matchDraft.total);
+    const questionsComplete = !questionsPending || (questionDraft.total > 0 && questionDraft.done >= questionDraft.total);
+
+    // El envío va en dos pasos: primero los partidos y, con todos rellenos,
+    // «Siguiente» lleva a las preguntas, donde ya aparece «Enviar Todo».
+    const showNext = matchesPending && questionsPending && tab === 'matches';
+    const canSubmit = questionsPending ? questionsComplete : matchesComplete;
+
     /**
      * Comprueba que está TODO relleno y abre la confirmación.
      *
@@ -415,11 +425,16 @@ const Prediction = () => {
                                 </Space>
                             )
                         }
-                        // Un solo botón para toda la jornada, esté donde esté puesta la
-                        // pestaña: no se manda media jornada.
+                        // Un solo envío para toda la jornada: no se manda media jornada.
+                        // Mientras queden preguntas, desde los partidos solo se puede
+                        // avanzar a ellas, y únicamente con todos los partidos rellenos.
                         extra={
-                            anythingPending && (
-                                <Button type="primary" size="small" loading={submitting} onClick={handleSubmitAll}>
+                            showNext ? (
+                                <Button type="primary" size="small" disabled={!matchesComplete} onClick={() => setTab('questions')}>
+                                    Siguiente
+                                </Button>
+                            ) : anythingPending && (
+                                <Button type="primary" size="small" loading={submitting} disabled={!canSubmit} onClick={handleSubmitAll}>
                                     Enviar Todo
                                 </Button>
                             )
