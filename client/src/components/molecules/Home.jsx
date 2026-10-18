@@ -62,6 +62,44 @@ function getAnswerInfo(question, participation, answers) {
     };
 }
 
+/** El rótulo pequeño en mayúsculas que encabeza partidos y preguntas. */
+function SectionLabel({ children, style }) {
+    return (
+        <Text
+            strong
+            style={{
+                display: 'block', marginBottom: 8, fontSize: 9,
+                letterSpacing: '0.13em', textTransform: 'uppercase', color: 'var(--text-faint)',
+                ...style,
+            }}
+        >
+            {children}
+        </Text>
+    );
+}
+
+/**
+ * Rótulo de los partidos, con lo que lleva sumado en los que ya tienen resultado.
+ *
+ * Los puntos salen de `prediction.points`, que el servidor mantiene al día al meter
+ * cada resultado (base, marcador exacto, equipo favorito y pleno). Recalcularlos aquí
+ * obligaría a replicar el pleno, que depende del orden de toda la semana.
+ */
+function MatchesLabel({ matchGroup, participation, predictions, results, style }) {
+    const resolved = matchGroup.filter(m => results.some(r => r.match_id === m.id));
+    const won = resolved.reduce(
+        (sum, m) => sum + (getPredInfo(m, participation, predictions, results).pred?.points || 0),
+        0
+    );
+    return (
+        <SectionLabel style={style}>
+            Partidos{resolved.length > 0
+                ? ` · +${won} pts en ${resolved.length} de ${matchGroup.length}`
+                : ' · sin resultados'}
+        </SectionLabel>
+    );
+}
+
 /**
  * La tira de respuestas que va debajo de la rejilla de partidos.
  *
@@ -91,17 +129,11 @@ function QuestionStrip({ questions, participation, answers, isCurrent, revealAns
 
     return (
         <div style={{ marginTop: 13, paddingTop: 11, borderTop: '1px dashed rgba(var(--tint), 0.10)' }}>
-            <Text
-                strong
-                style={{
-                    display: 'block', marginBottom: 8, fontSize: 9,
-                    letterSpacing: '0.13em', textTransform: 'uppercase', color: 'var(--text-faint)',
-                }}
-            >
+            <SectionLabel>
                 Preguntas{settled.length > 0
                     ? ` · +${won} de ${settled.length * QUESTION_POINTS}`
                     : ' · sin corregir'}
-            </Text>
+            </SectionLabel>
 
             <Flex wrap="wrap" gap={8}>
                 {infos.map(({ question, status, answer, hidden }) => {
@@ -201,6 +233,13 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                 </Text>
             </Space>
 
+            <div>
+            <MatchesLabel
+                matchGroup={matchGroup}
+                participation={participation}
+                predictions={predictions}
+                results={results}
+            />
             <Flex
                 wrap="wrap"
                 gap={10}
@@ -258,10 +297,16 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                             ) : (
                                 <Text type="secondary" style={{ fontSize: 18, fontWeight: 300 }}>–</Text>
                             )}
+                            {status !== 'pending' && (
+                                <Text style={{ fontSize: 9.5, fontWeight: 700, color: c.text, lineHeight: 1, opacity: 0.85 }}>
+                                    +{pred?.points || 0}
+                                </Text>
+                            )}
                         </Card>
                     );
                 })}
             </Flex>
+            </div>
 
             <QuestionStrip
                 questions={questions}
@@ -286,6 +331,14 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
                 <Avatar src={getAvatarSrc(participation.User?.logo_url)} icon={<UserOutlined />} size={26} style={{ border: isCurrent ? '2px solid var(--accent)' : '1px solid rgba(var(--tint),0.1)' }} />
                 <Text strong style={{ fontSize: 13, color: isCurrent ? 'var(--accent)' : 'inherit' }}>{participation.User?.username}</Text>
             </Space>
+
+            <MatchesLabel
+                matchGroup={matchGroup}
+                participation={participation}
+                predictions={predictions}
+                results={results}
+                style={{ marginBottom: 0, paddingLeft: 4 }}
+            />
 
             {matchGroup.map(match => {
                 const { pred, predictedTeam, status } = getPredInfo(match, participation, predictions, results);
@@ -329,6 +382,11 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
                                 </Flex>
                             ) : (
                                 <Text type="secondary" style={{ fontSize: 11, opacity: 0.5 }}>—</Text>
+                            )}
+                            {status !== 'pending' && (
+                                <Text style={{ fontSize: 10.5, fontWeight: 700, color: c.text, minWidth: 22, textAlign: 'right' }}>
+                                    +{pred?.points || 0}
+                                </Text>
                             )}
                         </Flex>
                     </Flex>
