@@ -78,24 +78,47 @@ function SectionLabel({ children, style }) {
     );
 }
 
+/** Bonus por marcador exacto según el formato. Igual que en pointsCalculator del servidor. */
+const EXACT_BONUS = { BO1: 0, BO3: 3, BO5: 5 };
+
+/** Lo que vale un pleno de `length` partidos, en total. Igual que plenoBonus del servidor. */
+function plenoBonus(length) {
+    if (length >= 6) return 3;
+    if (length === 5) return 2;
+    if (length >= 3) return 1;
+    return 0;
+}
+
 /**
- * Rótulo de los partidos, con lo que lleva sumado en los que ya tienen resultado.
+ * Rótulo de los partidos: lo que ha sacado frente a lo que podría haber sacado en los
+ * que ya tienen resultado.
  *
- * Los puntos salen de `prediction.points`, que el servidor mantiene al día al meter
- * cada resultado (base, marcador exacto, equipo favorito y pleno). Recalcularlos aquí
- * obligaría a replicar el pleno, que depende del orden de toda la semana.
+ * Lo ganado sale de `prediction.points`, que el servidor mantiene al día. El máximo es
+ * haberlos clavado todos: base + marcador exacto + favorito (si ganó su favorito) + el
+ * pleno que eso habría ido formando. `matchGroup` es la semana entera ordenada por
+ * fecha, que es justo lo que necesita el pleno.
  */
-function MatchesLabel({ matchGroup, participation, predictions, results, style }) {
-    const resolved = matchGroup.filter(m => results.some(r => r.match_id === m.id));
-    const won = resolved.reduce(
-        (sum, m) => sum + (getPredInfo(m, participation, predictions, results).pred?.points || 0),
-        0
-    );
+function MatchesLabel({ matchGroup, participation, predictions, results, favoriteTeams, style }) {
+    const userId = participation.User?.id ?? participation.user_id;
+    const favId = favoriteTeams?.find(f => f.user_id === userId)?.team?.id;
+
+    let won = 0;
+    let max = 0;
+    let streak = 0;
+    for (const m of matchGroup) {
+        const result = results.find(r => r.match_id === m.id);
+        if (!result) continue;
+        streak++;
+        won += getPredInfo(m, participation, predictions, results).pred?.points || 0;
+        max += 2
+            + (EXACT_BONUS[m.format] ?? 0)
+            + (favId != null && favId === result.winner ? 1 : 0)
+            + plenoBonus(streak) - plenoBonus(streak - 1);
+    }
+
     return (
         <SectionLabel style={style}>
-            Partidos{resolved.length > 0
-                ? ` · +${won} pts en ${resolved.length} de ${matchGroup.length}`
-                : ' · sin resultados'}
+            Partidos{streak > 0 ? ` · +${won} de ${max}` : ' · sin resultados'}
         </SectionLabel>
     );
 }
@@ -207,7 +230,7 @@ function getPredInfo(match, participation, predictions, results) {
 }
 
 // ── Desktop: user-centric 6x6 grid of cards ──────────────────────────────────
-function DesktopMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser, questions, questionAnswers, revealAnswers }) {
+function DesktopMatchGroupBlock({ matchGroup, participation, predictions, results, favoriteTeams, currentUser, questions, questionAnswers, revealAnswers }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
     return (
@@ -239,6 +262,7 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
                 participation={participation}
                 predictions={predictions}
                 results={results}
+                favoriteTeams={favoriteTeams}
             />
             <Flex
                 wrap="wrap"
@@ -320,7 +344,7 @@ function DesktopMatchGroupBlock({ matchGroup, participation, predictions, result
 }
 
 // ── Mobile: vertically stacked matches for a single user ────────────────────
-function MobileMatchGroupBlock({ matchGroup, participation, predictions, results, currentUser, questions, questionAnswers, revealAnswers }) {
+function MobileMatchGroupBlock({ matchGroup, participation, predictions, results, favoriteTeams, currentUser, questions, questionAnswers, revealAnswers }) {
     const isCurrent = currentUser?.id === participation.id;
     const { getAvatarSrc } = useAppTheme();
     const { token } = theme.useToken();
@@ -337,6 +361,7 @@ function MobileMatchGroupBlock({ matchGroup, participation, predictions, results
                 participation={participation}
                 predictions={predictions}
                 results={results}
+                favoriteTeams={favoriteTeams}
                 style={{ marginBottom: 0, paddingLeft: 4 }}
             />
 
@@ -918,6 +943,7 @@ function Home() {
                                         participants={visibleParticipants}
                                         predictions={predictions}
                                         results={results}
+                                        favoriteTeams={favoriteTeams}
                                         currentUser={currentUser}
                                         questions={questions}
                                         questionAnswers={questionAnswers}
