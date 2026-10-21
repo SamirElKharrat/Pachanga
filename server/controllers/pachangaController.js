@@ -3,64 +3,12 @@ const User = require('../models/user');
 const League = require('../models/league');
 const LeagueParticipation = require('../models/leagueParticipation');
 const Rule = require('../models/rule');
+const Hall = require('../models/hall');
 const Match = require('../models/match');
 const Team = require('../models/team');
 const Result = require('../models/result');
 const { startOfWeek } = require('./weekController');
 const { Sequelize, Op } = require('sequelize');
-
-/**
- * The Pachanga standings of one year, grouped by user and sorted by points.
- *
- * Shared by the full standings page and the public showcase, so the podium on the
- * landing page can never disagree with the one inside the web.
- *
- * @param {number} year
- * @returns {Promise<Array<{id: number, username: string, logo_url: string|null, totalPoints: number, rank: number, breakdown: Array}>>}
- */
-async function buildStandings(year) {
-    const pointEntries = await PachangaPoint.findAll({
-        where: { year },
-        include: [{
-            model: User,
-            as: 'User',
-            attributes: ['id', 'username', 'logo_url']
-        }],
-        order: [['date', 'DESC'], ['id', 'DESC']]
-    });
-
-    // Group points by user
-    const userMap = {};
-    pointEntries.forEach(entry => {
-        const uid = entry.user_id;
-        if (!userMap[uid]) {
-            userMap[uid] = {
-                id: uid,
-                username: entry.User?.username || `Usuario #${uid}`,
-                logo_url: entry.User?.logo_url || null,
-                totalPoints: 0,
-                breakdown: []
-            };
-        }
-        userMap[uid].totalPoints += entry.points;
-        userMap[uid].breakdown.push({
-            id: entry.id,
-            competition_name: entry.competition_name,
-            points: entry.points,
-            position: entry.position,
-            league_id: entry.league_id,
-            date: entry.date
-        });
-    });
-
-    // Sort by total points descending
-    return Object.values(userMap)
-        .sort((a, b) => b.totalPoints - a.totalPoints)
-        .map((player, idx) => ({
-            ...player,
-            rank: idx + 1
-        }));
-}
 
 /**
  * Get full Pachanga standings grouped by user for a specific year
@@ -70,7 +18,48 @@ exports.getStandings = async (req, res) => {
         const currentYear = new Date().getFullYear();
         const year = parseInt(req.query.year, 10) || currentYear;
 
-        const standings = await buildStandings(year);
+        // Fetch all points for the target year
+        const pointEntries = await PachangaPoint.findAll({
+            where: { year },
+            include: [{
+                model: User,
+                as: 'User',
+                attributes: ['id', 'username', 'logo_url']
+            }],
+            order: [['date', 'DESC'], ['id', 'DESC']]
+        });
+
+        // Group points by user
+        const userMap = {};
+        pointEntries.forEach(entry => {
+            const uid = entry.user_id;
+            if (!userMap[uid]) {
+                userMap[uid] = {
+                    id: uid,
+                    username: entry.User?.username || `Usuario #${uid}`,
+                    logo_url: entry.User?.logo_url || null,
+                    totalPoints: 0,
+                    breakdown: []
+                };
+            }
+            userMap[uid].totalPoints += entry.points;
+            userMap[uid].breakdown.push({
+                id: entry.id,
+                competition_name: entry.competition_name,
+                points: entry.points,
+                position: entry.position,
+                league_id: entry.league_id,
+                date: entry.date
+            });
+        });
+
+        // Sort by total points descending
+        const standings = Object.values(userMap)
+            .sort((a, b) => b.totalPoints - a.totalPoints)
+            .map((player, idx) => ({
+                ...player,
+                rank: idx + 1
+            }));
 
         // Get available years from PachangaPoint and Leagues
         const pointYears = await PachangaPoint.findAll({
@@ -103,7 +92,7 @@ exports.getStandings = async (req, res) => {
 const SHOWCASE_MATCHES = 6;
 
 /**
- * What the public landing page shows: this year's podium and the next matches.
+ * What the public landing page shows: the Hall of Flame podium and the next matches.
  *
  * Public on purpose, like /leagues/active-theme: whoever lands here has no session.
  * So it returns the bare minimum, by hand, field by field. No emails, no roles, no
@@ -117,13 +106,21 @@ const SHOWCASE_MATCHES = 6;
  */
 exports.getShowcase = async (req, res) => {
     try {
-        const year = new Date().getFullYear();
-        const standings = await buildStandings(year);
-        const podium = standings.slice(0, 3).map(p => ({
-            rank: p.rank,
-            username: p.username,
-            logo_url: p.logo_url,
-            totalPoints: p.totalPoints
+        // The podium is the Hall of Flame one: whoever has won the most titles.
+        // Counted straight from Hall, without the sync that /hall/get runs first,
+        // because a visitor must not write to the database.
+        const titles = await Hall.findAll({
+            attributes: ['user_id', [Sequelize.fn('COUNT', Sequelize.col('Hall.id')), 'titles']],
+            include: [{ model: User, as: 'User', attributes: ['username', 'logo_url'] }],
+            group: ['Hall.user_id', 'User.id'],
+            order: [[Sequelize.literal('titles'), 'DESC']],
+            limit: 3
+        });
+        const podium = titles.map((t, idx) => ({
+            rank: idx + 1,
+            username: t.User?.username,
+            logo_url: t.User?.logo_url || null,
+            titles: Number(t.get('titles'))
         }));
 
         const resolved = await Result.findAll({ attributes: ['match_id'], raw: true });
@@ -156,7 +153,7 @@ exports.getShowcase = async (req, res) => {
             // Live first, then by date: the same order as NextGames.
             .sort((a, b) => (b.status === 'live') - (a.status === 'live') || new Date(a.date) - new Date(b.date));
 
-        res.json({ year, podium, nextMatches });
+        res.json({ podium, nextMatches });
     } catch (error) {
         console.error("Error in getShowcase:", error);
         res.status(500).json({ error: error.message });

@@ -154,7 +154,10 @@ const UserMenu = ({ children }) => {
     }, [tourKey]);
 
     useEffect(() => {
-        if (!tourRequested || location.pathname !== '/') return;
+        // En móvil no hay tour: el menú vive plegado en el cajón y la mitad de los
+        // pasos no tendrían a qué señalar. Queda pendiente para cuando entre desde el
+        // ordenador, porque no se marca como visto.
+        if (isMobile || !tourRequested || location.pathname !== '/') return;
         // Inicio carga sus datos al montarse; el margen es para que existan las
         // tarjetas que el tour señala.
         const t = setTimeout(() => {
@@ -162,7 +165,7 @@ const UserMenu = ({ children }) => {
             setTourOpen(true);
         }, 1200);
         return () => clearTimeout(t);
-    }, [tourRequested, location.pathname]);
+    }, [tourRequested, location.pathname, isMobile]);
 
     const startTour = () => {
         if (location.pathname !== '/') nav('/');
@@ -178,7 +181,7 @@ const UserMenu = ({ children }) => {
 
     const userMenuItems = [
         { key: 'profile', label: 'Mi Perfil', icon: <UserOutlined />, onClick: () => nav('/user') },
-        { key: 'tour', label: 'Ver tutorial', icon: <QuestionCircleOutlined />, onClick: startTour },
+        ...(isMobile ? [] : [{ key: 'tour', label: 'Ver tutorial', icon: <QuestionCircleOutlined />, onClick: startTour }]),
         { type: 'divider' },
         {
             key: 'logout',
@@ -486,7 +489,7 @@ const UserMenu = ({ children }) => {
                 </div>
             </Modal>
 
-            <WelcomeTour open={tourOpen} onClose={closeTour} />
+            <WelcomeTour open={tourOpen && !isMobile} onClose={closeTour} />
 
             <ChangelogModal
                 open={changelogOpen}

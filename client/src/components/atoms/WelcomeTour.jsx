@@ -10,7 +10,7 @@ const STEPS = [
     {
         target: 'next-games',
         title: 'Próximos partidos',
-        description: 'Aquí salen los partidos que aún puedes predecir. Pulsa uno para ir a Predicciones y elige ganador y marcador. Puedes cambiarlo hasta que empiece.',
+        description: 'Aquí salen los partidos. Pulsa uno para ir a Predicciones y elige ganador y marcador.',
         placement: 'bottom',
     },
     {
@@ -22,13 +22,13 @@ const STEPS = [
     {
         target: 'league-ranking',
         title: 'Clasificación de la liga',
-        description: 'Tus puntos en esta liga. Ojo a las rachas: 3, 5 y 6 plenos en la misma semana dan puntos extra.',
+        description: 'Tus puntos en esta liga. Aquí verás tus puntos y los de tus contrincantes.',
         placement: 'right',
     },
     {
         target: 'menu-predictions',
         title: 'Tus predicciones',
-        description: 'Todas las que has hecho, por liga y semana. Aquí también eliges tu equipo favorito: un pleno con él vale +1.',
+        description: 'Todas las que has hecho, por liga y semana.',
         placement: 'right',
     },
     {

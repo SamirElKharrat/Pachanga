@@ -1,0 +1,350 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PORTADA
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Solo tokens de tokens.css: el modo Worlds los redefine y la portada se pone
+   en oro sin tocar nada aquí. Si hace falta un color nuevo, va en tokens.css y
+   en worlds.css, nunca un hex suelto en este archivo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.landing {
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── Hero ── */
+.landing-hero {
+  position: relative;
+  padding: 24px 0 8px;
+}
+
+/* Dos manchas de luz detrás del hero. Le quitan la seriedad de bloque recto sin
+   meter ninguna imagen. */
+.landing-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+.landing-glow.is-accent {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  right: -60px;
+  background: rgba(var(--accent-rgb), 0.28);
+}
+.landing-glow.is-flame {
+  width: 320px;
+  height: 320px;
+  bottom: -160px;
+  left: -120px;
+  background: rgba(var(--flame-rgb), 0.16);
+}
+.landing-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-title.ant-typography {
+  font-size: clamp(36px, 5.2vw, 58px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 18px;
+  text-wrap: balance;
+}
+.landing-title-hl {
+  background: var(--hof-flame-gradient);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* El trazo un pelo más abajo para que el degradado no corte los acentos. */
+  padding-bottom: 0.06em;
+}
+
+/* ── Abanico de predicciones ── */
+.landing-fan {
+  position: relative;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.landing-fan-card {
+  position: absolute;
+  width: 118px;
+  min-height: 150px;
+  border-radius: 14px;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 18px 40px -18px rgba(var(--tint), 0.08), 0 12px 24px -12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background-color: var(--bg-surface);
+}
+.landing-fan-card .pick {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-strong);
+  line-height: 1;
+}
+.landing-fan-card .score {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+.landing-fan-card .match {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.landing-fan:hover .landing-fan-card {
+  transform: var(--spread) !important;
+}
+
+/* La pegatina de «¡Pleno!». Va torcida a propósito. */
+.landing-sticker {
+  position: absolute;
+  z-index: 5;
+  top: 14px;
+  right: calc(50% - 150px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--on-medal);
+  background: linear-gradient(135deg, var(--medal-gold), var(--medal-gold-deep));
+  box-shadow: 0 8px 20px rgba(var(--medal-gold-rgb), 0.35);
+  transform: rotate(9deg);
+  white-space: nowrap;
+}
+
+/* ── Capturas de la web ── */
+.landing-shots {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* Las pestañas son las del filtro de año de la web (YearFilter). */
+.landing-shots-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.landing-shots-tabs::-webkit-scrollbar { display: none; }
+.landing-shots-tabs button {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(var(--tint), 0.5);
+  transition: var(--transition);
+}
+/* --text-strong y no --on-accent: en Worlds --on-accent es oscuro y no se leería. */
+.landing-shots-tabs button:hover { color: var(--text-strong); }
+.landing-shots-tabs button.is-active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-mid));
+  color: var(--on-accent);
+  box-shadow: 0 2px 8px rgba(var(--accent-mid-rgb), 0.4);
+}
+.landing-shots-tabs button:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
+}
+
+.landing-shots-frame {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--tint), 0.1);
+  background: var(--bg-surface);
+  box-shadow:
+    0 40px 80px -40px rgba(var(--accent-rgb), 0.45),
+    0 24px 48px -24px rgba(0, 0, 0, 0.6);
+}
+.landing-shots-chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-surface-deep);
+  border-bottom: 1px solid rgba(var(--tint), 0.06);
+}
+.landing-shots-chrome .dots { display: flex; gap: 6px; }
+.landing-shots-chrome .dots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(var(--tint), 0.15);
+}
+.landing-shots-chrome .url {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(var(--tint), 0.05);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.landing-shots-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1600 / 820;
+  object-fit: cover;
+  object-position: top left;
+  background: var(--bg-base);
+}
+.landing-shots-caption.ant-typography {
+  font-size: 15px;
+  min-height: 1.6em;
+}
+
+/* ── Pasos ── */
+.landing-step.ant-card {
+  height: 100%;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.landing-step.ant-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(var(--accent-rgb), 0.5);
+}
+/* El número grande y desvaído del fondo: es el orden real de los pasos. */
+.landing-step-num {
+  position: absolute;
+  right: 14px;
+  bottom: -18px;
+  font-size: 96px;
+  font-weight: 900;
+  line-height: 1;
+  color: rgba(var(--tint), 0.04);
+  pointer-events: none;
+  user-select: none;
+}
+.landing-step-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+/* ── Fichas de puntos ── */
+.landing-points {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+.landing-point {
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(var(--tint), 0.03);
+  border: 1px solid rgba(var(--tint), 0.07);
+  transition: transform 0.2s ease;
+}
+.landing-point:hover {
+  transform: translateY(-3px) rotate(-1deg);
+}
+.landing-point-value {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Podio ── */
+.landing-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+  padding-top: 8px;
+}
+.landing-podium-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.landing-podium-name {
+  font-weight: 700;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.landing-podium-step {
+  width: 100%;
+  border-radius: 12px 12px 4px 4px;
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--on-medal);
+}
+.landing-podium-col.is-1 .landing-podium-step { height: 120px; background: linear-gradient(180deg, var(--medal-gold), var(--medal-gold-deep)); }
+.landing-podium-col.is-2 .landing-podium-step { height: 88px;  background: linear-gradient(180deg, var(--medal-silver), var(--medal-silver-deep)); }
+.landing-podium-col.is-3 .landing-podium-step { height: 64px;  background: linear-gradient(180deg, var(--medal-bronze), var(--medal-bronze-deep)); }
+.landing-podium-col.is-1 .ant-avatar { box-shadow: 0 0 0 3px var(--medal-gold), 0 0 24px rgba(var(--medal-gold-rgb), 0.45); }
+.landing-podium-col.is-2 .ant-avatar { box-shadow: 0 0 0 3px var(--medal-silver); }
+.landing-podium-col.is-3 .ant-avatar { box-shadow: 0 0 0 3px var(--medal-bronze); }
+
+/* ── Cierre ── */
+.landing-cta {
+  position: relative;
+  border-radius: 20px;
+  padding: 1px;
+  background: var(--hof-flame-gradient);
+}
+.landing-cta-inner {
+  border-radius: 19px;
+  padding: 32px 28px;
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .landing-fan { height: 210px; }
+  .landing-fan-card { width: 96px; min-height: 124px; }
+  .landing-fan-card .pick { font-size: 21px; }
+  .landing-sticker { right: 8px; top: 4px; }
+  .landing-cta-inner { padding: 24px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-fan-card,
+  .landing-step.ant-card,
+  .landing-point { transition: none; }
+  .landing-fan:hover .landing-fan-card { transform: none; }
+}
