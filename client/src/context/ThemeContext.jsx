@@ -9,6 +9,7 @@ const ThemeContext = createContext();
 // Claves de localStorage, en un sitio para que no se dupliquen por ahí sueltas.
 const KEY_PREFERENCE   = 'pachanga_theme_preference';
 const KEY_GIFS         = 'pachanga_gifs_enabled';
+const KEY_GUILLENT     = 'pachanga_guillent';
 const KEY_WORLDS_CACHE = 'pachanga_worlds_season';
 const KEY_WORLDS_OPTOUT = 'pachanga_worlds_optout';
 
@@ -39,6 +40,11 @@ export const ThemeProvider = ({ children }) => {
 
     const [gifsEnabled, setGifsEnabled] = useState(() => {
         return localStorage.getItem(KEY_GIFS) !== 'false';
+    });
+
+    // «Guillen't»: quita las ranas de ¿Está ganando Guille?. Apagado por defecto.
+    const [guillent, setGuillent] = useState(() => {
+        return localStorage.getItem(KEY_GUILLENT) === 'true';
     });
 
     // ── Temporada de Worlds ──────────────────────────────────────────────────
@@ -165,6 +171,11 @@ export const ThemeProvider = ({ children }) => {
         localStorage.setItem(KEY_GIFS, enabled);
     };
 
+    const toggleGuillent = (enabled) => {
+        setGuillent(enabled);
+        localStorage.setItem(KEY_GUILLENT, enabled);
+    };
+
     /** Apagar o volver a encender el modo Worlds desde Opciones. */
     const changeModoWorlds = (enabled) => {
         setWorldsOptOut(!enabled);
@@ -179,6 +190,8 @@ export const ThemeProvider = ({ children }) => {
             isLightMode,
             gifsEnabled,
             toggleGifs,
+            guillent,
+            toggleGuillent,
             // ── Worlds ──
             isWorlds,                                   // ¿se está viendo la piel del mundial?
             worldsSeason,                               // ¿hay mundial en curso, lo mire quien lo mire?

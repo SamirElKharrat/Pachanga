@@ -24,12 +24,15 @@ import {
     FireOutlined,
     InfoCircleOutlined,
     QuestionCircleOutlined,
+    StopOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
 import BrandMark from './BrandMark';
 import ChangelogModal from './ChangelogModal';
 import WelcomeTour from './WelcomeTour';
+import { croakOnce } from '../../utils/croak';
+import { GUILLE_ID } from '../../constants/pachanga';
 
 const { Content, Sider, Header } = Layout;
 const { Text } = Typography;
@@ -74,6 +77,7 @@ const getMenuItems = (isAdmin, navigate) => {
 const UserMenu = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState(null);
+    const isGuille = user?.id === GUILLE_ID;
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [changelogOpen, setChangelogOpen] = useState(false);
     const [changelog, setChangelog] = useState([]);
@@ -87,7 +91,7 @@ const UserMenu = ({ children }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     // Context & settings
-    const { themePreference, changeTheme, isLightMode, gifsEnabled, toggleGifs, getAvatarSrc,
+    const { themePreference, changeTheme, isLightMode, gifsEnabled, toggleGifs, guillent, toggleGuillent, getAvatarSrc,
         isWorlds, worldsSeason, changeModoWorlds } = useTheme();
 
     const nav = useNavigate();
@@ -464,6 +468,27 @@ const UserMenu = ({ children }) => {
                         <Switch
                             checked={gifsEnabled}
                             onChange={v => toggleGifs(v)}
+                            checkedChildren="Sí"
+                            unCheckedChildren="No"
+                        />
+                    </div>
+
+                    <Divider style={{ margin: 0 }} />
+
+                    {/* Guillen't: las ranas de ¿Está ganando Guille? */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <StopOutlined style={{ fontSize: 17, color: 'var(--danger)' }} />
+                            <div>
+                                <Text strong style={{ display: 'block', fontSize: 14 }}>Guillen't</Text>
+                                <Text type="secondary" style={{ fontSize: 11 }}>Quita las ranas de ¿Está ganando Guille?</Text>
+                            </div>
+                        </div>
+                        {/* Guille también ve la opción, pero a él no le funciona: cada
+                            vez que la pulsa solo le croa una rana. */}
+                        <Switch
+                            checked={isGuille ? false : guillent}
+                            onChange={v => (isGuille ? croakOnce() : toggleGuillent(v))}
                             checkedChildren="Sí"
                             unCheckedChildren="No"
                         />

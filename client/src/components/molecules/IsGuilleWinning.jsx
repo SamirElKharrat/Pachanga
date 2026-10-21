@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Typography, Spin, Empty, Flex, Button } from 'antd';
 import { SoundOutlined, MutedOutlined } from '@ant-design/icons';
 import { API } from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
+import { playCroak } from '../../utils/croak';
+import { GUILLE_ID } from '../../constants/pachanga';
 import './css/IsGuilleWinning.css';
 
 const { Title, Text } = Typography;
@@ -49,54 +52,6 @@ function makeFrogs(count) {
             pitch: random(0.85, 1.25),
         };
     });
-}
-
-/**
- * Un croac sintetizado con Web Audio, sin ningún archivo de sonido: un diente de
- * sierra grave que baja de tono, con trémolo rápido para que raspe y dos golpes de
- * volumen («cro-ac»). `pitch` hace que cada rana suene un poco distinta.
- *
- * @param {AudioContext} ctx
- * @param {number} [pitch=1]
- */
-function playCroak(ctx, pitch = 1) {
-    const t = ctx.currentTime;
-
-    const out = ctx.createGain();
-    out.gain.setValueAtTime(0.0001, t);
-    out.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
-    out.gain.exponentialRampToValueAtTime(0.04, t + 0.11);
-    out.gain.exponentialRampToValueAtTime(0.4, t + 0.16);
-    out.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
-    out.connect(ctx.destination);
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 1100;
-    filter.Q.value = 8;
-    filter.connect(out);
-
-    // El trémolo: una ganancia que oscila muy rápido sobre la voz.
-    const rasp = ctx.createGain();
-    rasp.gain.value = 0.6;
-    rasp.connect(filter);
-    const lfo = ctx.createOscillator();
-    lfo.type = 'square';
-    lfo.frequency.value = 42 * pitch;
-    const lfoDepth = ctx.createGain();
-    lfoDepth.gain.value = 0.45;
-    lfo.connect(lfoDepth).connect(rasp.gain);
-
-    const voice = ctx.createOscillator();
-    voice.type = 'sawtooth';
-    voice.frequency.setValueAtTime(150 * pitch, t);
-    voice.frequency.exponentialRampToValueAtTime(85 * pitch, t + 0.4);
-    voice.connect(rasp);
-
-    voice.start(t);
-    lfo.start(t);
-    voice.stop(t + 0.45);
-    lfo.stop(t + 0.45);
 }
 
 /**
@@ -188,6 +143,8 @@ function FrogPond({ winning, soundOn }) {
 const IsGuilleWinning = () => {
     const [isWinning, setIsWinning] = useState(null);
     const [loading, setLoading] = useState(true);
+    // «Guillen't», en Opciones: sin ranas ni croacs.
+    const { guillent } = useTheme();
     const [error, setError] = useState(null);
     // Puesto, puntos y liga de Guille, para la frase de debajo. Null si no hay liga con gente.
     const [stats, setStats] = useState(null);
@@ -195,8 +152,6 @@ const IsGuilleWinning = () => {
     const [soundOn, setSoundOn] = useState(() => {
         try { return localStorage.getItem('pachanga.guille.sound') !== 'off'; } catch { return true; }
     });
-
-    const GUILLE_ID = 27;
 
     useEffect(() => {
         try { localStorage.setItem('pachanga.guille.sound', soundOn ? 'on' : 'off'); } catch { /* sin almacenamiento */ }
@@ -290,17 +245,21 @@ const IsGuilleWinning = () => {
 
     return (
         <div className={`guille-page ${isWinning === 'SÍ' ? 'is-winning' : 'is-losing'}`}>
-            <FrogPond winning={isWinning === 'SÍ'} soundOn={soundOn} />
+            {!guillent && (
+                <>
+                    <FrogPond winning={isWinning === 'SÍ'} soundOn={soundOn} />
 
-            <Button
-                className="guille-sound"
-                shape="round"
-                icon={soundOn ? <SoundOutlined /> : <MutedOutlined />}
-                onClick={() => setSoundOn(on => !on)}
-                aria-pressed={soundOn}
-            >
-                {soundOn ? 'Croac activado' : 'Croac silenciado'}
-            </Button>
+                    <Button
+                        className="guille-sound"
+                        shape="round"
+                        icon={soundOn ? <SoundOutlined /> : <MutedOutlined />}
+                        onClick={() => setSoundOn(on => !on)}
+                        aria-pressed={soundOn}
+                    >
+                        {soundOn ? 'Croac activado' : 'Croac silenciado'}
+                    </Button>
+                </>
+            )}
 
             <div className="guille-verdict">
                 <Title
@@ -315,7 +274,9 @@ const IsGuilleWinning = () => {
                     {isWinning}
                 </Title>
                 <Text type="secondary" className="guille-quote">{quoteFor(isWinning, stats)}</Text>
-                <Text type="secondary" style={{ fontSize: 12, opacity: 0.6 }}>Toca un Guillermo para oírlo</Text>
+                {!guillent && (
+                    <Text type="secondary" style={{ fontSize: 12, opacity: 0.6 }}>Toca un Guillermo para oírlo</Text>
+                )}
             </div>
         </div>
     );

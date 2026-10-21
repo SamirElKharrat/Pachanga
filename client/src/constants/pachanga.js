@@ -22,6 +22,12 @@ export const RANK_STYLES = {
     default: { bg: 'var(--bg-elevated)', glow: null },
 };
 
+/**
+ * El id de usuario de Guille. Lo usan ¿Está ganando Guille? y la opción
+ * «Guillen't», que a él no le deja quitar las ranas.
+ */
+export const GUILLE_ID = 27;
+
 /** Lo que vale acertar una pregunta. Igual que QUESTION_POINTS en el servidor. */
 export const QUESTION_POINTS = 4;
 
