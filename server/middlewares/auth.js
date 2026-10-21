@@ -58,4 +58,38 @@ const requireAdmin = async (req, res, next) => {
     }
 };
 
-module.exports = { authenticateJwtToken, requireAdmin };
+// Check that the user acts on their own account (`:id`), or is an admin.
+// Leaves `req.isAdmin` set so the controller can decide which fields to accept.
+const requireSelfOrAdmin = async (req, res, next) => {
+    try {
+        if (!req.user || !req.user.email) {
+            return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        const user = await User.findOne({
+            where: { email: req.user.email },
+            include: [{
+                model: Role,
+                through: 'UserRoles'
+            }]
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const isAdmin = Boolean(user.Roles && user.Roles.some(role => role.name === 'admin'));
+        if (!isAdmin && String(user.id) !== String(req.params.id)) {
+            return res.status(403).json({ error: 'You can only modify your own account' });
+        }
+
+        req.fullUser = user;
+        req.isAdmin = isAdmin;
+        next();
+    } catch (error) {
+        console.error('Error in requireSelfOrAdmin middleware:', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = { authenticateJwtToken, requireAdmin, requireSelfOrAdmin };

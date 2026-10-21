@@ -67,7 +67,7 @@ exports.createUser = async (req, res) => {
     const roleId = req.body.role ? req.body.role : 8;
     const role = await Role.findByPk(roleId);
     await user.addRole(role);
-    res.status(201).json(user);
+    res.status(201).json(withoutPassword(user));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -143,10 +143,16 @@ exports.changePassword = async (req, res) => {
     }
     const hashedPass = await bcrypt.hash(newPassword, 10);
     const updatedUser = await user.update({ password: hashedPass });
-    res.json(updatedUser);
+    res.json(withoutPassword(updatedUser));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
+}
+
+/** The user as JSON, never with the password hash. */
+function withoutPassword(user) {
+  const { password, ...rest } = user.toJSON();
+  return rest;
 }
 
 // Update user
@@ -156,10 +162,17 @@ exports.updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    const updatedUser = await user.update(req.body);
-    // No enviar la contraseña en la respuesta
-    const { password, ...userWithoutPassword } = updatedUser;
-    res.json(user);
+
+    // El id no se cambia nunca. La contraseña tampoco va por aquí: tiene su ruta
+    // (changePassword, resetPassword). Antes, mandarla en el body la guardaba sin
+    // cifrar. Si un admin la cambia desde el panel, se cifra.
+    const { id, password, ...fields } = req.body;
+    if (password && req.isAdmin) {
+      fields.password = await bcrypt.hash(password, 10);
+    }
+
+    const updatedUser = await user.update(fields);
+    res.json(withoutPassword(updatedUser));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -223,7 +236,7 @@ exports.resetPassword = async (req, res) => {
     }
     const hashedPass = await bcrypt.hash("pachanga123!", 10);
     const updatedUser = await user.update({ password: hashedPass });
-    res.json(updatedUser);
+    res.json(withoutPassword(updatedUser));
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
