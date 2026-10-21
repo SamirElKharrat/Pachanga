@@ -23,11 +23,13 @@ import {
     BarChartOutlined,
     FireOutlined,
     InfoCircleOutlined,
+    QuestionCircleOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
 import BrandMark from './BrandMark';
 import ChangelogModal from './ChangelogModal';
+import WelcomeTour from './WelcomeTour';
 
 const { Content, Sider, Header } = Layout;
 const { Text } = Typography;
@@ -36,9 +38,9 @@ const getMenuItems = (isAdmin, navigate) => {
     const items = [
         { label: 'Inicio', key: '/', icon: <HomeOutlined />, onClick: () => navigate('/') },
         { label: 'Ligas', key: '/leagues', icon: <TrophyOutlined />, onClick: () => navigate('/leagues') },
-        { label: 'Clasificación', key: '/clasificacion', icon: <BarChartOutlined />, onClick: () => navigate('/clasificacion') },
+        { label: 'Clasificación', key: '/clasificacion', 'data-tour': 'menu-standing', icon: <BarChartOutlined />, onClick: () => navigate('/clasificacion') },
         // { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
-        { label: 'Predicciones', key: '/predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
+        { label: 'Predicciones', key: '/predictions', 'data-tour': 'menu-predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
         {
             label: (
                 <span className="hof-menu-item-wrapper">
@@ -136,8 +138,47 @@ const UserMenu = ({ children }) => {
         return () => document.documentElement.style.setProperty('--shell-offset', '0px');
     }, [isMobile, collapsed]);
 
+    // ── Tour de bienvenida ──
+    // Se abre solo la primera vez que alguien entra, y luego cuando lo pide desde su
+    // menú. Siempre sobre Inicio, que es la pantalla que explica: si se pide desde
+    // otra, primero se va a Inicio y se espera a que se pinte.
+    const [tourRequested, setTourRequested] = useState(false);
+    const [tourOpen, setTourOpen] = useState(false);
+    const tourKey = user?.id ? `pachanga.tour.${user.id}` : null;
+
+    useEffect(() => {
+        if (!tourKey) return;
+        let seen = true;
+        try { seen = localStorage.getItem(tourKey) === 'seen'; } catch { /* sin almacenamiento: no se insiste */ }
+        if (!seen) setTourRequested(true);
+    }, [tourKey]);
+
+    useEffect(() => {
+        if (!tourRequested || location.pathname !== '/') return;
+        // Inicio carga sus datos al montarse; el margen es para que existan las
+        // tarjetas que el tour señala.
+        const t = setTimeout(() => {
+            setTourRequested(false);
+            setTourOpen(true);
+        }, 1200);
+        return () => clearTimeout(t);
+    }, [tourRequested, location.pathname]);
+
+    const startTour = () => {
+        if (location.pathname !== '/') nav('/');
+        setTourRequested(true);
+    };
+
+    const closeTour = () => {
+        setTourOpen(false);
+        if (tourKey) {
+            try { localStorage.setItem(tourKey, 'seen'); } catch { /* sin almacenamiento */ }
+        }
+    };
+
     const userMenuItems = [
         { key: 'profile', label: 'Mi Perfil', icon: <UserOutlined />, onClick: () => nav('/user') },
+        { key: 'tour', label: 'Ver tutorial', icon: <QuestionCircleOutlined />, onClick: startTour },
         { type: 'divider' },
         {
             key: 'logout',
@@ -444,6 +485,8 @@ const UserMenu = ({ children }) => {
 
                 </div>
             </Modal>
+
+            <WelcomeTour open={tourOpen} onClose={closeTour} />
 
             <ChangelogModal
                 open={changelogOpen}
