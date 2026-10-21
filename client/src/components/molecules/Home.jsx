@@ -9,6 +9,7 @@ import WinnerCelebration from '../atoms/WinnerCelebration';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 import SegmentedControl from '../atoms/SegmentedControl';
 import { API } from '../../services/api';
+import { STATUS_COLORS, RANK_STYLES, QUESTION_POINTS } from '../../constants/pachanga';
 
 const { Text } = Typography;
 
@@ -22,25 +23,6 @@ function chunkArray(arr, size) {
     }
     return chunks;
 }
-
-const STATUS_COLORS = {
-    pending: { bg: 'rgba(var(--tint), 0.05)', border: 'rgba(var(--tint), 0.12)', text: 'var(--text-dim)' },
-    correct: { bg: 'rgba(var(--success-rgb), 0.12)', border: 'rgba(var(--success-rgb), 0.35)', text: 'var(--success)' },
-    partial: { bg: 'rgba(var(--pred-acierto-rgb), 0.12)', border: 'rgba(var(--pred-acierto-rgb), 0.35)', text: 'var(--pred-acierto)' },
-    wrong: { bg: 'rgba(var(--danger-rgb), 0.12)', border: 'rgba(var(--danger-rgb), 0.35)', text: 'var(--danger)' },
-};
-
-// Colores del puesto en la clasificación lateral. El resplandor es el mismo tono
-// al 33 % — que es lo que valía el `55` hexadecimal que se concatenaba antes.
-const RANK_STYLES = {
-    1: { bg: 'var(--warning-light)', glow: 'rgba(var(--warning-light-rgb), 0.333)' },
-    2: { bg: 'var(--text-dim)',      glow: 'rgba(var(--text-dim-rgb), 0.333)' },
-    3: { bg: 'var(--warning-deep)',  glow: 'rgba(var(--warning-deep-rgb), 0.333)' },
-    default: { bg: 'var(--bg-elevated)', glow: null },
-};
-
-/** Lo que vale acertar una pregunta. Igual que QUESTION_POINTS en el servidor. */
-const QUESTION_POINTS = 4;
 
 /**
  * Cómo le fue a alguien en una pregunta.
@@ -687,6 +669,7 @@ function Home() {
                 {/* Clasificación */}
                 <Col xs={24} lg={8}>
                     <Card
+                        data-tour="league-ranking"
                         title="Clasificación"
                         extra={
                             selectedParticipants.length > 0 ? (
@@ -824,6 +807,7 @@ function Home() {
                 {/* Predicciones */}
                 <Col xs={24} lg={16}>
                     <Card
+                        data-tour="predictions-grid"
                         title="Predicciones de la Semana"
                         loading={loading}
                         styles={{ body: { padding: '12px 10px' } }}
