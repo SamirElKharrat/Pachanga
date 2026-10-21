@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ¿ESTÁ GANANDO GUILLE?
+   ═══════════════════════════════════════════════════════════════════════════
+
+   Guillermos saltando por la pantalla como ranas. Si gana salen muchos y con
+   aro dorado; si no, unos pocos con aro plateado. Solo tokens: con el modo
+   Worlds se repinta solo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.guille-page {
+  position: relative;
+  min-height: 80vh;
+  padding: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.guille-verdict {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 460px;
+  pointer-events: none;
+}
+.guille-verdict .guille-quote {
+  font-size: 17px;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+/* ── Las ranas ──
+   Cada una son dos capas: la de fuera cruza la pantalla a velocidad constante y
+   la de dentro sube y baja. Juntas dibujan los saltos. */
+.guille-pond {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.guille-frog {
+  position: absolute;
+  left: 0;
+  bottom: var(--ground);
+  animation: guilleCross var(--cross) linear var(--delay) infinite;
+  will-change: transform;
+}
+.guille-frog.is-left {
+  animation-name: guilleCrossBack;
+}
+@keyframes guilleCross {
+  from { transform: translateX(-160px); }
+  to { transform: translateX(calc(100vw + 40px)); }
+}
+@keyframes guilleCrossBack {
+  from { transform: translateX(calc(100vw + 40px)); }
+  to { transform: translateX(-160px); }
+}
+
+.guille-frog-hop {
+  animation: guilleHop var(--hop) cubic-bezier(0.33, 0, 0.67, 1) var(--delay) infinite;
+}
+/* Agachado, salto en arco y aterrizaje aplastado: eso es lo que lo hace rana. */
+@keyframes guilleHop {
+  0%   { transform: translateY(0) scale(1.08, 0.9); }
+  12%  { transform: translateY(0) scale(0.95, 1.06); }
+  50%  { transform: translateY(calc(var(--height) * -1)) scale(0.97, 1.03) rotate(var(--tilt)); }
+  88%  { transform: translateY(0) scale(1.1, 0.88); }
+  100% { transform: translateY(0) scale(1.08, 0.9); }
+}
+
+.guille-frog-face {
+  display: block;
+  width: var(--size);
+  aspect-ratio: 260 / 180;
+  border-radius: 50%;
+  object-fit: cover;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: filter 0.2s ease;
+}
+.guille-frog.is-left .guille-frog-face {
+  transform: scaleX(-1);
+}
+.guille-page.is-winning .guille-frog-face {
+  box-shadow: 0 0 0 3px var(--medal-gold), 0 10px 24px -8px rgba(var(--medal-gold-rgb), 0.6);
+}
+.guille-page.is-losing .guille-frog-face {
+  box-shadow: 0 0 0 3px var(--medal-silver-deep), 0 10px 24px -10px rgba(0, 0, 0, 0.6);
+  filter: saturate(0.6);
+}
+.guille-frog-face:hover {
+  filter: saturate(1.2) brightness(1.08);
+}
+
+/* El bocadillo de «¡Croac!» que sale al tocar una rana. */
+.guille-croak {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 6px;
+  padding: 6px 12px;
+  border-radius: 14px 14px 14px 4px;
+  font-weight: 800;
+  font-size: 15px;
+  white-space: nowrap;
+  color: var(--on-medal);
+  background: var(--medal-gold);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  animation: guilleCroak 1s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes guilleCroak {
+  0%   { opacity: 0; transform: translateX(-50%) scale(0.4) rotate(-6deg); }
+  15%  { opacity: 1; transform: translateX(-50%) scale(1.1) rotate(-6deg); }
+  25%  { transform: translateX(-50%) scale(1) rotate(-6deg); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-14px) rotate(-6deg); }
+}
+
+/* ── El botón del sonido ── */
+.guille-sound {
+  position: absolute;
+  z-index: 3;
+  top: 16px;
+  right: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guille-frog,
+  .guille-frog-hop {
+    animation: none;
+  }
+  .guille-frog {
+    transform: translateX(var(--rest-x));
+  }
+}
