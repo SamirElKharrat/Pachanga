@@ -3,7 +3,64 @@ const User = require('../models/user');
 const League = require('../models/league');
 const LeagueParticipation = require('../models/leagueParticipation');
 const Rule = require('../models/rule');
+const Match = require('../models/match');
+const Team = require('../models/team');
+const Result = require('../models/result');
+const { startOfWeek } = require('./weekController');
 const { Sequelize, Op } = require('sequelize');
+
+/**
+ * The Pachanga standings of one year, grouped by user and sorted by points.
+ *
+ * Shared by the full standings page and the public showcase, so the podium on the
+ * landing page can never disagree with the one inside the web.
+ *
+ * @param {number} year
+ * @returns {Promise<Array<{id: number, username: string, logo_url: string|null, totalPoints: number, rank: number, breakdown: Array}>>}
+ */
+async function buildStandings(year) {
+    const pointEntries = await PachangaPoint.findAll({
+        where: { year },
+        include: [{
+            model: User,
+            as: 'User',
+            attributes: ['id', 'username', 'logo_url']
+        }],
+        order: [['date', 'DESC'], ['id', 'DESC']]
+    });
+
+    // Group points by user
+    const userMap = {};
+    pointEntries.forEach(entry => {
+        const uid = entry.user_id;
+        if (!userMap[uid]) {
+            userMap[uid] = {
+                id: uid,
+                username: entry.User?.username || `Usuario #${uid}`,
+                logo_url: entry.User?.logo_url || null,
+                totalPoints: 0,
+                breakdown: []
+            };
+        }
+        userMap[uid].totalPoints += entry.points;
+        userMap[uid].breakdown.push({
+            id: entry.id,
+            competition_name: entry.competition_name,
+            points: entry.points,
+            position: entry.position,
+            league_id: entry.league_id,
+            date: entry.date
+        });
+    });
+
+    // Sort by total points descending
+    return Object.values(userMap)
+        .sort((a, b) => b.totalPoints - a.totalPoints)
+        .map((player, idx) => ({
+            ...player,
+            rank: idx + 1
+        }));
+}
 
 /**
  * Get full Pachanga standings grouped by user for a specific year
@@ -13,48 +70,7 @@ exports.getStandings = async (req, res) => {
         const currentYear = new Date().getFullYear();
         const year = parseInt(req.query.year, 10) || currentYear;
 
-        // Fetch all points for the target year
-        const pointEntries = await PachangaPoint.findAll({
-            where: { year },
-            include: [{
-                model: User,
-                as: 'User',
-                attributes: ['id', 'username', 'logo_url']
-            }],
-            order: [['date', 'DESC'], ['id', 'DESC']]
-        });
-
-        // Group points by user
-        const userMap = {};
-        pointEntries.forEach(entry => {
-            const uid = entry.user_id;
-            if (!userMap[uid]) {
-                userMap[uid] = {
-                    id: uid,
-                    username: entry.User?.username || `Usuario #${uid}`,
-                    logo_url: entry.User?.logo_url || null,
-                    totalPoints: 0,
-                    breakdown: []
-                };
-            }
-            userMap[uid].totalPoints += entry.points;
-            userMap[uid].breakdown.push({
-                id: entry.id,
-                competition_name: entry.competition_name,
-                points: entry.points,
-                position: entry.position,
-                league_id: entry.league_id,
-                date: entry.date
-            });
-        });
-
-        // Sort by total points descending
-        const standings = Object.values(userMap)
-            .sort((a, b) => b.totalPoints - a.totalPoints)
-            .map((player, idx) => ({
-                ...player,
-                rank: idx + 1
-            }));
+        const standings = await buildStandings(year);
 
         // Get available years from PachangaPoint and Leagues
         const pointYears = await PachangaPoint.findAll({
@@ -79,6 +95,70 @@ exports.getStandings = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in getStandings:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/** How many matches the landing page shows. The same cap as NextGames inside the web. */
+const SHOWCASE_MATCHES = 6;
+
+/**
+ * What the public landing page shows: this year's podium and the next matches.
+ *
+ * Public on purpose, like /leagues/active-theme: whoever lands here has no session.
+ * So it returns the bare minimum, by hand, field by field. No emails, no roles, no
+ * points breakdown and, above all, no predictions: inside the web nobody sees
+ * someone else's picks until they have made their own, and that rule cannot have a
+ * back door from outside.
+ *
+ * Read-only too. Unlike /matches/getByWeek it never updates a match status: a
+ * visitor must not write to the database. A match that has started is reported as
+ * live in the response, which is what NextGames does on the client.
+ */
+exports.getShowcase = async (req, res) => {
+    try {
+        const year = new Date().getFullYear();
+        const standings = await buildStandings(year);
+        const podium = standings.slice(0, 3).map(p => ({
+            rank: p.rank,
+            username: p.username,
+            logo_url: p.logo_url,
+            totalPoints: p.totalPoints
+        }));
+
+        const resolved = await Result.findAll({ attributes: ['match_id'], raw: true });
+        const resolvedIds = resolved.map(r => r.match_id).filter(Boolean);
+
+        const matches = await Match.findAll({
+            where: {
+                status: { [Op.ne]: 'finished' },
+                date: { [Op.gte]: startOfWeek() },
+                ...(resolvedIds.length > 0 && { id: { [Op.notIn]: resolvedIds } })
+            },
+            include: [{
+                model: Team,
+                attributes: ['name', 'logo_url', 'acronym'],
+                through: { attributes: [] }
+            }],
+            order: [['date', 'ASC']],
+            limit: SHOWCASE_MATCHES
+        });
+
+        const now = new Date();
+        const nextMatches = matches
+            .map(m => ({
+                id: m.id,
+                date: m.date,
+                format: m.format,
+                status: new Date(m.date) <= now ? 'live' : m.status,
+                Teams: (m.Teams || []).map(t => ({ name: t.name, logo_url: t.logo_url, acronym: t.acronym }))
+            }))
+            // Live first, then by date: the same order as NextGames.
+            .sort((a, b) => (b.status === 'live') - (a.status === 'live') || new Date(a.date) - new Date(b.date));
+
+        res.json({ year, podium, nextMatches });
+    } catch (error) {
+        console.error("Error in getShowcase:", error);
         res.status(500).json({ error: error.message });
     }
 };
