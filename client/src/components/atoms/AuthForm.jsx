@@ -1,9 +1,10 @@
 import { Card, Form, Input, Button, Typography, Space, theme, Checkbox } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined, ArrowRightOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { safeNext } from '../../utils/loginRedirect';
 import BrandMark from './BrandMark';
 
 const { Title, Text } = Typography;
@@ -20,6 +21,8 @@ const AuthForm = ({ method }) => {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const nav = useNavigate();
+    // A dónde volver tras entrar: la ruta que pediste sin sesión (ver SessionGate).
+    const [searchParams] = useSearchParams();
     const { token } = theme.useToken();
 
     const isRegister = method === 'register';
@@ -50,7 +53,7 @@ const AuthForm = ({ method }) => {
                 nav('/login');
             } else {
                 showAlert('success', 'Sesión iniciada con éxito.');
-                nav('/');
+                nav(safeNext(searchParams.get('next')), { replace: true });
             }
         } catch (error) {
             console.error("Auth error:", error);
@@ -71,6 +74,18 @@ const AuthForm = ({ method }) => {
             <div className="mb-5 text-center">
                 <BrandMark logoWidth={180} crestSize={96} wordmark onClick={() => nav('/')} />
             </div>
+
+            {/* Sin sesión, `/` es la portada: para quien llega aquí sin saber qué es esto. */}
+            {!isRegister && (
+                <Button
+                    type="link"
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => nav('/')}
+                    style={{ marginBottom: 16, fontWeight: 600 }}
+                >
+                    Qué es la Pachanga
+                </Button>
+            )}
 
             <Card
                 className="auth-card shadow border-0"

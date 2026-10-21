@@ -1,7 +1,7 @@
 // main.jsx
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Layoutlet from './components/molecules/layoutlet'
+import SessionGate from './components/route/SessionGate'
 import ProtectedRoute from './components/route/ProtectedRoute'
 import Stats from './components/molecules/Stats'
 import Auth from './components/atoms/AuthForm'
@@ -31,7 +31,7 @@ function Root() {
           <BrowserRouter>
             <Routes>
               <Route path='/login' element={<Auth method={"login"} />} />
-              <Route path='/' element={<Layoutlet />}>
+              <Route path='/' element={<SessionGate />}>
                 <Route element={<ProtectedRoute />}>
                   <Route index element={<Home />} />
                   <Route path='/leagues' element={<League />} />

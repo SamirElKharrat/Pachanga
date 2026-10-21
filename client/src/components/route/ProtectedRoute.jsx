@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { API } from '../../services/api';
+import { loginPath } from '../../utils/loginRedirect';
 
 const ProtectedRoute = () => {
     const [isVerified, setIsVerified] = useState(null);
     const nav = useNavigate();
     const location = useLocation();
+    const loginTarget = loginPath(location);
 
     useEffect(() => {
         if (isVerified == null) {
@@ -14,7 +16,7 @@ const ProtectedRoute = () => {
                     setIsVerified(<Outlet />);
                 })
                 .catch(() => {
-                    nav('/login', { state: { error: "The Token has expired, login to get a new one" } })
+                    nav(loginTarget, { state: { error: "The Token has expired, login to get a new one" } })
                 })
         }
 
@@ -33,7 +35,7 @@ const ProtectedRoute = () => {
             .catch(() => {
                 localStorage.removeItem('admin');
             })
-    }, [isVerified, nav, location.pathname, location.search]);
+    }, [isVerified, nav, location.pathname, location.search, loginTarget]);
 
     return isVerified
 
