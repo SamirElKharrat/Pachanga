@@ -23,26 +23,17 @@ const IsGuilleWinning = () => {
                     return;
                 }
 
-                // Get the most recent live league
-                const liveLeagues = leagues
-                    .filter(l => l.status === 'live')
-                    .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                let currentLeague = liveLeagues[0];
-                console.log(liveLeagues);
-
-                // Fallback to the most recent finished league if no live league exists
-                if (!currentLeague) {
-                    const finishedLeagues = leagues
-                        .filter(l => l.status === 'finished')
-                        .sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                    currentLeague = finishedLeagues[0];
-                }
-
-                // Ultimate fallback to the overall most recent league (e.g. scheduled)
-                if (!currentLeague) {
-                    const sortedLeagues = [...leagues].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                    currentLeague = sortedLeagues[0];
-                }
+                // La liga en curso se elige por fechas y no por `status`: el estado
+                // solo se actualiza cuando alguien abre la portada y suele ir con
+                // retraso, y entonces se miraba una liga vieja.
+                const now = new Date();
+                const byNewest = [...leagues].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+                const inProgress = byNewest.filter(l => new Date(l.start_date) <= now && now <= new Date(l.end_date));
+                const started = byNewest.filter(l => new Date(l.start_date) <= now);
+                const currentLeague = inProgress[0]
+                    || byNewest.find(l => l.status === 'live')
+                    || started[0]
+                    || byNewest[0];
 
                 // 2. Get participants and their points for this league
                 const participants = await API.get(`/leagueParticipations/get/participants/${currentLeague.id}`);
@@ -52,11 +43,12 @@ const IsGuilleWinning = () => {
                     return;
                 }
 
-                // Sort by points descending
-                const sorted = [...participants].sort((a, b) => (b.points || 0) - (a.points || 0));
+                // Gana si nadie tiene más puntos que él: empatado arriba también cuenta.
+                const points = p => Number(p.points) || 0;
+                const guille = participants.find(p => Number(p.user_id) === GUILLE_ID);
+                const topPoints = Math.max(...participants.map(points));
 
-                // Check if the top one is Guille
-                if (sorted[0].user_id === GUILLE_ID) {
+                if (guille && points(guille) === topPoints) {
                     setIsWinning('SÍ');
                 } else {
                     setIsWinning('NO');
