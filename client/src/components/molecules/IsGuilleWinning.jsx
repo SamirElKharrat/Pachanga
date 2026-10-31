@@ -23,20 +23,30 @@ const IsGuilleWinning = () => {
                     return;
                 }
 
-                // La liga en curso se elige por fechas y no por `status`: el estado
-                // solo se actualiza cuando alguien abre la portada y suele ir con
-                // retraso, y entonces se miraba una liga vieja.
+                // Ligas candidatas, de más a menos «actual». Se ordena por fechas y no
+                // solo por `status`, que se actualiza con retraso.
                 const now = new Date();
                 const byNewest = [...leagues].sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
-                const inProgress = byNewest.filter(l => new Date(l.start_date) <= now && now <= new Date(l.end_date));
-                const started = byNewest.filter(l => new Date(l.start_date) <= now);
-                const currentLeague = inProgress[0]
-                    || byNewest.find(l => l.status === 'live')
-                    || started[0]
-                    || byNewest[0];
+                const inProgress = l => new Date(l.start_date) <= now && now <= new Date(l.end_date);
+                const started = l => new Date(l.start_date) <= now;
+                const candidates = [
+                    ...byNewest.filter(inProgress),
+                    ...byNewest.filter(l => l.status === 'live'),
+                    ...byNewest.filter(started),
+                ].filter((l, i, all) => all.indexOf(l) === i);
 
-                // 2. Get participants and their points for this league
-                const participants = await API.get(`/leagueParticipations/get/participants/${currentLeague.id}`);
+                // 2. La primera candidata en la que juega Guille. Así no se cuela una
+                // liga de prueba u otra en curso en la que él no está.
+                let participants = null;
+                for (const league of candidates) {
+                    // La semana en curso, igual que la clasificación de Inicio, para
+                    // que las dos lean los mismos puntos.
+                    const rows = await API.get(`/leagueParticipations/get/participants/${league.id}?week=latest`);
+                    if (rows?.some(p => Number(p.user_id) === GUILLE_ID)) {
+                        participants = rows;
+                        break;
+                    }
+                }
 
                 if (!participants || participants.length === 0) {
                     setIsWinning('NO');

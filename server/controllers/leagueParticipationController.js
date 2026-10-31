@@ -68,7 +68,10 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
     const { week } = req.query; // Optional: filter to a specific week
 
     try {
-        const targetWeek = (week !== undefined && week !== "null") ? parseInt(week, 10) : -1;
+        // `?week=latest`: la última semana con puntos de la liga, la que va en curso.
+        const targetWeek = week === 'latest'
+            ? (await leagueParticipation.max('week', { where: { league_id: leagueId } })) ?? -1
+            : (week !== undefined && week !== "null") ? parseInt(week, 10) : -1;
 
         // 1. Obtener los datos acumulados de la semana seleccionada
         let currentWeekRows = await leagueParticipation.findAll({
