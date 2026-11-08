@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Avatar, Tooltip, Typography, Button, Empty, List, Tag, Space, Skeleton, Modal, Flex, theme } from 'antd';
 import { UserOutlined, FilterOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import YearFilter from '../atoms/YearFilter';
 import WinnerCelebration from '../atoms/WinnerCelebration';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 import SegmentedControl from '../atoms/SegmentedControl';
+import RoundPicker from '../atoms/RoundPicker';
+import { defaultRound } from '../../utils/rounds';
 import { showAlert } from '../atoms/AlertInfo';
 import { STATUS_COLORS, RANK_STYLES, QUESTION_POINTS } from '../../constants/pachanga';
 
@@ -371,9 +373,6 @@ function Home() {
         return localStorage.getItem('pachanga_filters_collapsed') === 'true';
     });
 
-    // Ref to track which league the current `weeks` array belongs to
-    const weeksLeagueRef = useRef(null);
-
     const {
         leagues,
         participants,
@@ -410,35 +409,24 @@ function Home() {
         setSelectedYear(year);
     };
 
-    // Cuando cambie la liga, resetear la semana inmediatamente
+    // Cuando cambie la liga, resetear la jornada inmediatamente
     const handleLeagueChange = (val) => {
         setSelectedLeague(val);
         setSelectedWeek(null);
         setSelectedParticipants([]);
-        weeksLeagueRef.current = null; // invalidate
     };
 
-    // Auto-seleccionar semana cuando llegan las semanas de la liga activa
+    // Elegir jornada cuando llegan las de la liga activa: la actual (la última que ya
+    // ha empezado). Cada jornada dice de qué liga es, así que unas que aún sean de la
+    // liga anterior no cuelan; antes hacía falta una ref para eso.
     useEffect(() => {
-        if (weeks.length === 0) return;
-        // Solo actuar si las semanas pertenecen a la liga seleccionada actualmente
-        if (weeksLeagueRef.current === selectedLeague && selectedWeek !== null) return;
+        if (weeks.length === 0 || weeks[0].league_id !== selectedLeague) return;
+        if (selectedWeek !== null && weeks.some(w => w.id === selectedWeek)) return;
+        const target = defaultRound(weeks);
+        if (target) setSelectedWeek(target.id);
+    }, [weeks, selectedLeague, selectedWeek]);
 
-        weeksLeagueRef.current = selectedLeague;
-        const todayStr = new Date().toISOString().split('T')[0];
-        const currentWeek = weeks.find(w => todayStr >= w.start && todayStr <= w.end);
-        if (currentWeek) {
-            setSelectedWeek(currentWeek.id);
-        } else {
-            // Si la liga no ha empezado aún (hoy es antes de la primera semana) -> Semana 1
-            if (todayStr < weeks[0].start) {
-                setSelectedWeek(weeks[0].id);
-            } else {
-                // Si la liga ya terminó (hoy es después del final) -> Última semana
-                setSelectedWeek(weeks[weeks.length - 1].id);
-            }
-        }
-    }, [weeks]);
+    const selectedRound = weeks.find(w => w.id === selectedWeek);
 
 
 
@@ -605,7 +593,7 @@ function Home() {
                                     Liga: <span style={{ color: token.colorText, fontWeight: 600 }}>{leagues.find(l => l.id === selectedLeague)?.name || 'Ninguna'}</span>
                                 </Text>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                    Semana: <span style={{ color: token.colorText, fontWeight: 600 }}>{weeks.find(w => w.id === selectedWeek)?.name || 'Ninguna'}</span>
+                                    Jornada: <span style={{ color: token.colorText, fontWeight: 600 }}>{selectedRound ? `${selectedRound.stageLabel} · ${selectedRound.name}` : 'Ninguna'}</span>
                                 </Text>
                             </Space>
                         ) : (
@@ -636,26 +624,13 @@ function Home() {
                                     </Flex>
                                 </Col>
 
-                                {/* SEMANA */}
-                                <Col xs={24}>
-                                    <Flex vertical gap={8}>
-                                        <Text strong style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', color: 'rgba(var(--tint),0.5)', letterSpacing: '0.08em' }}>Semana</Text>
-                                        {loading && weeks.length === 0 ? (
-                                            <Skeleton.Button active block style={{ height: 32 }} />
-                                        ) : (
-                                            <SegmentedControl
-                                                options={weeks.map(w => {
-                                                    const todayStr = new Date().toISOString().split('T')[0];
-                                                    const isCurrent = todayStr >= w.start && todayStr <= w.end;
-                                                    return { value: w.id, label: `${w.name} ${isCurrent ? '(Actual)' : ''}` };
-                                                })}
-                                                value={selectedWeek}
-                                                onChange={setSelectedWeek}
-                                                disabled={loading && weeks.length === 0}
-                                            />
-                                        )}
-                                    </Flex>
-                                </Col>
+                                {/* FASE Y JORNADA */}
+                                <RoundPicker
+                                    rounds={weeks}
+                                    value={selectedWeek}
+                                    onChange={setSelectedWeek}
+                                    loading={loading}
+                                />
                             </Row>
                         )}
                     </Card>
@@ -813,7 +788,7 @@ function Home() {
                 <Col xs={24} lg={16}>
                     <Card
                         data-tour="predictions-grid"
-                        title="Predicciones de la Semana"
+                        title={selectedRound ? `Predicciones · ${selectedRound.name}` : 'Predicciones de la Jornada'}
                         loading={loading}
                         styles={{ body: { padding: '12px 10px' } }}
                     >
@@ -822,7 +797,7 @@ function Home() {
                         {(!predictionsMade || !myQuestionsDone || matches.length === 0) ? (
                             <Flex justify="center" align="center" style={{ padding: '40px 16px' }}>
                                 {matches.length === 0 ? (
-                                    <Empty description="No hay partidos programados para esta semana" />
+                                    <Empty description="No hay partidos programados en esta jornada" />
                                 ) : (
                                     <Space direction="vertical" align="center">
                                         <Text type="secondary">

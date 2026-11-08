@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { Card } from 'antd';
 import { showAlert } from './AlertInfo';
 import { API } from '../../services/api';
+import { fetchLeagueRounds, defaultRound } from '../../utils/rounds';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -31,6 +32,24 @@ const ANSWER_TYPE_OPTIONS = [{ value: 'choice', label: 'Opciones' }, { value: 't
 /** Si el formulario está describiendo una pregunta de texto. */
 const isTextQuestion = (getFieldValue) => getFieldValue('answer_type') === 'text';
 
+// Las fases de una jornada. Las mismas, y en el mismo orden, que STAGES en
+// server/utils/rounds.js.
+const STAGE_OPTIONS = [
+    { value: 'regular', label: 'Fase regular' },
+    { value: 'playin', label: 'Play-in' },
+    { value: 'swiss', label: 'Fase suiza' },
+    { value: 'playoffs', label: 'Playoffs' },
+    { value: 'quarterfinal', label: 'Cuartos de final' },
+    { value: 'semifinal', label: 'Semifinales' },
+    { value: 'final', label: 'Final' },
+];
+const ROUND_STATUS_LABEL = { scheduled: 'programada', live: 'en juego', settled: 'resuelta' };
+
+// Los desplegables que sí dependen de otro dato. Antes cualquier `select` llamaba a
+// handleSelect, que pedía los equipos de una liga con el valor elegido: elegir un
+// formato o un estado pedía /leagues/getTeams/BO3 y podía saltar un aviso de error.
+const DEPENDENT_SELECTS = ['leagues', 'match_id'];
+
 // Result options per match format
 const RESULT_OPTIONS = {
     BO1: [{ value: '1-0', label: '1-0' }],
@@ -56,17 +75,37 @@ const parseFriendlyDate = (dateStr) => {
 /**
  * A dynamic form for admin CRUD operations.
  */
-const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCount, selectData, onCollect }) => {
+/**
+ * @param {Object} props
+ * @param {Array<string>} [props.optional] - Campos que pueden ir vacíos al crear. El
+ *   resto es obligatorio, como siempre.
+ */
+const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCount, selectData, onCollect, optional = [] }) => {
     const [form]           = Form.useForm();
     const [fileList, setFileList]           = useState([]);
     const [relationData, setRelationData]   = useState([]);
     const [loading, setLoading]             = useState(false);
     const [selectedFormat, setSelectedFormat] = useState(null); // for result_select
+    // Las jornadas de la liga elegida, para el campo `round_select`.
+    const [rounds, setRounds]               = useState([]);
+    const hasRoundField = fields.includes('round_select');
 
     // ── Handle dynamic dependent selects ─────────────────────────────────────
     const handleSelect = useCallback(async (option) => {
         const url = option.name === 'match_id' ? '/matches/getTeams' : '/leagues/getTeams';
         try {
+            // Las jornadas, si el formulario las pide. Al crear se deja elegida la
+            // actual; al editar se respeta la que ya tiene.
+            if (option.name === 'leagues' && hasRoundField) {
+                const list = await fetchLeagueRounds(option.value);
+                setRounds(list);
+                const elegida = form.getFieldValue('round_id');
+                if (!record && !list.some(r => r.roundId === elegida)) {
+                    const actual = defaultRound(list);
+                    form.setFieldValue('round_id', actual ? actual.roundId : undefined);
+                }
+            }
+
             const response = await API.get(`${url}/${option.value}`);
             setRelationData(response.Teams || []);
 
@@ -80,7 +119,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
         } catch {
             showAlert('error', 'Error al cargar datos relacionados');
         }
-    }, [form]);
+    }, [form, hasRoundField, record]);
 
     // ── Pre-fill form when editing / default values ────────────────────────────
     useEffect(() => {
@@ -105,11 +144,11 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 }
             });
             form.setFieldsValue(formattedRecord);
-            if (table === 'matches' && formattedRecord.league_id) {
+            if ((table === 'matches' || hasRoundField) && formattedRecord.league_id) {
                 handleSelect({ value: formattedRecord.league_id, name: 'leagues' });
             }
         } else {
-            if (table === 'matches' && selectData?.length > 0) {
+            if ((table === 'matches' || hasRoundField) && selectData?.length > 0) {
                 const leagueData = selectData.find(d => d.name === 'leagues');
                 if (leagueData && leagueData.data?.length > 0) {
                     const newestLeagueId = leagueData.data[0].value;
@@ -118,7 +157,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 }
             }
         }
-    }, [record, form, names, fields, selectData, table, handleSelect]);
+    }, [record, form, names, fields, selectData, table, handleSelect, hasRoundField]);
 
     const normFile = (e) => (Array.isArray(e) ? e : e?.fileList);
 
@@ -218,7 +257,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
         // explícito.
         const commonProps = {
             name, label,
-            rules: !record ? [{ required: true, message: `${label} es obligatorio` }] : [],
+            rules: !record && !optional.includes(name) ? [{ required: true, message: `${label} es obligatorio` }] : [],
         };
 
         switch (field) {
@@ -287,6 +326,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                 else if (name === 'type')   options = TYPE_OPTIONS;
                 else if (name === 'kind')   options = KIND_OPTIONS;
                 else if (name === 'theme')  options = THEME_OPTIONS;
+                else if (name === 'stage')  options = STAGE_OPTIONS;
                 else if (name === 'winner') options = relationData.map(t => ({ value: t.id ?? t.value, label: t.name ?? t.label }));
                 else {
                     const relName = name === 'match_id' ? 'matches' : (name === 'leagues' ? 'leagues' : name);
@@ -298,7 +338,7 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                     <Form.Item key={name} {...commonProps}>
                         <Select
                             placeholder={`Seleccionar ${label.toLowerCase()}`}
-                            onSelect={(val) => handleSelect({ value: val, name })}
+                            onSelect={DEPENDENT_SELECTS.includes(name) ? (val) => handleSelect({ value: val, name }) : undefined}
                             options={options}
                             showSearch
                             optionFilterProp="label"
@@ -399,6 +439,33 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
                                 </Form.Item>
                             );
                         }}
+                    </Form.Item>
+                );
+
+            // ── La jornada de un partido o de una pregunta ────────────────────
+            // Sale de la liga elegida arriba. Va por id de jornada (round_id), no
+            // por número: el servidor deduce de ella el número que usan las
+            // estadísticas.
+            case 'round_select':
+                return (
+                    <Form.Item
+                        key={name}
+                        {...commonProps}
+                        label="Jornada"
+                        help={rounds.length
+                            ? 'Por defecto, la jornada actual de la liga'
+                            : 'Elige antes la liga. Si aún no tiene jornadas, créalas en la pestaña Jornadas'}
+                    >
+                        <Select
+                            placeholder="Seleccionar jornada"
+                            allowClear={optional.includes(name)}
+                            disabled={rounds.length === 0}
+                            options={rounds.map(r => ({
+                                value: r.roundId,
+                                label: `${r.stageLabel} · ${r.name} (${ROUND_STATUS_LABEL[r.status] || r.status})`,
+                            }))}
+                            style={{ width: '100%', maxWidth: 400 }}
+                        />
                     </Form.Item>
                 );
 

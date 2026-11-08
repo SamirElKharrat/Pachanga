@@ -24,14 +24,40 @@ const contentOf = async (roundId) => {
     return { matches, questions, total: matches + questions };
 };
 
-// Todas, para el panel de administración.
+const STATUS_LABEL = { scheduled: 'Programada', live: 'En juego', settled: 'Resuelta' };
+
+/**
+ * Todas, para el panel de administración: cada jornada con su nombre (el escrito o
+ * el generado), su estado y sus recuentos. El panel pinta una columna por campo, de
+ * ahí los nombres en castellano de los calculados.
+ */
 exports.getAllRounds = async (req, res) => {
     try {
         const rounds = await Round.findAll({
             include: [{ model: League, as: 'League', attributes: ['id', 'name'] }],
             order: [['league_id', 'DESC'], ['order', 'ASC']],
         });
-        res.json(rounds);
+
+        const described = {};
+        for (const leagueId of [...new Set(rounds.map(r => r.league_id))]) {
+            (await describeRounds(leagueId)).forEach(d => { described[d.id] = d; });
+        }
+
+        res.json(rounds.map(r => {
+            const d = described[r.id] || {};
+            return {
+                id: r.id,
+                league_id: r.league_id,
+                League: r.League,
+                order: r.order,
+                stage: r.stage,
+                name: r.name,
+                jornada: d.label,
+                estado: STATUS_LABEL[d.status] || d.status,
+                partidos: d.matches ?? 0,
+                preguntas: d.questions ?? 0,
+            };
+        }));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

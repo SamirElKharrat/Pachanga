@@ -22,9 +22,14 @@ const { Text } = Typography;
 
 // ── Column renderer helpers ───────────────────────────────────────────────────
 const ANSWER_TYPE_LABELS = { choice: 'Opciones', text: 'Texto libre' };
+const STAGE_LABELS = {
+    regular: 'Fase regular', playin: 'Play-in', swiss: 'Fase suiza', playoffs: 'Playoffs',
+    quarterfinal: 'Cuartos de final', semifinal: 'Semifinales', final: 'Final',
+};
 
 const renderCell = (key, text) => {
     if (key === 'answer_type') return ANSWER_TYPE_LABELS[text] || ANSWER_TYPE_LABELS.choice;
+    if (key === 'stage') return STAGE_LABELS[text] || text;
     if (key === 'logo_url' && text) {
         return <img src={text} alt="logo" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 4 }} />;
     }
@@ -44,7 +49,10 @@ const renderCell = (key, text) => {
 /**
  * A generic data management component for administrative tasks.
  */
-const AdminPanel = ({ table, names, fields, relation }) => {
+/**
+ * @param {Array<string>} [optional] - Campos que pueden ir vacíos al crear (BasicForm).
+ */
+const AdminPanel = ({ table, names, fields, relation, optional }) => {
     const [data, setData]                   = useState([]);
     const [filteredData, setFilteredData]   = useState([]);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -57,12 +65,22 @@ const AdminPanel = ({ table, names, fields, relation }) => {
     const [queue, setQueue]                 = useState([]);
     const [sending, setSending]             = useState(false);
     const [deleting, setDeleting]           = useState(false);
+    // Nombre de cada jornada por su id, para enseñar «Jornada 3» y no «12».
+    const [roundLabels, setRoundLabels]     = useState({});
 
     // ── Fetch main data ───────────────────────────────────────────────────────
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const response = await API.get(`/${table}/get`);
+
+            // Partidos y preguntas guardan la jornada por id; su nombre sale de aquí.
+            let labels = {};
+            if (Array.isArray(response) && response.some(item => item.round_id)) {
+                const rounds = await API.get('/rounds/get').catch(() => []);
+                rounds.forEach(r => { labels[r.id] = r.jornada; });
+                setRoundLabels(labels);
+            }
 
             // Una respuesta con forma rara acababa en «response.map is not a
             // function», que no dice nada de lo que ha pasado de verdad: casi siempre
@@ -90,7 +108,12 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                     entry._matchLabel = entry.Match.Teams.map(t => t.name).join(' vs ');
                 }
 
-                // 4. Winner team name (results + predictions)
+                // 4. Jornada (matches + questions)
+                if (entry.round_id && labels[entry.round_id]) {
+                    entry._roundLabel = labels[entry.round_id];
+                }
+
+                // 5. Winner team name (results + predictions)
                 if (entry.Winner?.name) {
                     entry._winnerName = entry.Winner.name;
                 } else if (entry.WinnerTeam?.name) {
@@ -188,6 +211,14 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                     render: (_, record) => <Text ellipsis>{record._matchLabel || record[key]}</Text>
                 };
             }
+            // round_id → el nombre de la jornada
+            if (key === 'round_id') {
+                title = 'Jornada';
+                return {
+                    title, key, dataIndex: key, ellipsis: true,
+                    render: (_, record) => <Text ellipsis>{record._roundLabel || record[key] || '-'}</Text>
+                };
+            }
             // Override winner → show team name
             if (key === 'winner') {
                 title = 'Ganador';
@@ -274,6 +305,7 @@ const AdminPanel = ({ table, names, fields, relation }) => {
             if (valor === null || valor === undefined || valor === '') return null;
             // Una URL de imagen no dice nada en una línea de texto.
             if (clave === 'logo_url') return null;
+            if (clave === 'round_id') return roundLabels[valor] ? String(roundLabels[valor]) : `Jornada #${valor}`;
 
             // league_id viene de la relación `leagues`; los equipos, de `teams`.
             const rel = clave === 'league_id' ? 'leagues' : (clave === 'teams' ? 'teams' : null);
@@ -346,6 +378,7 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                 <Row gutter={[20, 20]}>
                     <Col xs={24} lg={14}>
                         <BasicForm
+                            optional={optional}
                             fields={fields}
                             names={names}
                             table={table}
@@ -438,6 +471,7 @@ const AdminPanel = ({ table, names, fields, relation }) => {
         return (
             <Card title={<Space><TableOutlined />{viewMode === 'CREATE' ? 'Nuevo Registro' : 'Editar Registro'}</Space>} className="border-0 shadow-sm">
                 <BasicForm
+                            optional={optional}
                     fields={fields}
                     names={names}
                     record={recordToProcess}

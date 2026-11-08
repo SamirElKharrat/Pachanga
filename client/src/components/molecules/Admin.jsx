@@ -7,7 +7,7 @@ import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
     ControlOutlined, FileTextOutlined, BarChartOutlined,
-    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined
+    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined, CalendarOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -68,15 +68,34 @@ const Admin = () => {
             )
         },
         {
+            key: '4b',
+            label: <span><CalendarOutlined /> Jornadas</span>,
+            children: (
+                // Orden y nombre pueden ir vacíos: el orden va detrás de la última
+                // jornada de la liga y el nombre se genera a partir de la fase.
+                <AdminPanel
+                    table="rounds"
+                    relation={['leagues']}
+                    name="Jornada"
+                    fields={['select', 'select', 'number', 'text']}
+                    names={['leagues', 'stage', 'order', 'name']}
+                    optional={['order', 'name']}
+                />
+            )
+        },
+        {
             key: '5',
             label: <span><ScheduleOutlined /> Partidos</span>,
             children: (
+                // La jornada puede ir vacía: entonces el servidor le pone la de la
+                // semana de su fecha, como antes.
                 <AdminPanel
                     table="matches"
                     relation={['leagues', 'teams']}
                     name="Partido"
-                    fields={['select', 'date', 'select', 'select', 'multiselect']}
-                    names={['leagues', 'date', 'format', 'status', 'teams']}
+                    fields={['select', 'round_select', 'date', 'select', 'select', 'multiselect']}
+                    names={['leagues', 'round_id', 'date', 'format', 'status', 'teams']}
+                    optional={['round_id']}
                 />
             )
         },
@@ -117,8 +136,8 @@ const Admin = () => {
                     table="questions"
                     relation={['leagues']}
                     name="Pregunta"
-                    fields={['select', 'answer_type', 'number', 'text', 'taglist', 'option_select']}
-                    names={['leagues', 'answer_type', 'week', 'text', 'options', 'correct_option']}
+                    fields={['select', 'answer_type', 'round_select', 'text', 'taglist', 'option_select']}
+                    names={['leagues', 'answer_type', 'round_id', 'text', 'options', 'correct_option']}
                 />
             )
         },

@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API } from '../services/api';
+import { fetchLeagueRounds, defaultRound } from '../utils/rounds';
 
 /**
- * Custom hook to handle data fetching and week calculation for the Home page.
+ * Custom hook to handle data fetching for the Home page.
+ *
+ * `weeks` son las jornadas de la liga (utils/rounds.js): `id` es su orden, que es lo
+ * que se pasa como `selectedWeek`. Ya no se calculan semanas a partir de fechas.
  *
  * `status` es la máquina de la carga: 'loading' → 'ready' | 'error'. Cada cambio de
  * liga o de semana (o `reload`) vuelve a 'loading'. Al fallar se conservan los datos
@@ -60,8 +64,9 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
 
                 const liga = sortedLeagues.find(l => l.id === leagueId);
                 
-                // 2. Week Calculation
-                const weeks = calculateWeeks(liga.start_date, liga.end_date);
+                // 2. Las jornadas de la liga
+                const weeks = liga ? await fetchLeagueRounds(liga.id) : [];
+                if (cancelled) return;
                 
                 // 3. Current User & Participants
                 const currentUserInfo = await API.getUserByToken();
@@ -94,7 +99,7 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                 let questionAnswers = [];
                 let predictionsMade = false;
 
-                const weekData = weeks.find(w => w.id === selectedWeek) || weeks[weeks.length - 1];
+                const weekData = weeks.find(w => w.id === selectedWeek) || defaultRound(weeks);
 
                 if (weekData) {
                     // Fuera del `if (matches.length > 0)` de abajo a propósito: una
@@ -104,7 +109,9 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                         API.get(`/questions/answers/${leagueId}/${weekData.id}`).catch(() => []),
                     ]);
 
-                    const matchesResponse = await API.get(`/matches/getByWeek/${leagueId}/${weekData.start}T00:00:00/${weekData.end}T23:59:59`);
+                    // Los de la jornada, no los de unas fechas: un partido aplazado
+                    // sigue saliendo en la suya.
+                    const matchesResponse = await API.get(`/matches/getByRound/${weekData.roundId}`);
                     matches = matchesResponse.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                     if (matches.length > 0) {
@@ -154,41 +161,4 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
     const reload = useCallback(() => setNonce(n => n + 1), []);
 
     return { ...data, status, loading: status === 'loading', reload };
-};
-
-/**
- * Helper to calculate weeks between two dates, starting from the first Thursday.
- */
-const calculateWeeks = (startDateStr, endDateStr) => {
-    const startDate = new Date(startDateStr);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(endDateStr);
-    endDate.setHours(23, 59, 59, 999);
-
-    const weeks = [];
-    let currentWeekStart = new Date(startDate);
-    const dayOfWeek = currentWeekStart.getDay();
-
-    // Adjust to previous Thursday (4) or current if it's Thursday
-    let daysToThursday = (dayOfWeek === 4) ? 0 : (dayOfWeek > 4 ? -(dayOfWeek - 4) : -(dayOfWeek + 3));
-    currentWeekStart.setDate(currentWeekStart.getDate() + daysToThursday);
-
-    let weekNumber = 1;
-
-    // Show ALL weeks in the league range (not just past weeks)
-    while (currentWeekStart <= endDate) {
-        const currentWeekEnd = new Date(currentWeekStart);
-        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
-
-        weeks.push({
-            id: weekNumber,
-            name: `Semana ${weekNumber}`,
-            start: currentWeekStart.toISOString().split('T')[0],
-            end: currentWeekEnd.toISOString().split('T')[0]
-        });
-
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-        weekNumber++;
-    }
-    return weeks;
 };

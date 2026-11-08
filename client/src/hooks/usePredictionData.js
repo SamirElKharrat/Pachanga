@@ -1,49 +1,13 @@
 import { useState, useEffect } from 'react';
 import { API } from '../services/api';
-
-/**
- * Calculates week intervals from a league start date to today.
- * Same algorithm as useHomeData – weeks start on Thursday.
- */
-const calculateWeeks = (startDateStr, endDateStr) => {
-    const startDate = new Date(startDateStr);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(endDateStr);
-    endDate.setHours(23, 59, 59, 999);
-
-    const weeks = [];
-    let currentWeekStart = new Date(startDate);
-    const dayOfWeek = currentWeekStart.getDay();
-
-    const daysToThursday =
-        dayOfWeek === 4 ? 0 : dayOfWeek > 4 ? -(dayOfWeek - 4) : -(dayOfWeek + 3);
-    currentWeekStart.setDate(currentWeekStart.getDate() + daysToThursday);
-
-    let weekNumber = 1;
-
-    // Show ALL weeks in the league range (not just past weeks)
-    while (currentWeekStart <= endDate) {
-        const currentWeekEnd = new Date(currentWeekStart);
-        currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
-
-        weeks.push({
-            id: weekNumber,
-            name: `Semana ${weekNumber}`,
-            start: currentWeekStart.toISOString().split('T')[0],
-            end: currentWeekEnd.toISOString().split('T')[0],
-        });
-
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-        weekNumber++;
-    }
-    return weeks;
-};
+import { fetchLeagueRounds } from '../utils/rounds';
 
 /**
  * Custom hook for the Prediction page.
  *
  * Phase 1 (runs on mount): loads leagues + user points for selected league.
- * Phase 2 (runs when league + week are set): loads match/prediction/result data.
+ * Phase 1c (when the league changes): loads its jornadas (`weeks`, utils/rounds.js).
+ * Phase 2 (runs when league + jornada are set): loads match/prediction/result data.
  *
  * `leaguesStatus` ('loading' → 'ready' | 'error') separa «no tienes ligas» de «no
  * se pudieron cargar»: las dos dejan `leagues` vacío y antes se pintaban igual.
@@ -125,9 +89,26 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
         return () => { cancelled = true; };
     }, [selectedLeague]);
 
+    // ── Phase 1c: las jornadas de la liga ──────────────────────────────────────
+    // Se vacían al cambiar de liga, para que nadie elija una jornada de la anterior.
+    useEffect(() => {
+        if (!selectedLeague) return;
+        let cancelled = false;
+        setWeeks([]);
+        fetchLeagueRounds(selectedLeague)
+            .then(rounds => { if (!cancelled) setWeeks(rounds); })
+            .catch(err => {
+                console.error('[usePredictionData] rounds fetch failed:', err);
+                if (!cancelled) setError(err.message);
+            });
+        return () => { cancelled = true; };
+    }, [selectedLeague]);
+
     // ── Phase 2: Load week data (when both league + week are known) ───────────
     useEffect(() => {
         if (!selectedLeague || !selectedWeek) return;
+        const week = weeks.find(w => w.id === selectedWeek && w.league_id === selectedLeague);
+        if (!week) return;
         let cancelled = false;
 
         const fetchWeekData = async () => {
@@ -138,25 +119,18 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
                 const liga = leagues.find(l => l.id === selectedLeague);
                 if (!liga) return;
 
-                const allWeeks = calculateWeeks(liga.start_date, liga.end_date);
-                if (!cancelled) setWeeks(allWeeks);
-
-                const week = allWeeks.find(w => w.id === selectedWeek) ?? allWeeks[allWeeks.length - 1];
-                if (!week) return;
-
                 const [allUserPreds, allLeagueMatches, allRes, weekQuestions] = await Promise.all([
                     API.get('/predictions/user').catch(() => []),
                     API.get('/matches/getByLeague/' + liga.id).catch(() => []),
                     API.get('/results/get').catch(() => []),
-                    // La misma numeración de semana que usa el servidor: 1 desde el
-                    // jueves de inicio de liga. Si esto se desalineara, las preguntas
-                    // saldrían en la jornada equivocada.
+                    // `week.id` es el orden de la jornada, el mismo número que guarda
+                    // cada pregunta en `week`.
                     API.get(`/questions/getByWeek/${liga.id}/${week.id}`).catch(() => []),
                 ]);
                 if (cancelled) return;
 
                 const weekMatchesRaw = await API.get(
-                    `/matches/getByWeek/${liga.id}/${week.start}T00:00:00/${week.end}T23:59:59`
+                    `/matches/getByRound/${week.roundId}`
                 ).catch(() => []);
                 if (cancelled) return;
 
@@ -178,14 +152,9 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
 
                 const resultMatchIds = new Set(allRes.map(r => r.match_id));
                 const withResults = allLeagueMatches
-                    .filter(m => {
-                        if (!resultMatchIds.has(m.id)) return false;
-                        const mDate = (m.date || '').substring(0, 10);
-                        return mDate >= week.start && mDate <= week.end;
-                    })
+                    .filter(m => resultMatchIds.has(m.id) && m.round_id === week.roundId)
                     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-                setWeeks(allWeeks);
                 setCurrentMatches(formMatches);
                 setHasPredicted(didPredictAll);
                 setUserCurrentPredictions(userWeekPreds);
@@ -203,7 +172,7 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
 
         fetchWeekData();
         return () => { cancelled = true; };
-    }, [selectedLeague, selectedWeek, leagues, nonce]);
+    }, [selectedLeague, selectedWeek, leagues, weeks, nonce]);
 
     return {
         leagues,

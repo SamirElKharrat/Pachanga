@@ -5,7 +5,7 @@ import { Select, Avatar, Segmented, Space, Flex } from 'antd';
  * A sleek Segmented Control component with responsive mobile fallback.
  * On mobile (<768px) it renders an Ant Design Select dropdown instead.
  * 
- * @param {Object[]} options - Array of options { value, label, logo (optional), badge (optional) }
+ * @param {Object[]} options - Array of options { value, label, logo (optional), badge (optional), icon (optional ReactNode, before the label) }
  * @param {string|number} value - Currently selected value
  * @param {Function} onChange - Callback on change
  * @param {boolean} disabled - Whether the control is disabled/loading
@@ -50,6 +50,7 @@ export default function SegmentedControl({ options, value, onChange, disabled })
                             {opt.logo && typeof opt.logo === 'string' && opt.logo.startsWith('http') && (
                                 <Avatar src={opt.logo} size={16} shape="square" style={{ background: 'transparent', borderRadius: 3 }} />
                             )}
+                            {opt.icon}
                             <span>{opt.label}</span>
                             {opt.badge && <Badge />}
                         </Space>
@@ -74,6 +75,7 @@ export default function SegmentedControl({ options, value, onChange, disabled })
                             {opt.logo && typeof opt.logo === 'string' && opt.logo.startsWith('http') && (
                                 <Avatar src={opt.logo} size={16} shape="square" style={{ background: 'transparent' }} />
                             )}
+                            {opt.icon}
                             <span>{opt.label}</span>
                             {opt.badge && <Badge />}
                         </Space>
