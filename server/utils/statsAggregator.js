@@ -14,7 +14,7 @@ const Question = require('../models/question');
 const QuestionAnswer = require('../models/questionAnswer');
 
 const { startOfWeek } = require('../controllers/weekController');
-const { calculatePredictionBreakdown, QUESTION_POINTS } = require('./pointsCalculator');
+const { calculatePredictionBreakdown, QUESTION_POINTS, isSettled, isAnswerCorrect } = require('./pointsCalculator');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -155,6 +155,8 @@ const computeWeek = async (league, week) => {
 
     // Resolved matches only: an unplayed match is not "available" to anyone yet.
     const resolvedMatches = weekMatches.filter(m => resultMap[m.id]);
+    // Lo mismo con las preguntas: solo cuentan las corregidas.
+    const settledQuestions = weekQuestions.filter(isSettled);
 
     // Every prediction of the week starts at zero, so one whose match lost its result
     // is correctly worth nothing rather than keeping a stale value. Duplicates stay at
@@ -177,7 +179,10 @@ const computeWeek = async (league, week) => {
         points_streak: 0,
         points_favorite: 0,
         points_question: 0,
-        plenos: 0
+        plenos: 0,
+        questions_available: settledQuestions.length,
+        questions_answered: 0,
+        questions_correct: 0
     });
 
     const perUser = {};
@@ -261,20 +266,25 @@ const computeWeek = async (league, week) => {
     const pointsByAnswer = new Map();
     answers.forEach(a => pointsByAnswer.set(a.id, 0));
 
-    const correctByQuestion = {};
-    weekQuestions.forEach(q => {
-        if (q.correct_option !== null) correctByQuestion[q.id] = q.correct_option;
-    });
+    const questionById = {};
+    weekQuestions.forEach(q => { questionById[q.id] = q; });
 
+    // Si acierta lo decide isAnswerCorrect, la misma función que usa la API para
+    // pintar el check: opción elegida o texto aceptado, según el tipo.
     for (const answer of answers) {
-        const correct = correctByQuestion[answer.question_id];
-        if (correct === undefined || answer.answer !== correct) continue;
-
-        pointsByAnswer.set(answer.id, QUESTION_POINTS);
+        const question = questionById[answer.question_id];
+        const correct = question ? isAnswerCorrect(question, answer.answer) : null;
+        if (correct === null) continue;   // sin corregir: ni cuenta ni puntúa
 
         if (!perUser[answer.user_id]) perUser[answer.user_id] = blank(answer.user_id);
-        perUser[answer.user_id].points += QUESTION_POINTS;
-        perUser[answer.user_id].points_question += QUESTION_POINTS;
+        const row = perUser[answer.user_id];
+        row.questions_answered += 1;
+        if (!correct) continue;
+
+        pointsByAnswer.set(answer.id, QUESTION_POINTS);
+        row.questions_correct += 1;
+        row.points += QUESTION_POINTS;
+        row.points_question += QUESTION_POINTS;
     }
 
     const weekRows = Object.values(perUser).map(row => ({ ...row, computed_at: new Date() }));
@@ -510,10 +520,16 @@ exports.rollUpLeague = async (leagueId) => {
             points_exact: 0,
             points_streak: 0,
             points_favorite: 0,
-            points_question: 0
+            points_question: 0,
+            questions_available: 0,
+            questions_answered: 0,
+            questions_correct: 0
         };
 
         acc.matches_available += row.matches_available;
+        acc.questions_available += row.questions_available;
+        acc.questions_answered += row.questions_answered;
+        acc.questions_correct += row.questions_correct;
         acc.predictions += row.predictions;
         acc.wins += row.wins;
         acc.exact_scores += row.exact_scores;

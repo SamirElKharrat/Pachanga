@@ -19,4 +19,8 @@ router.post('/set', authenticateJwtToken, requireAdmin, questionController.creat
 router.put('/update/:id', authenticateJwtToken, requireAdmin, questionController.updateQuestion);
 router.delete('/delete/:id', authenticateJwtToken, requireAdmin, questionController.deleteQuestion);
 
+// Corregir las de texto: ver las respuestas agrupadas y marcar cuáles valen.
+router.get('/groups/:id', authenticateJwtToken, requireAdmin, questionController.getAnswerGroups);
+router.put('/settle/:id', authenticateJwtToken, requireAdmin, questionController.settleTextQuestion);
+
 module.exports = router;

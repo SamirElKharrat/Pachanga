@@ -179,10 +179,72 @@ exports.calculatePredictionBreakdown = async ({
  * What one right answer to a weekly question is worth.
  *
  * Flat, and the same for every question: there is no partial credit to give — you
- * either picked the right option or you did not. It lives here, next to the rest of
- * the scoring, so the number exists in exactly one place.
+ * either got it right or you did not. It lives here, next to the rest of the
+ * scoring, so the number exists in exactly one place.
  */
 exports.QUESTION_POINTS = 4;
+
+/**
+ * Cómo se contesta una pregunta.
+ *
+ * - `choice` eligiendo una de `options`; acierta quien elige `correct_option`.
+ * - `text`   escribiendo; acierta quien escribe algo que, normalizado, coincide con
+ *            alguna de `accepted_answers`. Las aceptadas las marca el admin al
+ *            corregir, agrupando las respuestas parecidas.
+ */
+exports.ANSWER_TYPES = Object.freeze({ CHOICE: 'choice', TEXT: 'text' });
+
+/** Lo más largo que se puede escribir en una respuesta de texto. */
+exports.TEXT_ANSWER_MAX = 60;
+
+/**
+ * La forma con la que se comparan dos respuestas escritas.
+ *
+ * «Caps», «caps», «CAPS » y «Caps!!» son la misma respuesta: minúsculas, sin tildes,
+ * sin signos y sin espacios repetidos. Las letras de otros alfabetos se conservan,
+ * así que un nombre en coreano se compara tal cual.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+exports.normalizeAnswer = (text) => String(text ?? '')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+
+/**
+ * Si una pregunta está corregida.
+ *
+ * `closed_at` es la señal para los dos tipos. Una de texto puede cerrarse sin
+ * ninguna respuesta aceptada (nadie la acertó), así que mirar `correct_option`, como
+ * se hacía antes, la daría por abierta para siempre.
+ *
+ * @param {Object} question
+ * @returns {boolean}
+ */
+exports.isSettled = (question) => question.closed_at !== null && question.closed_at !== undefined;
+
+/**
+ * Si una respuesta acierta su pregunta. `null` mientras la pregunta no esté corregida.
+ *
+ * Es la ÚNICA función que lo decide: la usa el agregador para repartir puntos y la
+ * API para pintar el check, así que las dos cosas no pueden discrepar.
+ *
+ * @param {Object} question
+ * @param {string} answer - El texto que mandó el usuario.
+ * @returns {boolean|null}
+ */
+exports.isAnswerCorrect = (question, answer) => {
+    if (!exports.isSettled(question)) return null;
+    if (question.answer_type === exports.ANSWER_TYPES.TEXT) {
+        const mine = exports.normalizeAnswer(answer);
+        return mine !== '' && (question.accepted_answers || [])
+            .some(accepted => exports.normalizeAnswer(accepted) === mine);
+    }
+    return question.correct_option !== null && answer === question.correct_option;
+};
 
 /**
  * What a pleno of a given length is worth, in total.

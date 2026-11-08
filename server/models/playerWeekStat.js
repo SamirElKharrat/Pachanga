@@ -48,6 +48,24 @@ const PlayerWeekStat = sequelize.define('PlayerWeekStat', {
         allowNull: false,
         defaultValue: 0
     },
+    // Las preguntas, contadas aparte de los partidos: su acierto se mide por
+    // separado y nunca se mezcla con el de los marcadores. `questions_available`
+    // son las corregidas, el denominador; 0 quiere decir «no hubo», no «0 %».
+    questions_available: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    questions_answered: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    questions_correct: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
     // Winner guessed right.
     wins: {
         type: DataTypes.INTEGER,

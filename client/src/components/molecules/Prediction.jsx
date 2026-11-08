@@ -91,7 +91,7 @@ const Prediction = () => {
     } = usePredictionData(selectedLeague, selectedWeek);
 
     // ── Estado de las preguntas de la jornada ─────────────────────────────────
-    const unanswered = questions.filter(q => !q.myAnswer && !q.correct_option).length;
+    const unanswered = questions.filter(q => !q.myAnswer && !q.settled).length;
     const hasQuestions = questions.length > 0;
 
     // Una pestaña que no tiene nada detrás no se enseña, y si estabas en ella al

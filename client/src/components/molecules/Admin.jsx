@@ -2,11 +2,12 @@ import React from 'react';
 import { Card, Tabs, Typography } from 'antd';
 import AdminPanel from '../atoms/AdminPanel';
 import StatsRecalc from '../atoms/StatsRecalc';
+import QuestionCorrection from '../atoms/QuestionCorrection';
 import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
     ControlOutlined, FileTextOutlined, BarChartOutlined,
-    QuestionCircleOutlined, NotificationOutlined
+    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -109,16 +110,22 @@ const Admin = () => {
             key: '8',
             label: <span><QuestionCircleOutlined /> Preguntas</span>,
             children: (
-                // Se crea con la correcta en blanco y se vuelve a editar al cerrar la
-                // jornada para marcarla: ese guardado es el que reparte los puntos.
+                // Las de opciones se crean con la correcta en blanco y se vuelven a
+                // editar al cerrar la jornada para marcarla: ese guardado es el que
+                // reparte los puntos. Las de texto se corrigen en la pestaña siguiente.
                 <AdminPanel
                     table="questions"
                     relation={['leagues']}
                     name="Pregunta"
-                    fields={['select', 'number', 'text', 'taglist', 'option_select']}
-                    names={['leagues', 'week', 'text', 'options', 'correct_option']}
+                    fields={['select', 'answer_type', 'number', 'text', 'taglist', 'option_select']}
+                    names={['leagues', 'answer_type', 'week', 'text', 'options', 'correct_option']}
                 />
             )
+        },
+        {
+            key: '8b',
+            label: <span><CheckSquareOutlined /> Corregir respuestas</span>,
+            children: <QuestionCorrection />
         },
         {
             key: '9',

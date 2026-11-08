@@ -37,11 +37,12 @@ function getAnswerInfo(question, participation, answers) {
     const mine = answers.find(a => a.question_id === question.id && a.user_id === userId);
 
     if (!mine) return { status: 'missing', answer: null };
-    if (!question.correct_option) return { status: 'pending', answer: mine.answer };
-    return {
-        status: mine.answer === question.correct_option ? 'correct' : 'wrong',
-        answer: mine.answer,
-    };
+    // `correct` lo manda el servidor: en las de texto, «faker!!» puede valer como
+    // «Faker», y eso solo lo sabe quien corrigió.
+    if (!question.settled || mine.correct === null || mine.correct === undefined) {
+        return { status: 'pending', answer: mine.answer };
+    }
+    return { status: mine.correct ? 'correct' : 'wrong', answer: mine.answer };
 }
 
 /**
@@ -66,7 +67,7 @@ function QuestionStrip({ questions, participation, answers, isCurrent, revealAns
     const infos = questions.map(q => ({
         question: q,
         ...getAnswerInfo(q, participation, answers),
-        hidden: !isCurrent && !revealAnswers && !q.correct_option,
+        hidden: !isCurrent && !revealAnswers && !q.settled,
     }));
     const settled = infos.filter(i => i.status === 'correct' || i.status === 'wrong');
     const won = infos.filter(i => i.status === 'correct').length * QUESTION_POINTS;
@@ -95,7 +96,9 @@ function QuestionStrip({ questions, participation, answers, isCurrent, revealAns
                         : (missing ? 'Sin responder' : answer);
 
                     return (
-                        <Tooltip key={question.id} title={question.text}>
+                        // En el tooltip va también la respuesta entera: las de texto se
+                        // cortan con «…» en la pastilla.
+                        <Tooltip key={question.id} title={hidden || missing ? question.text : `${question.text} · ${answer}`}>
                             <Flex
                                 align="center"
                                 gap={7}
@@ -122,7 +125,8 @@ function QuestionStrip({ questions, participation, answers, isCurrent, revealAns
                                     <Text
                                         strong
                                         style={{
-                                            display: 'block', fontSize: 12, lineHeight: 1.3,
+                                            display: 'block', fontSize: 12, lineHeight: 1.3, maxWidth: 160,
+                                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                             color: missing ? 'var(--pred-fallo)' : c.text,
                                             fontStyle: (missing || hidden) ? 'italic' : 'normal',
                                             fontWeight: (missing || hidden) ? 400 : 700,
@@ -394,7 +398,7 @@ function Home() {
     // ¿He respondido ya a todo lo que estaba abierto esta jornada? Hasta que sí, las
     // respuestas ajenas sin corregir se tapan: la puerta de `predictionsMade` mira
     // los partidos, y las preguntas se envían aparte.
-    const myQuestionsDone = questions.every(q => q.myAnswer || q.correct_option);
+    const myQuestionsDone = questions.every(q => q.myAnswer || q.settled);
 
     useEffect(() => {
         if (filteredLeagues.length > 0 && (selectedLeague === null || !filteredLeagues.find(l => l.id === selectedLeague))) {

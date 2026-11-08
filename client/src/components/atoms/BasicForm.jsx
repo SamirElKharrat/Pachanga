@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Form, Input, Button, Select, Upload, DatePicker, Switch, Space, Typography, Divider } from 'antd';
+import { Form, Input, Button, Select, Upload, DatePicker, Switch, Space, Typography, Divider, Radio } from 'antd';
 import { PlusOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { Card } from 'antd';
@@ -22,6 +22,14 @@ const KIND_OPTIONS    = [
 ];
 // La piel que lleva la web mientras la liga esté viva. Se marca una vez al crearla.
 const THEME_OPTIONS   = [{ value: 'default', label: 'Normal' }, { value: 'worlds', label: 'Worlds — mundial' }];
+
+// Cómo se contesta una pregunta. Va en su propio tipo de campo (`answer_type`) y no
+// como `select`: todo `select` llama a handleSelect, que pide los equipos de una liga
+// con el valor elegido.
+const ANSWER_TYPE_OPTIONS = [{ value: 'choice', label: 'Opciones' }, { value: 'text', label: 'Texto libre' }];
+
+/** Si el formulario está describiendo una pregunta de texto. */
+const isTextQuestion = (getFieldValue) => getFieldValue('answer_type') === 'text';
 
 // Result options per match format
 const RESULT_OPTIONS = {
@@ -321,16 +329,37 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
             // `mode="tags"` deja escribir valores que no están en ninguna lista, que
             // es justo lo que hace falta: las opciones se inventan al escribir la
             // pregunta. El valor es un array de textos y va tal cual al JSONB.
+            //
+            // Una pregunta de texto no tiene opciones: el campo desaparece.
             case 'taglist':
                 return (
-                    <Form.Item key={name} {...commonProps} help="Escribe cada opción y pulsa Enter">
-                        <Select
-                            mode="tags"
-                            open={false}
-                            placeholder="Sí, No, G2…"
-                            tokenSeparators={[',']}
-                            style={{ width: '100%', maxWidth: 400 }}
-                        />
+                    <Form.Item key={name} noStyle shouldUpdate={(prev, cur) => prev.answer_type !== cur.answer_type}>
+                        {({ getFieldValue }) => (isTextQuestion(getFieldValue) ? null : (
+                            <Form.Item {...commonProps} help="Escribe cada opción y pulsa Enter">
+                                <Select
+                                    mode="tags"
+                                    open={false}
+                                    placeholder="Sí, No, G2…"
+                                    tokenSeparators={[',']}
+                                    style={{ width: '100%', maxWidth: 400 }}
+                                />
+                            </Form.Item>
+                        ))}
+                    </Form.Item>
+                );
+
+            // ── Cómo se contesta una pregunta ─────────────────────────────────
+            // Por defecto, opciones: es lo que eran todas hasta ahora.
+            case 'answer_type':
+                return (
+                    <Form.Item
+                        key={name}
+                        {...commonProps}
+                        label="Tipo de respuesta"
+                        initialValue={record ? undefined : 'choice'}
+                        help="Las de texto se corrigen en la pestaña «Corregir respuestas»"
+                    >
+                        <Radio.Group optionType="button" buttonStyle="solid" options={ANSWER_TYPE_OPTIONS} />
                     </Form.Item>
                 );
 
@@ -343,8 +372,14 @@ const BasicForm = ({ fields, names, record, onCancel, onSuccess, table, maxTagCo
             // días después.
             case 'option_select':
                 return (
-                    <Form.Item key={name} noStyle shouldUpdate={(prev, cur) => prev.options !== cur.options}>
+                    <Form.Item
+                        key={name}
+                        noStyle
+                        shouldUpdate={(prev, cur) => prev.options !== cur.options || prev.answer_type !== cur.answer_type}
+                    >
                         {({ getFieldValue }) => {
+                            // Las de texto no tienen «la opción correcta».
+                            if (isTextQuestion(getFieldValue)) return null;
                             const opts = getFieldValue('options') || [];
                             // Sin `key`: esto no sale de una lista, sale del render-prop
                             // del Form.Item de fuera, que ya la lleva.

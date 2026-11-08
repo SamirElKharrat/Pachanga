@@ -21,7 +21,10 @@ const { Search } = Input;
 const { Text } = Typography;
 
 // ── Column renderer helpers ───────────────────────────────────────────────────
+const ANSWER_TYPE_LABELS = { choice: 'Opciones', text: 'Texto libre' };
+
 const renderCell = (key, text) => {
+    if (key === 'answer_type') return ANSWER_TYPE_LABELS[text] || ANSWER_TYPE_LABELS.choice;
     if (key === 'logo_url' && text) {
         return <img src={text} alt="logo" style={{ width: 36, height: 36, objectFit: 'contain', borderRadius: 4 }} />;
     }

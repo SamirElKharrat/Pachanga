@@ -32,6 +32,12 @@ export const GUILLE_ID = 27;
 export const QUESTION_POINTS = 4;
 
 /**
+ * Lo más largo que se puede escribir en una pregunta de texto. Igual que
+ * TEXT_ANSWER_MAX en server/utils/pointsCalculator.js, que es quien lo hace cumplir.
+ */
+export const TEXT_ANSWER_MAX = 60;
+
+/**
  * Lo que vale cada acierto en un partido, tal como lo cuenta la portada.
  *
  * El cálculo de verdad está en server/utils/pointsCalculator.js

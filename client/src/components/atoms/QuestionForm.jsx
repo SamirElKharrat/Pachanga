@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Radio, Typography, Tag, Empty, Flex, theme } from 'antd';
+import { Radio, Input, Typography, Tag, Empty, Flex, theme } from 'antd';
+import { QUESTION_POINTS, TEXT_ANSWER_MAX } from '../../constants/pachanga';
 
 const { Text } = Typography;
 
-/** Lo que vale acertar una pregunta. Igual que QUESTION_POINTS en el servidor. */
-const QUESTION_POINTS = 4;
+/** Si se contesta escribiendo. Las de antes de existir el tipo son todas de opciones. */
+const isText = (question) => question.answer_type === 'text';
+
+/** Lo escrito, listo para enviar: sin espacios en los bordes. */
+const clean = (value) => (typeof value === 'string' ? value.trim() : value);
 
 /**
  * El estado en que está una pregunta para quien la mira.
@@ -17,9 +21,55 @@ const QUESTION_POINTS = 4;
  * @returns {'open'|'sent'|'settled'}
  */
 const stateOf = (question) => {
-    if (question.correct_option) return 'settled';
+    // `settled` lo manda el servidor (mira `closed_at`). Una de texto puede quedar
+    // corregida sin ninguna respuesta buena, así que `correct_option` no sirve.
+    if (question.settled) return 'settled';
     return question.myAnswer ? 'sent' : 'open';
 };
+
+/** La línea gris bajo el enunciado, ya corregida. */
+const solutionOf = (question) => {
+    if (!isText(question)) return `Respuesta correcta: ${question.correct_option}`;
+    const accepted = question.accepted_answers || [];
+    return accepted.length
+        ? `${accepted.length > 1 ? 'Valían' : 'Valía'}: ${accepted.join(', ')}`
+        : 'Nadie la acertó';
+};
+
+/**
+ * Lo que escribió alguien en una pregunta de texto, ya enviado. Mismos colores que
+ * LockedOption: azul mientras no se corrige, verde o rojo después.
+ */
+function LockedText({ answer, settled, correct }) {
+    const { token } = theme.useToken();
+    const tone = !settled
+        ? { border: token.colorPrimary, text: token.colorPrimary, bg: `${token.colorPrimary}1a` }
+        : correct
+            ? { border: 'var(--success)', text: 'var(--success)', bg: 'rgba(var(--success-rgb), 0.12)' }
+            : { border: 'var(--danger)', text: 'var(--danger)', bg: 'rgba(var(--danger-rgb), 0.10)' };
+
+    return (
+        <div
+            style={{
+                minHeight: 36,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                border: `1px solid ${tone.border}`,
+                background: tone.bg,
+                color: tone.text,
+                overflowWrap: 'anywhere',
+            }}
+        >
+            {answer}
+            {settled && correct && <span aria-hidden="true">✓</span>}
+        </div>
+    );
+}
 
 /**
  * Una opción ya bloqueada. No se pinta con Radio a propósito: un Radio deshabilitado
@@ -91,11 +141,12 @@ export default function QuestionForm({ questions, onChange }) {
     /** Informa hacia arriba de lo respondido y de lo que habría que enviar. */
     useEffect(() => {
         if (!onChange) return;
-        const answered = pending.filter(q => picked[q.id]);
+        // Un texto solo de espacios no cuenta como respondido.
+        const answered = pending.filter(q => clean(picked[q.id]));
         onChange({
             done: answered.length,
             total: pending.length,
-            payload: answered.map(q => ({ question_id: q.id, answer: picked[q.id] })),
+            payload: answered.map(q => ({ question_id: q.id, answer: clean(picked[q.id]) })),
         });
     }, [picked, questions, onChange]);
 
@@ -108,7 +159,8 @@ export default function QuestionForm({ questions, onChange }) {
             {questions.map((question, i) => {
                 const state = stateOf(question);
                 const settled = state === 'settled';
-                const hit = settled && question.myAnswer === question.correct_option;
+                // El acierto lo decide el servidor (mismo cálculo que reparte los puntos).
+                const hit = settled && question.myCorrect === true;
 
                 return (
                     <div
@@ -124,9 +176,11 @@ export default function QuestionForm({ questions, onChange }) {
                                     {question.text}
                                 </Text>
                                 <Text type="secondary" style={{ fontSize: 11 }}>
-                                    {state === 'open' && 'Se corrige al acabar la jornada'}
+                                    {state === 'open' && (isText(question)
+                                        ? 'Respuesta libre · se corrige al acabar la jornada'
+                                        : 'Se corrige al acabar la jornada')}
                                     {state === 'sent' && 'Enviada · pendiente de corregir'}
-                                    {settled && `Respuesta correcta: ${question.correct_option}`}
+                                    {settled && solutionOf(question)}
                                 </Text>
                             </div>
 
@@ -141,7 +195,24 @@ export default function QuestionForm({ questions, onChange }) {
                             )}
                         </Flex>
 
-                        {state === 'open' ? (
+                        {isText(question) ? (
+                            state === 'open' ? (
+                                <Input
+                                    id={`question-${question.id}`}
+                                    aria-label={question.text}
+                                    value={picked[question.id] || ''}
+                                    onChange={e => setPicked(prev => ({ ...prev, [question.id]: e.target.value }))}
+                                    maxLength={TEXT_ANSWER_MAX}
+                                    showCount
+                                    placeholder="Escribe tu respuesta"
+                                    autoComplete="off"
+                                />
+                            ) : question.myAnswer ? (
+                                <LockedText answer={question.myAnswer} settled={settled} correct={hit} />
+                            ) : (
+                                <Text type="secondary" italic style={{ fontSize: 13 }}>No la respondiste</Text>
+                            )
+                        ) : state === 'open' ? (
                             <Radio.Group
                                 value={picked[question.id]}
                                 onChange={e => setPicked(prev => ({ ...prev, [question.id]: e.target.value }))}

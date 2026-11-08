@@ -214,6 +214,54 @@ const ensureQuestionPoints = async () => {
 };
 
 /**
+ * Lo mismo, para las preguntas de texto libre y sus estadísticas.
+ *
+ * Los modelos ya declaran estas columnas, así que sin ellas fallaría cualquier
+ * consulta de preguntas o de estadísticas. Idempotente: una consulta por arranque.
+ *
+ * Además rellena `closed_at` en las preguntas que se corrigieron al crearlas. Hasta
+ * ahora «corregida» se leía en `correct_option`, y `closed_at` solo se ponía al
+ * editar; ahora `closed_at` es la señal, y sin esto esas preguntas volverían a
+ * salir abiertas.
+ */
+const ensureQuestionColumns = async () => {
+  const wanted = {
+    Question: {
+      answer_type: `VARCHAR(16) NOT NULL DEFAULT 'choice'`,
+      accepted_answers: `JSONB NOT NULL DEFAULT '[]'::jsonb`,
+    },
+    PlayerWeekStat: {
+      questions_available: 'INTEGER NOT NULL DEFAULT 0',
+      questions_answered: 'INTEGER NOT NULL DEFAULT 0',
+      questions_correct: 'INTEGER NOT NULL DEFAULT 0',
+    },
+    PlayerLeagueStat: {
+      questions_available: 'INTEGER NOT NULL DEFAULT 0',
+      questions_answered: 'INTEGER NOT NULL DEFAULT 0',
+      questions_correct: 'INTEGER NOT NULL DEFAULT 0',
+    },
+  };
+
+  const [columns] = await db.query(
+    `SELECT table_name, column_name FROM information_schema.columns
+      WHERE table_name IN ('Question', 'PlayerWeekStat', 'PlayerLeagueStat')`
+  );
+  const has = (table, column) => columns.some(c => c.table_name === table && c.column_name === column);
+
+  for (const [table, defs] of Object.entries(wanted)) {
+    for (const [column, ddl] of Object.entries(defs)) {
+      if (has(table, column)) continue;
+      console.log(`Añadiendo ${table}.${column} (la migración no se había lanzado)...`);
+      await db.query(`ALTER TABLE "${table}" ADD COLUMN ${column} ${ddl}`);
+    }
+  }
+
+  await db.query(
+    `UPDATE "Question" SET closed_at = NOW() WHERE correct_option IS NOT NULL AND closed_at IS NULL`
+  );
+};
+
+/**
  * Fills the stats tables the first time the server boots with them in place.
  *
  * Skips itself as soon as there is a single row, so it costs one COUNT on every
@@ -258,6 +306,7 @@ const syncDatabase = async () => {
     await ensureStatsSchema();
     await ensureLeagueTheme();
     await ensureQuestionPoints();
+    await ensureQuestionColumns();
 
     // Auto-inicialización segura en arranque (Render & local)
     try {

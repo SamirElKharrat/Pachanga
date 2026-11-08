@@ -5,6 +5,9 @@ const QuestionAnswer = require('../models/questionAnswer');
 const League = require('../models/league');
 const User = require('../models/user');
 const statsAggregator = require('../utils/statsAggregator');
+const {
+    ANSWER_TYPES, TEXT_ANSWER_MAX, normalizeAnswer, isSettled, isAnswerCorrect,
+} = require('../utils/pointsCalculator');
 
 /**
  * The weekly questions.
@@ -14,10 +17,15 @@ const statsAggregator = require('../utils/statsAggregator');
  *  - Answers are final. Nothing in this file updates one, and the unique index on
  *    (question_id, user_id) makes sure nothing else can either.
  *
- *  - Points are never touched directly. Setting `correct_option` hands the week to
- *    statsAggregator.applyWeekPoints, exactly like entering a result does. Adding
- *    points to LeagueParticipation from here would make them show up in the stats
- *    screens as "added by hand" — see the comment on points_manual.
+ *  - Points are never touched directly. Settling a question (marking the right
+ *    option, or the accepted texts) hands the week to statsAggregator.applyWeekPoints,
+ *    exactly like entering a result does. Adding points to LeagueParticipation from
+ *    here would make them show up in the stats screens as "added by hand" — see the
+ *    comment on points_manual.
+ *
+ *  - Two kinds of question: 'choice' (pick one of `options`) and 'text' (write it).
+ *    Whether an answer is right is decided ONLY by pointsCalculator.isAnswerCorrect,
+ *    and `closed_at` is what says a question is settled, for both kinds.
  */
 
 /**
@@ -52,7 +60,7 @@ exports.getAllQuestions = async (req, res) => {
             // unsettled pays nobody and says nothing about it. Floating them to the
             // top of the panel is the whole safety net.
             order: [
-                [sequelize.literal('correct_option IS NULL'), 'DESC'],
+                [sequelize.literal('closed_at IS NULL'), 'DESC'],
                 ['league_id', 'DESC'],
                 ['week', 'DESC'],
                 ['id', 'ASC']
@@ -108,8 +116,11 @@ exports.getQuestionsByWeek = async (req, res) => {
 
         res.json(questions.map(q => ({
             ...q.dataValues,
+            settled: isSettled(q),
             myAnswer: mine[q.id] ? mine[q.id].answer : null,
-            myPoints: mine[q.id] ? mine[q.id].points : null
+            myPoints: mine[q.id] ? mine[q.id].points : null,
+            // null = sin responder o sin corregir.
+            myCorrect: mine[q.id] ? isAnswerCorrect(q, mine[q.id].answer) : null
         })));
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -125,7 +136,6 @@ exports.getAnswersByWeek = async (req, res) => {
     try {
         const questions = await Question.findAll({
             where: { league_id, week },
-            attributes: ['id'],
             order: [['id', 'ASC']]
         });
 
@@ -136,16 +146,56 @@ exports.getAnswersByWeek = async (req, res) => {
             attributes: ['id', 'question_id', 'user_id', 'answer', 'points']
         });
 
-        res.json(answers);
+        const byId = {};
+        questions.forEach(q => { byId[q.id] = q; });
+
+        // `correct` lo calcula el servidor: en las de texto el cliente no tiene cómo
+        // saber que «faker!!» cuenta como «Faker».
+        res.json(answers.map(a => ({
+            ...a.dataValues,
+            correct: isAnswerCorrect(byId[a.question_id], a.answer)
+        })));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
+/**
+ * Lo que tiene que cumplir una pregunta según su tipo. Devuelve el error o null.
+ *
+ * @param {Object} q - La pregunta tal como quedaría.
+ * @returns {string|null}
+ */
+const shapeError = (q) => {
+    const type = q.answer_type || ANSWER_TYPES.CHOICE;
+    if (!Object.values(ANSWER_TYPES).includes(type)) return `Tipo de pregunta desconocido: "${type}"`;
+    if (type === ANSWER_TYPES.CHOICE) {
+        if (!Array.isArray(q.options) || q.options.length < 2) return 'Una pregunta de opciones necesita al menos dos';
+        if (q.correct_option && !q.options.includes(q.correct_option)) {
+            return `"${q.correct_option}" no es una de las opciones de esta pregunta`;
+        }
+    }
+    if (type === ANSWER_TYPES.TEXT && q.correct_option) {
+        return 'Las preguntas de texto se corrigen desde «Corregir respuestas», no con una opción';
+    }
+    return null;
+};
+
 // Create question
 exports.createQuestion = async (req, res) => {
     try {
-        const question = await Question.create(req.body);
+        const payload = { ...req.body };
+        if (payload.answer_type === ANSWER_TYPES.TEXT) payload.options = [];
+
+        const error = shapeError(payload);
+        if (error) return res.status(400).json({ error });
+
+        // Creada ya corregida (se puede, desde el panel): que conste como cerrada,
+        // porque `closed_at` es lo que se mira para saberlo.
+        if (payload.correct_option) payload.closed_at = new Date();
+
+        const question = await Question.create(payload);
+        if (question.correct_option) await applyPoints(question.league_id, question.week);
         res.status(201).json(question);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -169,15 +219,15 @@ exports.updateQuestion = async (req, res) => {
 
         const before = question.correct_option;
         const payload = { ...req.body };
+        // El reparto de las de texto va por settleTextQuestion, no por aquí.
+        delete payload.accepted_answers;
+        delete payload.closed_at;
+        if ((payload.answer_type || question.answer_type) === ANSWER_TYPES.TEXT) payload.options = [];
 
         // An option that is not on the list would settle the question as wrong for
         // everyone, silently. Far better to refuse it.
-        const options = payload.options || question.options || [];
-        if (payload.correct_option && !options.includes(payload.correct_option)) {
-            return res.status(400).json({
-                error: `"${payload.correct_option}" no es una de las opciones de esta pregunta`
-            });
-        }
+        const error = shapeError({ ...question.dataValues, ...payload });
+        if (error) return res.status(400).json({ error });
 
         // closed_at follows correct_option rather than being set by the caller, so
         // the two can never disagree about whether the question is settled.
@@ -215,8 +265,8 @@ exports.deleteQuestion = async (req, res) => {
 
         const { league_id, week } = question;
 
-        if (question.correct_option) {
-            await question.update({ correct_option: null, closed_at: null });
+        if (isSettled(question)) {
+            await question.update({ correct_option: null, accepted_answers: [], closed_at: null });
             await applyPoints(league_id, week);
         }
 
@@ -266,10 +316,18 @@ exports.answerQuestions = async (req, res) => {
             }
             // Without this, anyone with the console open could answer on Monday the
             // question that was settled on Sunday.
-            if (question.correct_option) {
+            if (isSettled(question)) {
                 return res.status(409).json({ error: 'Esta pregunta ya está corregida' });
             }
-            if (!question.options.includes(answer)) {
+            if (question.answer_type === ANSWER_TYPES.TEXT) {
+                const text = typeof answer === 'string' ? answer.trim() : '';
+                if (!normalizeAnswer(text)) {
+                    return res.status(400).json({ error: 'Escribe una respuesta' });
+                }
+                if (text.length > TEXT_ANSWER_MAX) {
+                    return res.status(400).json({ error: `Las respuestas tienen un máximo de ${TEXT_ANSWER_MAX} caracteres` });
+                }
+            } else if (!question.options.includes(answer)) {
                 return res.status(400).json({ error: `"${answer}" no es una opción válida` });
             }
         }
@@ -283,7 +341,13 @@ exports.answerQuestions = async (req, res) => {
 
         const created = await sequelize.transaction(async (transaction) =>
             QuestionAnswer.bulkCreate(
-                answers.map(a => ({ question_id: a.question_id, user_id: user.id, answer: a.answer })),
+                // Se guarda lo que escribió, recortado. La versión normalizada no se
+                // guarda: se calcula al comparar, así nunca se desfasa.
+                answers.map(a => ({
+                    question_id: a.question_id,
+                    user_id: user.id,
+                    answer: typeof a.answer === 'string' ? a.answer.trim() : a.answer
+                })),
                 { transaction }
             )
         );
@@ -295,6 +359,129 @@ exports.answerQuestions = async (req, res) => {
         if (error.name === 'SequelizeUniqueConstraintError') {
             return res.status(409).json({ error: 'Ya has respondido a estas preguntas' });
         }
+        res.status(400).json({ error: error.message });
+    }
+};
+
+/**
+ * Distancia de edición entre dos textos: cuántas letras hay que cambiar, añadir o
+ * quitar para pasar de uno a otro. Solo sirve para sugerir parecidos al corregir.
+ *
+ * @param {string} a
+ * @param {string} b
+ * @returns {number}
+ */
+const editDistance = (a, b) => {
+    const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+        let diag = prev[0];
+        prev[0] = i;
+        for (let j = 1; j <= b.length; j++) {
+            const keep = prev[j];
+            prev[j] = Math.min(prev[j] + 1, prev[j - 1] + 1, diag + (a[i - 1] === b[j - 1] ? 0 : 1));
+            diag = keep;
+        }
+    }
+    return prev[b.length];
+};
+
+/**
+ * Las respuestas de una pregunta de texto, agrupadas para corregirlas de un vistazo.
+ *
+ * Un grupo es todo lo que se normaliza igual: «Faker», «FAKER» y «faker!!» son uno.
+ * Cada grupo dice cómo lo escribió la mayoría, cuántos y quiénes, si ya está
+ * aceptado, y si se parece (a una letra) a otro grupo mayor o ya aceptado: eso es
+ * casi siempre una falta de ortografía, pero lo decide el admin, no la web.
+ *
+ * GET /questions/groups/:id → { question, groups: [...] }
+ */
+exports.getAnswerGroups = async (req, res) => {
+    try {
+        const question = await Question.findByPk(req.params.id, {
+            include: [{ model: League, as: 'League', attributes: ['id', 'name'] }]
+        });
+        if (!question) return res.status(404).json({ error: 'Question not found' });
+
+        const answers = await QuestionAnswer.findAll({
+            where: { question_id: question.id },
+            include: [{ model: User, as: 'User', attributes: ['id', 'username'] }],
+            order: [['id', 'ASC']]
+        });
+
+        const accepted = new Set((question.accepted_answers || []).map(normalizeAnswer));
+        const byKey = new Map();
+        for (const a of answers) {
+            const key = normalizeAnswer(a.answer);
+            const g = byKey.get(key) || { key, spellings: new Map(), users: [] };
+            g.spellings.set(a.answer, (g.spellings.get(a.answer) || 0) + 1);
+            g.users.push(a.User ? a.User.username : `#${a.user_id}`);
+            byKey.set(key, g);
+        }
+
+        const groups = [...byKey.values()].map(g => {
+            const spellings = [...g.spellings.entries()].sort((x, y) => y[1] - x[1]);
+            return {
+                key: g.key,
+                label: spellings[0][0],
+                variants: spellings.map(([text]) => text),
+                count: g.users.length,
+                users: g.users,
+                accepted: accepted.has(g.key),
+            };
+        }).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+        for (const g of groups) {
+            if (g.accepted || g.key.length < 3) continue;
+            const near = groups.find(o => o !== g && (o.accepted || o.count > g.count) && editDistance(o.key, g.key) <= 1);
+            if (near) g.similarTo = near.label;
+        }
+
+        res.json({ question, groups });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+/**
+ * Corrige una pregunta de texto: estas respuestas valen, las demás no.
+ *
+ * Body: { accepted_answers: ["Faker", "Lee Sang-hyeok"] } — cierra la pregunta. Una
+ * lista vacía también la cierra: «nadie la acertó» es una corrección válida.
+ * Body: { reopen: true } — la vuelve a abrir y devuelve los puntos.
+ *
+ * Igual que con las de opciones, los puntos los mueve el agregador por diferencia:
+ * aceptar una respuesta más mañana suma solo a quien la escribió.
+ */
+exports.settleTextQuestion = async (req, res) => {
+    try {
+        const question = await Question.findByPk(req.params.id);
+        if (!question) return res.status(404).json({ error: 'Question not found' });
+        if (question.answer_type !== ANSWER_TYPES.TEXT) {
+            return res.status(400).json({ error: 'Esta pregunta es de opciones: se corrige eligiendo la opción correcta' });
+        }
+
+        if (req.body.reopen) {
+            await question.update({ accepted_answers: [], closed_at: null });
+        } else {
+            const list = req.body.accepted_answers;
+            if (!Array.isArray(list) || list.some(t => typeof t !== 'string')) {
+                return res.status(400).json({ error: 'accepted_answers tiene que ser una lista de textos' });
+            }
+            // Sin repetidos ni vacíos, comparando como se compara al puntuar.
+            const seen = new Set();
+            const clean = [];
+            for (const text of list.map(t => t.trim())) {
+                const key = normalizeAnswer(text);
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                clean.push(text);
+            }
+            await question.update({ accepted_answers: clean, closed_at: question.closed_at || new Date() });
+        }
+
+        await applyPoints(question.league_id, question.week);
+        res.json(question);
+    } catch (error) {
         res.status(400).json({ error: error.message });
     }
 };

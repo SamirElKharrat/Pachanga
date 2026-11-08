@@ -39,6 +39,15 @@ const Question = sequelize.define('Question', {
         type: DataTypes.TEXT,
         allowNull: false
     },
+    // 'choice' (elegir entre `options`) o 'text' (escribir). Se llama answer_type y
+    // no type porque el formulario del panel ya usa `type` para las predicciones.
+    // Las preguntas de antes de que existiera son todas 'choice'.
+    answer_type: {
+        type: DataTypes.STRING(16),
+        allowNull: false,
+        defaultValue: 'choice',
+        validate: { isIn: [['choice', 'text']] }
+    },
     // What you can answer, as a list of strings: ["Sí", "No"], ["G2", "FNC", …].
     // Stored as JSONB rather than a second table because nothing ever queries an
     // option on its own — they are only ever read as the whole list of one question.
@@ -47,13 +56,23 @@ const Question = sequelize.define('Question', {
         allowNull: false,
         defaultValue: []
     },
-    // Null until the week closes. It holds the option text itself, not an index, so
+    // Solo para 'choice'. Null until the week closes. It holds the option text itself, not an index, so
     // reordering or fixing a typo in `options` can never silently change which answer
     // was the right one.
     correct_option: {
         type: DataTypes.STRING,
         allowNull: true
     },
+    // Solo para 'text': las respuestas que el admin dio por buenas al corregir,
+    // escritas como las puso la mayoría ("Faker"). Se comparan normalizadas, así que
+    // "faker!!" también acierta. Ver pointsCalculator.isAnswerCorrect.
+    accepted_answers: {
+        type: DataTypes.JSONB,
+        allowNull: false,
+        defaultValue: []
+    },
+    // La señal de «corregida» para los dos tipos: una de texto puede cerrarse sin
+    // ninguna respuesta aceptada, así que `correct_option` no basta.
     closed_at: {
         type: DataTypes.DATE,
         allowNull: true
