@@ -23,6 +23,7 @@ const QuestionAnswer = require('./models/questionAnswer');
 // parece limpieza y deja la tabla sin crear en un despliegue nuevo.
 const Changelog = require('./models/changelog'); // eslint-disable-line no-unused-vars
 const Rule = require('./models/rule');
+const Round = require('./models/round');
 
 const app = express();
 const PORT = 3001;
@@ -131,10 +132,19 @@ User.hasMany(QuestionAnswer, { as: 'QuestionAnswers', foreignKey: 'user_id' });
 Rule.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
 League.hasMany(Rule, { as: 'Rules', foreignKey: 'league_id' });
 
+// Jornadas: cada partido y cada pregunta pertenecen a una (utils/rounds.js)
+Round.belongsTo(League, { as: 'League', foreignKey: 'league_id' });
+League.hasMany(Round, { as: 'Rounds', foreignKey: 'league_id' });
+Match.belongsTo(Round, { as: 'Round', foreignKey: 'round_id' });
+Round.hasMany(Match, { as: 'Matches', foreignKey: 'round_id' });
+Question.belongsTo(Round, { as: 'Round', foreignKey: 'round_id' });
+Round.hasMany(Question, { as: 'Questions', foreignKey: 'round_id' });
+
 const hallController = require('./controllers/hallController');
 const pachangaController = require('./controllers/pachangaController');
 const statsAggregator = require('./utils/statsAggregator');
 const { advanceLifecycles } = require('./utils/lifecycle');
+const { backfillRounds } = require('./utils/rounds');
 
 // Cada cuánto se avanzan ligas y partidos por calendario (ver utils/lifecycle.js).
 const LIFECYCLE_INTERVAL_MS = 60 * 1000;
@@ -262,6 +272,25 @@ const ensureQuestionColumns = async () => {
 };
 
 /**
+ * Lo mismo, para las jornadas: `round_id` en Match y en Question.
+ *
+ * La tabla Round la crea `db.sync` sola por ser nueva; las columnas de las tablas
+ * que ya existen, no. Los modelos ya las declaran, así que sin esto fallaría
+ * cualquier consulta de partidos.
+ */
+const ensureRoundColumns = async () => {
+  const [columns] = await db.query(
+    `SELECT table_name FROM information_schema.columns
+      WHERE table_name IN ('Match', 'Question') AND column_name = 'round_id'`
+  );
+  for (const table of ['Match', 'Question']) {
+    if (columns.some(c => c.table_name === table)) continue;
+    console.log(`Añadiendo ${table}.round_id (la migración no se había lanzado)...`);
+    await db.query(`ALTER TABLE "${table}" ADD COLUMN round_id INTEGER REFERENCES "Round" (id)`);
+  }
+};
+
+/**
  * Fills the stats tables the first time the server boots with them in place.
  *
  * Skips itself as soon as there is a single row, so it costs one COUNT on every
@@ -307,9 +336,17 @@ const syncDatabase = async () => {
     await ensureLeagueTheme();
     await ensureQuestionPoints();
     await ensureQuestionColumns();
+    await ensureRoundColumns();
 
     // Auto-inicialización segura en arranque (Render & local)
     try {
+      // Todo partido y pregunta sin jornada recibe la de su semana de siempre. La
+      // primera vez convierte las semanas en jornadas; después casi no hace nada.
+      const filled = await backfillRounds();
+      if (filled.matches || filled.questions) {
+        console.log(`Jornadas asignadas: ${filled.matches} partidos y ${filled.questions} preguntas.`);
+      }
+
       // Primero, que las ligas que terminaron con el servidor parado pasen a
       // `finished`: lo de abajo solo reparte títulos y puntos de las terminadas.
       await advanceLifecycles();

@@ -1,5 +1,8 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/configdb');
+// Por la clave foránea round_id: sin cargar Round antes, `sync` crearía esta tabla
+// apuntando a una que no existe.
+require('./round');
 
 /**
  * A question put to everyone for one week of one league.
@@ -34,6 +37,16 @@ const Question = sequelize.define('Question', {
     week: {
         type: DataTypes.INTEGER,
         allowNull: false
+    },
+    // La jornada de la pregunta. `week` se queda mientras dura el paso a jornadas, y
+    // siempre coincide con el `order` de esta jornada.
+    round_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'Round',
+            key: 'id'
+        }
     },
     text: {
         type: DataTypes.TEXT,

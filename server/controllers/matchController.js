@@ -5,6 +5,8 @@ const Prediction = require('../models/prediction');
 const Result = require('../models/result');
 const { startOfWeek, endOfWeek } = require('./weekController');
 const { advanceLifecycles } = require('../utils/lifecycle');
+const Round = require('../models/round');
+const { roundForMatchDate } = require('../utils/rounds');
 
 
 // Get all matches
@@ -208,7 +210,20 @@ exports.createMatch = async (req, res) => {
     try {
         const teams = await Team.findAll({ where: { id: req.body.teams } });
         const name = `${teams[0].acronym} vs ${teams[1].acronym}`;
-        const match = await Match.create({ ...req.body, name });
+        const payload = { ...req.body, name };
+
+        // Sin jornada elegida, la de su semana de siempre, para que nada cambie de
+        // grupo mientras el panel no la pida. Con jornada, tiene que ser de su liga.
+        if (!payload.round_id) {
+            payload.round_id = (await roundForMatchDate(payload)).id;
+        } else {
+            const round = await Round.findByPk(payload.round_id);
+            if (!round || round.league_id !== Number(payload.league_id)) {
+                return res.status(400).json({ error: 'Esa jornada no es de la liga del partido' });
+            }
+        }
+
+        const match = await Match.create(payload);
         match.addTeams(teams);
         res.json(match);
     } catch (error) {
@@ -223,7 +238,23 @@ exports.updateMatch = async (req, res) => {
         if (!match) {
             return res.status(404).json({ error: 'Match not found' });
         }
-        const updatedMatch = await match.update({ ...req.body });
+        const payload = { ...req.body };
+        const leagueId = Number(payload.league_id ?? match.league_id);
+
+        // Cambiar la fecha ya NO cambia la jornada: aplazar un partido lo deja donde
+        // estaba. Solo se reasigna si cambia de liga sin decir a qué jornada va.
+        if (payload.round_id) {
+            const round = await Round.findByPk(payload.round_id);
+            if (!round || round.league_id !== leagueId) {
+                return res.status(400).json({ error: 'Esa jornada no es de la liga del partido' });
+            }
+        } else if (leagueId !== match.league_id) {
+            payload.round_id = (await roundForMatchDate({ league_id: leagueId, date: payload.date ?? match.date })).id;
+        } else {
+            delete payload.round_id;
+        }
+
+        const updatedMatch = await match.update(payload);
         res.json(updatedMatch);
     } catch (error) {
         res.status(400).json({ error: error.message });

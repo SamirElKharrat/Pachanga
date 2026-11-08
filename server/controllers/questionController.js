@@ -5,6 +5,8 @@ const QuestionAnswer = require('../models/questionAnswer');
 const League = require('../models/league');
 const User = require('../models/user');
 const statsAggregator = require('../utils/statsAggregator');
+const Round = require('../models/round');
+const { roundFor } = require('../utils/rounds');
 const {
     ANSWER_TYPES, TEXT_ANSWER_MAX, normalizeAnswer, isSettled, isAnswerCorrect,
 } = require('../utils/pointsCalculator');
@@ -161,6 +163,33 @@ exports.getAnswersByWeek = async (req, res) => {
 };
 
 /**
+ * Deja `week` y `round_id` de acuerdo: si llega la jornada, la semana es su orden;
+ * si llega la semana, la jornada es la de ese orden. Mientras dure el paso a
+ * jornadas, las dos tienen que decir lo mismo. Modifica `payload`.
+ *
+ * @param {Object} payload
+ * @param {Object} [current] - La pregunta antes del cambio, al editar.
+ * @returns {Promise<string|null>} Un error, o null.
+ */
+const syncRound = async (payload, current = null) => {
+    const leagueId = Number(payload.league_id ?? (current && current.league_id));
+    const roundChanged = payload.round_id && (!current || Number(payload.round_id) !== current.round_id);
+    const weekChanged = payload.week !== undefined && payload.week !== null && payload.week !== ''
+        && (!current || Number(payload.week) !== current.week);
+
+    if (roundChanged) {
+        const round = await Round.findByPk(payload.round_id);
+        if (!round || round.league_id !== leagueId) return 'Esa jornada no es de la liga de la pregunta';
+        payload.week = round.order;
+    } else if (weekChanged || (!current && leagueId && payload.week !== undefined)) {
+        payload.round_id = (await roundFor(leagueId, Number(payload.week))).id;
+    } else if (current && payload.league_id !== undefined && leagueId !== current.league_id) {
+        payload.round_id = (await roundFor(leagueId, Number(payload.week ?? current.week))).id;
+    }
+    return null;
+};
+
+/**
  * Lo que tiene que cumplir una pregunta según su tipo. Devuelve el error o null.
  *
  * @param {Object} q - La pregunta tal como quedaría.
@@ -187,7 +216,7 @@ exports.createQuestion = async (req, res) => {
         const payload = { ...req.body };
         if (payload.answer_type === ANSWER_TYPES.TEXT) payload.options = [];
 
-        const error = shapeError(payload);
+        const error = shapeError(payload) || await syncRound(payload);
         if (error) return res.status(400).json({ error });
 
         // Creada ya corregida (se puede, desde el panel): que conste como cerrada,
@@ -226,7 +255,7 @@ exports.updateQuestion = async (req, res) => {
 
         // An option that is not on the list would settle the question as wrong for
         // everyone, silently. Far better to refuse it.
-        const error = shapeError({ ...question.dataValues, ...payload });
+        const error = shapeError({ ...question.dataValues, ...payload }) || await syncRound(payload, question);
         if (error) return res.status(400).json({ error });
 
         // closed_at follows correct_option rather than being set by the caller, so

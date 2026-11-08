@@ -15,6 +15,7 @@ const statsRoute = require("./stats");
 const questionRoute = require("./question");
 const changelogRoute = require("./changelog");
 const ruleRoute = require("./rule");
+const roundRoute = require("./round");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -32,5 +33,6 @@ router.use("/stats", statsRoute);
 router.use("/questions", questionRoute);
 router.use("/changelog", changelogRoute);
 router.use("/rules", ruleRoute);
+router.use("/rounds", roundRoute);
 
 module.exports = router;
