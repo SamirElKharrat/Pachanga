@@ -28,6 +28,10 @@ const TABS = [
 const num = (n) => (n == null ? '—' : n.toLocaleString('es-ES'));
 const pct = (n) => (n == null ? '—' : `${(n * 100).toLocaleString('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`);
 const dec = (n, d = 2) => (n == null ? '—' : n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }));
+/** Valor de un líder. Lo dice el servidor (`format`); sin él, se adivina como antes. */
+const leaderValue = (l) => (l.format === 'pct' || (!l.format && l.value > 0 && l.value < 1) ? pct(l.value) : num(l.value));
+/** Para ordenar columnas que pueden no aplicar: «—» siempre al fondo. */
+const orBottom = (v) => (v == null ? -1 : v);
 const signed = (n, d = 1) => (n == null ? '—' : `${n >= 0 ? '+' : '−'}${Math.abs(n).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d })}`);
 
 /**
@@ -410,6 +414,16 @@ function TabJugadores({ players, scope, getAvatarSrc, ctl, esMovil }) {
         { key: 'bestRun', label: 'Mejor pleno' },
         { key: 'pointsOfficial', label: 'Puntos', render: (r) => <span className="strong">{num(r.pointsOfficial)}</span> },
         { key: 'pointsPerPrediction', label: 'Pts/pred', render: (r) => dec(r.pointsPerPrediction) },
+        // Aparte del acierto en partidos, a propósito: no se mezclan.
+        {
+            key: 'questionAccuracy', label: 'Preguntas', title: 'Preguntas acertadas, sobre todas las que hubo',
+            sortValue: (r) => orBottom(r.questionAccuracy),
+            render: (r) => (r.questionAccuracy == null ? '—' : (
+                <span title={`${r.questionsCorrect} de ${r.questionsAvailable} · respondió ${r.questionsAnswered}`}>
+                    {pct(r.questionAccuracy)}
+                </span>
+            ))
+        },
         { key: 'byLeague', label: 'Por liga', sortable: false, render: spark },
     ];
 
@@ -431,12 +445,14 @@ function TabJugadores({ players, scope, getAvatarSrc, ctl, esMovil }) {
 
         const head = ['Jugador', 'Puesto', 'Predicciones', 'Participacion (%)', 'Acierto (%)',
                       'Acierto parcial (%)', 'Aciertos', 'Parciales', 'Plenos', 'Mejor pleno',
-                      'Puntos', 'Puntos por prediccion'];
+                      'Puntos', 'Puntos por prediccion', 'Preguntas acertadas', 'Preguntas posibles',
+                      'Acierto en preguntas (%)'];
 
         const lines = players.map((p, i) => [
             p.user.username, p.rank || i + 1, p.predictions, pc(p.participation), pc(p.accuracy),
             pc(p.partialAccuracy), p.exactScores, p.wins, p.plenos, p.bestRun,
-            p.pointsOfficial, dec2(p.pointsPerPrediction)
+            p.pointsOfficial, dec2(p.pointsPerPrediction), p.questionsCorrect, p.questionsAvailable,
+            pc(p.questionAccuracy)
         ].map(esc).join(';'));
 
         // El BOM es lo que hace que Excel abra el archivo como UTF-8 y no parta las tildes.
@@ -531,6 +547,19 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, t
                          foot={`solo el ganador · ${num(totals.wins)} de ${num(totals.possible)}`} />
             </div>
 
+            {/* Las preguntas, en su propia fila: su acierto no se suma al de los
+                partidos. Sin preguntas en el ámbito (ligas de antes), la fila no sale. */}
+            {totals.questions > 0 && (
+                <div className="pstats-kpis tres" style={{ marginTop: 12 }}>
+                    <KpiTile label="Acierto en preguntas" value={pct(totals.questionAccuracy)}
+                             foot={`${num(totals.questionsCorrect)} de ${num(totals.questions * totals.players)} posibles`} />
+                    <KpiTile label="Preguntas corregidas" value={num(totals.questions)}
+                             foot="en este ámbito" />
+                    <KpiTile label="Respondidas" value={pct(totals.questionParticipation)}
+                             foot={`${num(totals.questionsAnswered)} respuestas`} />
+                </div>
+            )}
+
             <div className="pstats-panel" style={{ marginTop: 14 }}>
                 <div className="pstats-head" style={{ marginBottom: 14 }}>
                     <div>
@@ -609,7 +638,7 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, t
                                         <div className="pstats-cap">{l.label}</div>
                                     </div>
                                     <span className={`pstats-row-value${i === 0 ? ' gold' : ''}`}>
-                                        {l.value > 0 && l.value < 1 ? pct(l.value) : num(l.value)}
+                                        {leaderValue(l)}
                                     </span>
                                 </div>
                             ))}
@@ -679,6 +708,8 @@ function TabLigas({ meta, year, getAvatarSrc, onPick }) {
         { key: 'participation', label: 'Partic.', render: (r) => pct(r.participation) },
         { key: 'accuracy', label: 'Acierto', render: (r) => <span className="strong">{pct(r.accuracy)}</span> },
         { key: 'partialAccuracy', label: 'Parcial', render: (r) => pct(r.partialAccuracy) },
+        { key: 'questionAccuracy', label: 'Preguntas', title: 'Acierto medio en preguntas · — si no hubo',
+          sortValue: (r) => orBottom(r.questionAccuracy), render: (r) => pct(r.questionAccuracy) },
         { key: 'pointsAverage', label: 'Pts medios', render: (r) => dec(r.pointsAverage, 1) },
         { key: 'winner', label: 'Ganador', align: 'left', sortValue: (r) => (r.winner ? r.winner.username : ''),
           render: (r) => (r.winner
@@ -773,7 +804,7 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
         return <>{picker}<div className="pstats-panel"><Skeleton active paragraph={{ rows: 6 }} /></div></>;
     }
 
-    const { player, rank, of, totals, average, byLeague, breakdown, weeks, teams } = detail;
+    const { player, rank, of, totals, average, byLeague, breakdown, weeks, teams, lonelyQuestions = [] } = detail;
     const c = colorOf(player.id);
 
     const origins = [
@@ -825,6 +856,38 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
                          delta={Number(((totals.participation - average.participation) * 100).toFixed(1))}
                          deltaLabel={`sobre la media (${pct(average.participation)})`} />
             </div>
+
+            {totals.questionsAvailable > 0 && (
+                <div className="pstats-panel" style={{ marginTop: 14 }}>
+                    <div style={{ marginBottom: 14 }}>
+                        <h4 className="pstats-panel-title">Preguntas</h4>
+                        <p className="pstats-cap">Aparte de los partidos · solo cuentan las ya corregidas</p>
+                    </div>
+                    <div className="pstats-kpis tres">
+                        <KpiTile hero label="Acierto en preguntas" value={pct(totals.questionAccuracy)}
+                                 delta={average.questionAccuracy == null ? undefined
+                                     : Number(((totals.questionAccuracy - average.questionAccuracy) * 100).toFixed(1))}
+                                 deltaLabel={`sobre la media (${pct(average.questionAccuracy)})`} />
+                        <KpiTile label="Acertadas" value={`${num(totals.questionsCorrect)} de ${num(totals.questionsAnswered)}`}
+                                 foot={`${pct(totals.questionAccuracyWhenAnswered)} de las que respondió`} />
+                        <KpiTile label="Respondidas" value={pct(totals.questionParticipation)}
+                                 foot={`${num(totals.questionsAnswered)} de ${num(totals.questionsAvailable)}`} />
+                    </div>
+                    {lonelyQuestions.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
+                            {lonelyQuestions.map(q => (
+                                <div key={q.questionId} className="pstats-moment" style={{ '--m-mark': chart.series[1], '--m-text': chart.text[1] }}>
+                                    <div className="pstats-moment-kind">Solo la acertó {player.username}</div>
+                                    <div className="pstats-moment-main">{q.text}</div>
+                                    <div className="pstats-moment-foot">
+                                        «{q.answer}» · {q.answers} respondieron · {q.league ? `${q.league}, ` : ''}jornada {q.week}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="pstats-panel-grid two">
                 <div className="pstats-panel">
@@ -968,7 +1031,7 @@ function TabComparar({ detail, detailFailed, players, aId, bId, scope, allIds, t
         return <div className="pstats-panel"><Skeleton active paragraph={{ rows: 6 }} /></div>;
     }
 
-    const { a, b, headToHead, byLeague, divergent } = detail;
+    const { a, b, headToHead, byLeague, divergent, questionsHeadToHead: qh } = detail;
     const pair = distinctColorsFor([a.user.id, b.user.id], allIds, themeName);
     const ca = pair[a.user.id];
     const cb = pair[b.user.id];
@@ -981,6 +1044,13 @@ function TabComparar({ detail, detailFailed, players, aId, bId, scope, allIds, t
         { label: 'Plenos', a: a.plenos, b: b.plenos, format: num },
         { label: 'Bonus favorito', a: a.pointsFavorite, b: b.pointsFavorite, format: num },
         { label: 'Particip.', a: a.participation, b: b.participation, format: pct },
+        // Las preguntas, como filas propias: nunca dentro del «Acierto» de arriba.
+        ...(a.questionAccuracy != null && b.questionAccuracy != null
+            ? [{ label: 'Acierto preg.', a: a.questionAccuracy, b: b.questionAccuracy, format: pct }]
+            : []),
+        ...(qh && qh.together > 0
+            ? [{ label: `Preg. comunes (${qh.together})`, a: qh.aCorrect, b: qh.bCorrect, format: num }]
+            : []),
     ];
 
     return (

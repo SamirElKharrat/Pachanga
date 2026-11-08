@@ -10,6 +10,9 @@ const PlayerLeagueStat = require('../models/playerLeagueStat');
 const PlayerWeekStat = require('../models/playerWeekStat');
 const MatchStat = require('../models/matchStat');
 const LeagueParticipation = require('../models/leagueParticipation');
+const Question = require('../models/question');
+const QuestionAnswer = require('../models/questionAnswer');
+const { isSettled, isAnswerCorrect } = require('../utils/pointsCalculator');
 
 /**
  * Read side of the stats. Nothing here calculates points: everything comes from the
@@ -21,6 +24,16 @@ const LeagueParticipation = require('../models/leagueParticipation');
 
 /** Below this many resolved matches, averages lie. The client shows participation instead. */
 const MIN_MATCHES = 5;
+
+/** Lo mismo para las preguntas: por debajo de esto, el «Oráculo» sería suerte. */
+const MIN_QUESTIONS = 5;
+
+/**
+ * Un cociente que puede no tener sentido: sin denominador es «no aplica» (null), no
+ * 0 %. Las preguntas lo necesitan porque las ligas de antes de que existieran no
+ * tuvieron ninguna, y ahí un 0 % diría que todos fallaron.
+ */
+const ratioOrNull = (a, b, d = 3) => (b > 0 ? round(a / b, d) : null);
 
 const ratio = (a, b) => (b > 0 ? a / b : 0);
 const round = (n, d = 3) => Math.round(n * 10 ** d) / 10 ** d;
@@ -130,6 +143,9 @@ const foldByPlayer = (rows) => {
             pointsFavorite: 0,
             pointsQuestion: 0,
             pointsManual: 0,
+            questionsAvailable: 0,
+            questionsAnswered: 0,
+            questionsCorrect: 0,
             byLeague: []
         };
 
@@ -146,6 +162,9 @@ const foldByPlayer = (rows) => {
         acc.pointsFavorite += row.points_favorite;
         acc.pointsQuestion += row.points_question;
         acc.pointsManual += row.points_manual;
+        acc.questionsAvailable += row.questions_available;
+        acc.questionsAnswered += row.questions_answered;
+        acc.questionsCorrect += row.questions_correct;
         if (row.best_run > acc.bestRun) acc.bestRun = row.best_run;
 
         acc.byLeague.push({
@@ -174,7 +193,14 @@ const foldByPlayer = (rows) => {
             // "when they do vote, how good are they?".
             accuracyWhenVoted: round(ratio(p.exactScores, p.predictions)),
             partialAccuracyWhenVoted: round(ratio(p.wins, p.predictions)),
-            pointsPerPrediction: round(ratio(p.points, p.predictions), 2)
+            pointsPerPrediction: round(ratio(p.points, p.predictions), 2),
+            // Las preguntas, SIEMPRE aparte: una de Sí/No es mucho más fácil que un
+            // marcador exacto, y mezclarlas inflaría el acierto de todos. Mismo
+            // criterio que arriba: sobre todas las que hubo, y aparte sobre las que
+            // respondió. null cuando no hubo ninguna.
+            questionAccuracy: ratioOrNull(p.questionsCorrect, p.questionsAvailable),
+            questionAccuracyWhenAnswered: ratioOrNull(p.questionsCorrect, p.questionsAnswered),
+            questionParticipation: ratioOrNull(p.questionsAnswered, p.questionsAvailable)
         }))
         .sort((a, b) => b.pointsOfficial - a.pointsOfficial);
 };
@@ -329,6 +355,15 @@ exports.getOverview = async (req, res) => {
         totals.accuracyWhenVoted = round(ratio(totals.exactScores, totals.predictions));
         totals.pointsAverage = round(ratio(totals.pointsOfficial, players.length), 1);
 
+        // Preguntas, aparte. Mismo patrón que los partidos: las que hubo (el máximo
+        // de cualquiera, porque todos las tuvieron disponibles) por cada jugador.
+        const questionsAvailable = players.length ? Math.max(...players.map(p => p.questionsAvailable)) : 0;
+        totals.questions = questionsAvailable;
+        totals.questionsAnswered = sum('questionsAnswered');
+        totals.questionsCorrect = sum('questionsCorrect');
+        totals.questionAccuracy = ratioOrNull(totals.questionsCorrect, questionsAvailable * players.length);
+        totals.questionParticipation = ratioOrNull(totals.questionsAnswered, questionsAvailable * players.length);
+
         // Leaders are by metric, not by rank: someone can top one of these and sit
         // fourth in the table.
         // No eligibility filter any more: now that the percentages count skipped
@@ -339,12 +374,24 @@ exports.getOverview = async (req, res) => {
             return { user: winner.user, value: winner[key] };
         };
 
+        // El Oráculo: mejor acierto en preguntas, entre quienes respondieron bastantes
+        // para que no sea suerte. Sin nadie que llegue, no hay líder.
+        const oracle = (() => {
+            const eligible = players.filter(p => p.questionsAnswered >= MIN_QUESTIONS && p.questionAccuracy !== null);
+            if (!eligible.length) return null;
+            const winner = eligible.reduce((a, b) => (b.questionAccuracy > a.questionAccuracy ? b : a));
+            return { user: winner.user, value: winner.questionAccuracy };
+        })();
+
+        // `format` le dice al cliente cómo pintar el valor: un 100 % es 1, y sin
+        // esto se confundía con «1 punto».
         const leaders = [
-            { metric: 'points', label: 'Más puntos', ...best('pointsOfficial') },
-            { metric: 'accuracy', label: 'Mejor % de acierto', ...best('accuracy') },
-            { metric: 'partialAccuracy', label: 'Mejor acierto parcial', ...best('partialAccuracy') },
-            { metric: 'bestRun', label: 'Mejor pleno', ...best('bestRun') },
-            { metric: 'favoriteBonus', label: 'Más bonus de equipo favorito', ...best('pointsFavorite') }
+            { metric: 'points', label: 'Más puntos', format: 'number', ...best('pointsOfficial') },
+            { metric: 'accuracy', label: 'Mejor % de acierto', format: 'pct', ...best('accuracy') },
+            { metric: 'partialAccuracy', label: 'Mejor acierto parcial', format: 'pct', ...best('partialAccuracy') },
+            { metric: 'bestRun', label: 'Mejor pleno', format: 'number', ...best('bestRun') },
+            { metric: 'favoriteBonus', label: 'Más bonus de equipo favorito', format: 'number', ...best('pointsFavorite') },
+            { metric: 'questionAccuracy', label: 'Oráculo · mejor acierto en preguntas', format: 'pct', ...(oracle || {}) }
         ].filter(l => l.user);
 
         res.json({
@@ -464,11 +511,17 @@ exports.getPlayer = async (req, res) => {
 
         // Compared against everyone, including themselves: the same number whoever looks.
         const meanOf = (key) => round(players.reduce((s, p) => s + p[key], 0) / players.length, 3);
+        // La media de un valor que puede ser null: solo entre quienes lo tienen.
+        const meanOfKnown = (key) => {
+            const known = players.filter(p => p[key] !== null);
+            return known.length ? round(known.reduce((s, p) => s + p[key], 0) / known.length, 3) : null;
+        };
         const average = {
             accuracy: meanOf('accuracy'),
             partialAccuracy: meanOf('partialAccuracy'),
             participation: meanOf('participation'),
-            pointsPerPrediction: meanOf('pointsPerPrediction')
+            pointsPerPrediction: meanOf('pointsPerPrediction'),
+            questionAccuracy: meanOfKnown('questionAccuracy')
         };
 
         const leagueById = {};
@@ -496,7 +549,9 @@ exports.getPlayer = async (req, res) => {
                 manual: player.pointsManual
             },
             weeks: await weekMap(userId, scope.leagueIds, leagueById),
-            teams: await teamAccuracy(userId, scope.leagueIds)
+            teams: await teamAccuracy(userId, scope.leagueIds),
+            // Las preguntas que solo acertó él: lo que más presume.
+            lonelyQuestions: await lonelyQuestions(userId, scope.leagueIds, leagueById)
         });
     } catch (error) {
         res.status(error.status || 500).json({ error: error.message });
@@ -612,6 +667,7 @@ exports.getCompare = async (req, res) => {
             a: { ...pa, rank: players.findIndex(p => p.user.id === a) + 1 },
             b: { ...pb, rank: players.findIndex(p => p.user.id === b) + 1 },
             headToHead: await headToHead(a, b, scope.leagueIds),
+            questionsHeadToHead: await questionsHeadToHead(a, b, scope.leagueIds),
             byLeague: scope.leagues.map(l => ({
                 leagueId: l.id,
                 name: l.name,
@@ -623,6 +679,77 @@ exports.getCompare = async (req, res) => {
     } catch (error) {
         res.status(error.status || 500).json({ error: error.message });
     }
+};
+
+/**
+ * Las preguntas corregidas de un ámbito, con todas sus respuestas.
+ *
+ * En vivo y no precalculado: son pocas (dos por jornada) y acertar una de texto lo
+ * decide isAnswerCorrect, que normaliza; en SQL habría que repetir esa regla.
+ *
+ * @param {Array<number>} leagueIds
+ * @returns {Promise<Array<{question: Object, answers: Array<Object>}>>}
+ */
+const settledQuestionsWithAnswers = async (leagueIds) => {
+    if (!leagueIds.length) return [];
+    const questions = (await Question.findAll({
+        where: { league_id: { [Op.in]: leagueIds }, closed_at: { [Op.ne]: null } },
+        order: [['league_id', 'ASC'], ['week', 'ASC'], ['id', 'ASC']]
+    })).filter(isSettled);
+    if (!questions.length) return [];
+
+    const answers = await QuestionAnswer.findAll({
+        where: { question_id: { [Op.in]: questions.map(q => q.id) } },
+        attributes: ['question_id', 'user_id', 'answer']
+    });
+    const byQuestion = {};
+    answers.forEach(a => { (byQuestion[a.question_id] = byQuestion[a.question_id] || []).push(a); });
+
+    return questions.map(q => ({
+        question: q,
+        answers: (byQuestion[q.id] || []).map(a => ({
+            userId: a.user_id, answer: a.answer, correct: isAnswerCorrect(q, a.answer) === true
+        }))
+    }));
+};
+
+/** Preguntas que respondieron los dos, y cuántas acertó cada uno. */
+const questionsHeadToHead = async (a, b, leagueIds) => {
+    const rows = await settledQuestionsWithAnswers(leagueIds);
+    let together = 0, aCorrect = 0, bCorrect = 0, both = 0, onlyA = 0, onlyB = 0;
+    for (const { answers } of rows) {
+        const ra = answers.find(x => x.userId === a);
+        const rb = answers.find(x => x.userId === b);
+        if (!ra || !rb) continue;
+        together += 1;
+        if (ra.correct) aCorrect += 1;
+        if (rb.correct) bCorrect += 1;
+        if (ra.correct && rb.correct) both += 1;
+        else if (ra.correct) onlyA += 1;
+        else if (rb.correct) onlyB += 1;
+    }
+    return { together, aCorrect, bCorrect, both, onlyA, onlyB };
+};
+
+/** Las preguntas en las que este jugador fue el único que acertó (con al menos 3 respuestas). */
+const lonelyQuestions = async (userId, leagueIds, leagueById, limit = 5) => {
+    const rows = await settledQuestionsWithAnswers(leagueIds);
+    return rows
+        .filter(({ answers }) => answers.length >= 3)
+        .filter(({ answers }) => {
+            const right = answers.filter(x => x.correct);
+            return right.length === 1 && right[0].userId === userId;
+        })
+        .slice(-limit)
+        .reverse()
+        .map(({ question, answers }) => ({
+            questionId: question.id,
+            text: question.text,
+            week: question.week,
+            league: leagueById[question.league_id] ? leagueById[question.league_id].name : null,
+            answer: answers.find(x => x.userId === userId).answer,
+            answers: answers.length
+        }));
 };
 
 /** Matches both of them played, and who came out ahead. */
@@ -723,6 +850,8 @@ exports.getLeagues = async (req, res) => {
             const predictions = players.reduce((s, p) => s + p.predictions, 0);
             const wins = players.reduce((s, p) => s + p.wins, 0);
             const exactScores = players.reduce((s, p) => s + p.exactScores, 0);
+            const questionsAvailable = players.length ? Math.max(...players.map(p => p.questionsAvailable)) : 0;
+            const questionsCorrect = players.reduce((s, p) => s + p.questionsCorrect, 0);
             // Sin filtro: con el denominador nuevo, quien vota poco ya baja solo.
             const accuracies = players.map(p => p.accuracy);
 
@@ -739,6 +868,9 @@ exports.getLeagues = async (req, res) => {
                 participation: round(Math.min(1, ratio(predictions, matchesAvailable * players.length))),
                 accuracy: round(ratio(exactScores, matchesAvailable * players.length)),
                 partialAccuracy: round(ratio(wins, matchesAvailable * players.length)),
+                // Aparte del acierto en partidos. null en las ligas sin preguntas.
+                questions: questionsAvailable,
+                questionAccuracy: ratioOrNull(questionsCorrect, questionsAvailable * players.length),
                 pointsAverage: round(ratio(players.reduce((s, p) => s + p.pointsOfficial, 0), players.length), 1),
                 // Min, mean and max accuracy: how much the league spread people out.
                 accuracyRange: accuracies.length
@@ -774,10 +906,10 @@ exports.getMoments = async (req, res) => {
         const stats = await MatchStat.findAll({
             where: { league_id: leagueId, predictions_count: { [Op.gt]: 0 } }
         });
-        if (!stats.length) return res.json({ leagueId, moments: [] });
-
+        // Sin partidos resueltos no hay momentos de partido, pero puede haber de
+        // preguntas: no se corta aquí.
         const matchIds = stats.map(s => s.match_id);
-        const [teams, results] = await Promise.all([
+        const [teams, results] = !matchIds.length ? [[], []] : await Promise.all([
             sequelize.query(`
                 SELECT tm.match_id, t.acronym, t.name
                 FROM "TeamMatches" tm JOIN "Team" t ON t.id = tm.team_id
@@ -846,6 +978,31 @@ exports.getMoments = async (req, res) => {
                 length: bestRun.best_run,
                 bonus: bestRun.points_streak
             });
+        }
+
+        // Las preguntas: la más difícil, y la que acertó uno solo. Con al menos 3
+        // respuestas, porque con dos cualquier cosa es «la más difícil».
+        const asked = (await settledQuestionsWithAnswers([leagueId])).filter(r => r.answers.length >= 3);
+        const share = (r) => r.answers.filter(x => x.correct).length / r.answers.length;
+        const qMoment = (r, kind, extra = {}) => ({
+            kind,
+            questionId: r.question.id,
+            text: r.question.text,
+            week: r.question.week,
+            answers: r.answers.length,
+            correct: r.answers.filter(x => x.correct).length,
+            ...extra
+        });
+
+        const lonely = asked.filter(r => r.answers.filter(x => x.correct).length === 1).pop();
+        if (lonely) {
+            const who = lonely.answers.find(x => x.correct);
+            const user = await User.findByPk(who.userId, { attributes: ['id', 'username', 'logo_url'] });
+            moments.push(qMoment(lonely, 'lonelyQuestion', { user: userPayload(user), answer: who.answer }));
+        }
+        const hardest = asked.length ? asked.reduce((x, y) => (share(y) < share(x) ? y : x)) : null;
+        if (hardest && (!lonely || hardest.question.id !== lonely.question.id)) {
+            moments.push(qMoment(hardest, 'hardestQuestion'));
         }
 
         res.json({ leagueId, moments });

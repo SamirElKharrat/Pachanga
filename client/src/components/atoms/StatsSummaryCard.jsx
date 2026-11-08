@@ -250,7 +250,7 @@ function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
                                             <div className="pstats-cap">{l.label}</div>
                                         </div>
                                         <span className={`pstats-row-value${i === 0 ? ' gold' : ''}`}>
-                                            {l.value < 1 && l.value > 0 ? `${pct(l.value)} %` : num(l.value)}
+                                            {l.format === 'pct' || (!l.format && l.value < 1 && l.value > 0) ? `${pct(l.value)} %` : num(l.value)}
                                         </span>
                                     </div>
                                 ))}
@@ -268,7 +268,7 @@ function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
 
     // ── Variante Liga ────────────────────────────────────────────────────────
     const byAccuracy = [...data.players].sort((a, b) => b.accuracy - a.accuracy);
-    const momentMark = { divided: 2, upset: 4, unanimous: 3, bestRun: 1 };
+    const momentMark = { divided: 2, upset: 4, unanimous: 3, bestRun: 1, lonelyQuestion: 0, hardestQuestion: 4 };
 
     return (
         <div className={root}>
@@ -337,7 +337,7 @@ function StatsSummaryCard({ variant, year, leagueId, leagueName, onSeeMore }) {
                                     const i = momentMark[m.kind] ?? 0;
                                     return (
                                         <MomentCard
-                                            key={m.kind}
+                                            key={m.kind + (m.questionId || m.matchId || '')}
                                             kind={m.kind}
                                             moment={m}
                                             mark={chart.series[i]}

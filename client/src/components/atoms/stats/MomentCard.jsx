@@ -2,13 +2,14 @@ import React from 'react';
 
 /**
  * Uno de los momentos de una liga: el partido que os dividió, la sorpresa, la
- * unanimidad, el mejor pleno.
+ * unanimidad, el mejor pleno, y de las preguntas, la más difícil y la que solo
+ * acertó uno.
  *
  * La API devuelve números, no frases. El texto se redacta aquí, así que cambiar
  * cómo se cuenta no obliga a tocar la base de datos.
  *
  * @param {Object} props
- * @param {string} props.kind - divided | upset | unanimous | bestRun
+ * @param {string} props.kind - divided | upset | unanimous | bestRun | lonelyQuestion | hardestQuestion
  * @param {Object} props.moment - Elemento de /api/stats/moments.
  * @param {string} props.mark - Color de la franja lateral.
  * @param {string} props.text - Color del rótulo, ya con contraste de texto.
@@ -44,6 +45,18 @@ function MomentCard({ kind, moment, mark, text }) {
             title: 'Mejor pleno de la liga',
             main: `${moment.user ? moment.user.username : '—'} · ${moment.length} seguidas`,
             foot: `Jornada ${moment.week}${moment.bonus ? ` · +${moment.bonus} pts de bonus` : ''}`
+        },
+        lonelyQuestion: {
+            title: `Solo la acertó ${moment.user ? moment.user.username : 'uno'}`,
+            main: moment.text,
+            foot: `«${moment.answer}» · ${moment.answers} respondieron · jornada ${moment.week}`
+        },
+        hardestQuestion: {
+            title: 'La pregunta más difícil',
+            main: moment.text,
+            foot: moment.correct === 0
+                ? `Ninguno de los ${moment.answers} la acertó · jornada ${moment.week}`
+                : `Solo ${moment.correct} de ${moment.answers} la acertaron · jornada ${moment.week}`
         }
     };
 
