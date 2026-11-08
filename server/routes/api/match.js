@@ -12,6 +12,7 @@ router.get('/getByWeek', authenticateJwtToken, matchController.getCurrentWeekMat
 router.get('/getByWeek/:league_id', authenticateJwtToken, matchController.getCurrentWeekMatchesByLeague);
 router.get('/getByWeek/:league_id/:startDate/:endDate', authenticateJwtToken, matchController.getCurrentWeekMatchesByWeek);
 router.get('/getByLeague/:id', authenticateJwtToken, matchController.getMatchesByLeague);
+router.get('/getByRound/:round_id', authenticateJwtToken, matchController.getMatchesByRound);
 router.get('/getWithoutResult', authenticateJwtToken, matchController.getMatchesWithoutResult);
 router.post('/set', authenticateJwtToken, requireAdmin, matchController.createMatch);
 router.put('/update/:id', authenticateJwtToken, requireAdmin, matchController.updateMatch);

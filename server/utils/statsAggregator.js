@@ -12,6 +12,7 @@ const PlayerLeagueStat = require('../models/playerLeagueStat');
 const MatchStat = require('../models/matchStat');
 const Question = require('../models/question');
 const QuestionAnswer = require('../models/questionAnswer');
+const Round = require('../models/round');
 
 const { startOfWeek } = require('../controllers/weekController');
 const { calculatePredictionBreakdown, QUESTION_POINTS, isSettled, isAnswerCorrect } = require('./pointsCalculator');
@@ -61,6 +62,44 @@ const weekOf = (leagueStartDate, date) => {
 };
 
 /**
+ * La jornada (su `order`) de un partido: la de su `round_id`, o la de su semana si
+ * aún no tiene. El número es el mismo que usan las columnas `week` de las tablas de
+ * estadísticas y de la clasificación.
+ *
+ * @param {{round_id: number|null, date: Date|string}} match
+ * @param {Object} league - Con `start_date`.
+ * @returns {Promise<number>}
+ */
+const roundOrderOf = async (match, league) => {
+    if (match.round_id) {
+        const round = await Round.findByPk(match.round_id, { attributes: ['order'] });
+        if (round) return round.order;
+    }
+    return weekOf(league.start_date, match.date);
+};
+
+/**
+ * Los partidos de una jornada, por fecha.
+ *
+ * Los de su `round_id`, más los que aún no tienen jornada y caen en sus fechas de
+ * semana de siempre. Lo segundo no debería pasar —el servidor rellena `round_id` al
+ * arrancar—, pero así una fila sin rellenar no se queda sin puntuar.
+ *
+ * @param {Object} league
+ * @param {number} week - El `order` de la jornada.
+ * @returns {Promise<Array<Object>>}
+ */
+const matchesOfRound = async (league, week) => {
+    const { from, to } = weekBounds(league.start_date, week);
+    const round = await Round.findOne({ where: { league_id: league.id, order: week }, attributes: ['id'] });
+    const loose = { round_id: null, date: { [Op.between]: [from, to] } };
+    return Match.findAll({
+        where: { league_id: league.id, ...(round ? { [Op.or]: [{ round_id: round.id }, loose] } : loose) },
+        order: [['date', 'ASC']]
+    });
+};
+
+/**
  * Everyone who should have a row for this league: whoever joined it, plus anyone who
  * took part even if their participation row went missing — by sending a prediction or
  * by answering a question.
@@ -83,7 +122,7 @@ const rosterFor = async (leagueId, predictions, answers = []) => {
 };
 
 /**
- * Works out one league week without writing anything.
+ * Works out one league week (one jornada: `week` is its `order`) without writing anything.
  *
  * Returns the rows the stats tables need, plus what every prediction of the week is
  * worth right now. Callers decide what to do with that.
@@ -93,13 +132,10 @@ const rosterFor = async (leagueId, predictions, answers = []) => {
  * @returns {Promise<Object>}
  */
 const computeWeek = async (league, week) => {
-    const { from, to } = weekBounds(league.start_date, week);
-
     // Chronological order matters: plenos are built walking the week forwards.
-    const weekMatches = await Match.findAll({
-        where: { league_id: league.id, date: { [Op.between]: [from, to] } },
-        order: [['date', 'ASC']]
-    });
+    // Los partidos son los de la jornada, no los de unas fechas: aplazar uno no lo
+    // saca de su grupo.
+    const weekMatches = await matchesOfRound(league, week);
     const weekMatchIds = weekMatches.map(m => m.id);
 
     // Las preguntas de la jornada. Se cargan ANTES de decidir si la semana está
@@ -587,17 +623,20 @@ exports.recomputeLeague = async (leagueId) => {
     const [matches, questions] = await Promise.all([
         Match.findAll({
             where: { league_id: leagueId },
-            attributes: ['id', 'date'],
+            attributes: ['id', 'date', 'round_id'],
             order: [['date', 'ASC']]
         }),
         Question.findAll({ where: { league_id: leagueId }, attributes: ['week'] })
     ]);
+    const rounds = await Round.findAll({ where: { league_id: leagueId }, attributes: ['id', 'order'] });
+    const orderOfRound = {};
+    rounds.forEach(r => { orderOfRound[r.id] = r.order; });
 
     // Las jornadas a recalcular salen de las dos cosas. Sacarlas solo de los partidos
     // —que es lo que se hacía— dejaría fuera una semana de parón con preguntas, y sus
     // puntos no se repartirían nunca sin dar ningún error.
     const weeks = [...new Set([
-        ...matches.map(m => weekOf(league.start_date, m.date)),
+        ...matches.map(m => orderOfRound[m.round_id] ?? weekOf(league.start_date, m.date)),
         ...questions.map(q => q.week)
     ])].sort((a, b) => a - b);
 
@@ -640,13 +679,13 @@ exports.recomputeSeason = async (year) => {
  * @returns {Promise<Object|null>} Summary, or null if the match is gone.
  */
 exports.recomputeForMatch = async (matchId) => {
-    const match = await Match.findByPk(matchId, { attributes: ['id', 'league_id', 'date'] });
+    const match = await Match.findByPk(matchId, { attributes: ['id', 'league_id', 'date', 'round_id'] });
     if (!match) return null;
 
     const league = await League.findByPk(match.league_id, { attributes: ['id', 'start_date'] });
     if (!league) return null;
 
-    return exports.recomputeLeagueWeek(match.league_id, weekOf(league.start_date, match.date));
+    return exports.recomputeLeagueWeek(match.league_id, await roundOrderOf(match, league));
 };
 
 /**
@@ -660,13 +699,13 @@ exports.recomputeForMatch = async (matchId) => {
  * @returns {Promise<Object|null>} Summary, or null if the match is gone.
  */
 exports.applyForMatch = async (matchId) => {
-    const match = await Match.findByPk(matchId, { attributes: ['id', 'league_id', 'date'] });
+    const match = await Match.findByPk(matchId, { attributes: ['id', 'league_id', 'date', 'round_id'] });
     if (!match) return null;
 
     const league = await League.findByPk(match.league_id, { attributes: ['id', 'start_date'] });
     if (!league) return null;
 
-    return exports.applyWeekPoints(match.league_id, weekOf(league.start_date, match.date));
+    return exports.applyWeekPoints(match.league_id, await roundOrderOf(match, league));
 };
 
 /**
@@ -682,3 +721,4 @@ exports.availableSeasons = async () => {
 
 exports.weekBounds = weekBounds;
 exports.weekOf = weekOf;
+exports.roundOrderOf = roundOrderOf;

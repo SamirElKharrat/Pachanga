@@ -13,6 +13,7 @@ const LeagueParticipation = require('../models/leagueParticipation');
 const Question = require('../models/question');
 const QuestionAnswer = require('../models/questionAnswer');
 const { isSettled, isAnswerCorrect } = require('../utils/pointsCalculator');
+const { describeRounds } = require('../utils/rounds');
 
 /**
  * Read side of the stats. Nothing here calculates points: everything comes from the
@@ -439,7 +440,12 @@ const buildProgression = async (scope, players) => {
             };
         });
 
-        return { axis: 'week', labels: weeks.map(w => `J${w}`), series, average: averageOf(series) };
+        // El eje con el nombre corto de cada jornada (J3, S2, CF…), no con su número
+        // interno: con semanas de parón, el `order` 4 es la «Jornada 3».
+        const rounds = await describeRounds(scope.leagueIds[0]);
+        const shortOf = {};
+        rounds.forEach(r => { shortOf[r.order] = r.shortLabel; });
+        return { axis: 'week', labels: weeks.map(w => shortOf[w] || `J${w}`), series, average: averageOf(series) };
     }
 
     const leagues = scope.leagues;

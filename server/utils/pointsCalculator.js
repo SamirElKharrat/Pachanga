@@ -95,18 +95,22 @@ exports.calculatePredictionBreakdown = async ({
 
     // If cache objects aren't provided (e.g., single calculation), fetch them
     if (!weekMatchIds || !resultMap || !allWeekPredictions) {
-        const weekStart = startOfWeek(match.date);
-        const weekEnd = endOfWeek(match.date);
-
-        const weekMatches = await Match.findAll({
-            where: {
-                league_id: match.league_id,
-                date: {
-                    [Op.between]: [weekStart, weekEnd]
-                }
-            },
-            order: [['date', 'ASC']]
-        });
+        // El pleno se encadena dentro de la jornada. Sin jornada (no debería pasar:
+        // el servidor la rellena al arrancar), la semana de siempre.
+        const weekMatches = match.round_id
+            ? await Match.findAll({
+                where: { league_id: match.league_id, round_id: match.round_id },
+                order: [['date', 'ASC']]
+            })
+            : await Match.findAll({
+                where: {
+                    league_id: match.league_id,
+                    date: {
+                        [Op.between]: [startOfWeek(match.date), endOfWeek(match.date)]
+                    }
+                },
+                order: [['date', 'ASC']]
+            });
         weekMatchIds = weekMatches.map(m => m.id);
 
         const currentMatchIndex = weekMatchIds.indexOf(match.id);

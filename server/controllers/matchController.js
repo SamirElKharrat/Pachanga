@@ -7,6 +7,7 @@ const { startOfWeek, endOfWeek } = require('./weekController');
 const { advanceLifecycles } = require('../utils/lifecycle');
 const Round = require('../models/round');
 const { roundForMatchDate } = require('../utils/rounds');
+const statsAggregator = require('../utils/statsAggregator');
 
 
 // Get all matches
@@ -115,6 +116,29 @@ exports.getCurrentWeekMatchesByLeague = async (req, res) => {
     } catch (error) {
         console.error('Error getting current week matches:', error);
         res.status(500).json({ error: 'Error fetching matches. Please try again later.' });
+    }
+};
+
+/**
+ * Los partidos de una jornada, por fecha y con sus equipos. Es lo que piden Inicio y
+ * Predicciones al elegir jornada.
+ *
+ * GET /matches/getByRound/:round_id
+ */
+exports.getMatchesByRound = async (req, res) => {
+    try {
+        const matches = await Match.findAll({
+            where: { round_id: req.params.round_id },
+            include: [{
+                model: Team,
+                attributes: ['id', 'name', 'logo_url', 'acronym'],
+                through: { attributes: [] }
+            }],
+            order: [['date', 'ASC']]
+        });
+        res.json(matches);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -254,7 +278,26 @@ exports.updateMatch = async (req, res) => {
             delete payload.round_id;
         }
 
+        const before = { round_id: match.round_id, date: new Date(match.date).getTime() };
         const updatedMatch = await match.update(payload);
+
+        // Cambiar de jornada saca el partido de una y lo mete en otra; cambiar la hora
+        // cambia el orden en que se encadena el pleno. En los dos casos, las jornadas
+        // afectadas se vuelven a puntuar (por diferencia: lo que no cambia, no se mueve).
+        const moved = updatedMatch.round_id !== before.round_id;
+        const retimed = new Date(updatedMatch.date).getTime() !== before.date;
+        if (moved || retimed) {
+            const orders = new Set();
+            for (const id of new Set([before.round_id, updatedMatch.round_id])) {
+                const round = id ? await Round.findByPk(id, { attributes: ['order', 'league_id'] }) : null;
+                if (round) orders.add(`${round.league_id}:${round.order}`);
+            }
+            for (const key of orders) {
+                const [leagueId, order] = key.split(':').map(Number);
+                await statsAggregator.applyWeekPoints(leagueId, order);
+            }
+        }
+
         res.json(updatedMatch);
     } catch (error) {
         res.status(400).json({ error: error.message });

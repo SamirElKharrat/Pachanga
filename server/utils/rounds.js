@@ -23,15 +23,20 @@ const { isSettled } = require('./pointsCalculator');
  * Por ahora no hay cierre: en ningún estado se deja de poder votar.
  */
 
-/** Las fases, en el orden en que se juegan. `label` es el nombre de la fase. */
+/**
+ * Las fases, en el orden en que se juegan. `label` es el nombre de la fase; `name` y
+ * `short`, el de una jornada suya según su posición (n de total). `short` es para
+ * ejes de gráficas, donde «Playoffs · Ronda 1» no cabe.
+ */
+const numbered = (text) => (n, total) => (total > 1 ? `${text}${n}` : text);
 const STAGES = Object.freeze([
-    { key: 'regular', label: 'Fase regular', name: (n) => `Jornada ${n}` },
-    { key: 'playin', label: 'Play-in', name: (n) => `Play-in · Ronda ${n}` },
-    { key: 'swiss', label: 'Fase suiza', name: (n) => `Ronda suiza ${n}` },
-    { key: 'playoffs', label: 'Playoffs', name: (n) => `Playoffs · Ronda ${n}` },
-    { key: 'quarterfinal', label: 'Cuartos de final', name: (n, total) => (total > 1 ? `Cuartos de final ${n}` : 'Cuartos de final') },
-    { key: 'semifinal', label: 'Semifinales', name: (n, total) => (total > 1 ? `Semifinales ${n}` : 'Semifinales') },
-    { key: 'final', label: 'Final', name: (n, total) => (total > 1 ? `Final ${n}` : 'Final') },
+    { key: 'regular', label: 'Fase regular', name: (n) => `Jornada ${n}`, short: (n) => `J${n}` },
+    { key: 'playin', label: 'Play-in', name: (n) => `Play-in · Ronda ${n}`, short: (n) => `PI${n}` },
+    { key: 'swiss', label: 'Fase suiza', name: (n) => `Ronda suiza ${n}`, short: (n) => `S${n}` },
+    { key: 'playoffs', label: 'Playoffs', name: (n) => `Playoffs · Ronda ${n}`, short: (n) => `PO${n}` },
+    { key: 'quarterfinal', label: 'Cuartos de final', name: (n, total) => (total > 1 ? `Cuartos de final ${n}` : 'Cuartos de final'), short: numbered('CF') },
+    { key: 'semifinal', label: 'Semifinales', name: (n, total) => (total > 1 ? `Semifinales ${n}` : 'Semifinales'), short: numbered('SF') },
+    { key: 'final', label: 'Final', name: (n, total) => (total > 1 ? `Final ${n}` : 'Final'), short: numbered('F') },
 ]);
 const STAGE_KEYS = STAGES.map(s => s.key);
 const stageOf = (key) => STAGES.find(s => s.key === key) || STAGES[0];
@@ -107,6 +112,7 @@ async function describeRounds(leagueId, now = new Date()) {
             stageLabel: stage.label,
             name: r.name,
             label: r.name || stage.name(position, totalByStage[r.stage]),
+            shortLabel: stage.short(position, totalByStage[r.stage]),
             status: roundStatus({ matches: own, resolvedIds, questions: ownQuestions, now }),
             matches: own.length,
             questions: ownQuestions.length,
