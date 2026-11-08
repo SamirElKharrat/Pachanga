@@ -9,7 +9,7 @@ const { Text } = Typography;
 
 /**
  * Component that displays a scrollable compact row of upcoming and live matches.
- * Automatically updates match statuses from 'scheduled' to 'live' if the time has passed.
+ * The server keeps match statuses current (scheduled → live → finished); this only reads them.
  * Fully styled using Ant Design components and Design Tokens.
  * 
  * @returns {React.ReactElement|null} The NextGames horizontal list or null if no games.
@@ -37,22 +37,10 @@ const NextGames = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
+                // Los estados ya vienen al día: el servidor pasa a `live` los
+                // empezados antes de responder (server/utils/lifecycle.js).
                 const response = await API.get('/matches/getByWeek/');
-                const gamesList = Array.isArray(response) ? response : [];
-                const now = new Date();
-
-                const updatedGames = await Promise.all(gamesList.map(async game => {
-                    const matchDate = new Date(game.date);
-                    if (matchDate <= now && game.status === 'scheduled') {
-                        try {
-                            await API.put('/matches/update/' + game.id, { status: 'live' });
-                            return { ...game, status: 'live' };
-                        } catch {
-                            return game;
-                        }
-                    }
-                    return game;
-                }));
+                const updatedGames = Array.isArray(response) ? response : [];
 
                 const participationsRes = await API.get('/leagueParticipations/get/').catch(() => []);
                 const participations = Array.isArray(participationsRes) ? participationsRes : [];

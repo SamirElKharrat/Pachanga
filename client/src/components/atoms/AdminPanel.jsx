@@ -53,6 +53,7 @@ const AdminPanel = ({ table, names, fields, relation }) => {
     // La cola del modo masivo: lo que se ha ido añadiendo y todavía no se ha enviado.
     const [queue, setQueue]                 = useState([]);
     const [sending, setSending]             = useState(false);
+    const [deleting, setDeleting]           = useState(false);
 
     // ── Fetch main data ───────────────────────────────────────────────────────
     const fetchData = useCallback(async () => {
@@ -508,6 +509,8 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                 okText="Eliminar"
                 cancelText="Cancelar"
                 onSuccess={async () => {
+                    if (deleting) return;
+                    setDeleting(true);
                     try {
                         await API.delete(`/${table}/delete/${recordToProcess.id}`);
                         showAlert('success', 'Registro eliminado');
@@ -515,9 +518,12 @@ const AdminPanel = ({ table, names, fields, relation }) => {
                         fetchData();
                     } catch {
                         showAlert('error', 'No se pudo eliminar el registro');
+                    } finally {
+                        setDeleting(false);
                     }
                 }}
                 onClose={() => setOpenDeleteModal(false)}
+                confirmLoading={deleting}
             />
         </div>
     );

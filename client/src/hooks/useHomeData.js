@@ -1,12 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { API } from '../services/api';
 
 /**
  * Custom hook to handle data fetching and week calculation for the Home page.
+ *
+ * `status` es la máquina de la carga: 'loading' → 'ready' | 'error'. Cada cambio de
+ * liga o de semana (o `reload`) vuelve a 'loading'. Al fallar se conservan los datos
+ * anteriores, así que «error con ligas» es una recarga fallida y «error sin ligas»,
+ * que no hay nada que enseñar.
+ *
+ * Solo la última petición escribe. Sin eso, al saltar rápido de una semana a otra
+ * (o de liga), la respuesta más lenta ganaba aunque fuera la de antes, y se veían
+ * los partidos de una jornada con el selector en otra.
+ *
  * @param {number|null} selectedLeague - ID of the selected league.
  * @param {number|null} selectedWeek - ID of the selected week.
+ * @returns {object} Los datos, más `status`, `loading` (= status === 'loading') y `reload()`.
  */
 export const useHomeData = (selectedLeague, selectedWeek) => {
+    /** @type {['loading'|'ready'|'error', Function]} */
+    const [status, setStatus] = useState('loading');
+    const [nonce, setNonce] = useState(0);
     const [data, setData] = useState({
         leagues: [],
         participants: [],
@@ -18,26 +32,29 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
         questions: [],
         questionAnswers: [],
         currentUser: null,
-        loading: true,
         predictionsMade: false
     });
 
     useEffect(() => {
+        let cancelled = false;
+
         const fetchAllData = async () => {
             try {
-                setData(prev => ({ ...prev, loading: true }));
+                setStatus('loading');
 
                 // 1. Fetch Leagues
                 const allLeaguesParticipants = await API.get('/leagueParticipations/get/');
                 const leagueArray = await Promise.all(
                     allLeaguesParticipants.map(p => API.get('/leagues/get/' + p.league_id))
                 );
+                if (cancelled) return;
                 const sortedLeagues = leagueArray.sort((a, b) => b.id - a.id);
 
                 let leagueId = selectedLeague || (sortedLeagues.length > 0 ? sortedLeagues[0].id : null);
                 
                 if (!leagueId) {
-                    setData(prev => ({ ...prev, leagues: sortedLeagues, loading: false }));
+                    setData(prev => ({ ...prev, leagues: sortedLeagues }));
+                    setStatus('ready');
                     return;
                 }
 
@@ -107,6 +124,7 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                     }
                 }
 
+                if (cancelled) return;
                 setData({
                     leagues: sortedLeagues,
                     participants: sortedParticipants,
@@ -118,20 +136,24 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                     questions,
                     questionAnswers,
                     currentUser: currentUserParticipant,
-                    loading: false,
                     predictionsMade
                 });
+                setStatus('ready');
 
             } catch (err) {
+                if (cancelled) return;
                 console.error("Error fetching home data:", err);
-                setData(prev => ({ ...prev, loading: false }));
+                setStatus('error');
             }
         };
 
         fetchAllData();
-    }, [selectedLeague, selectedWeek]);
+        return () => { cancelled = true; };
+    }, [selectedLeague, selectedWeek, nonce]);
 
-    return data;
+    const reload = useCallback(() => setNonce(n => n + 1), []);
+
+    return { ...data, status, loading: status === 'loading', reload };
 };
 
 /**

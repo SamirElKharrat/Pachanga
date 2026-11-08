@@ -146,38 +146,40 @@ const UserMenu = ({ children }) => {
     // Se abre solo la primera vez que alguien entra, y luego cuando lo pide desde su
     // menú. Siempre sobre Inicio, que es la pantalla que explica: si se pide desde
     // otra, primero se va a Inicio y se espera a que se pinte.
-    const [tourRequested, setTourRequested] = useState(false);
-    const [tourOpen, setTourOpen] = useState(false);
+    //
+    // 'idle' → 'pending' (pedido; espera a estar en Inicio, en escritorio) → 'open' → 'idle'.
+    // Antes eran dos booleanos, y nada impedía que estuvieran los dos a la vez.
+    /** @type {['idle'|'pending'|'open', Function]} */
+    const [tour, setTour] = useState('idle');
     const tourKey = user?.id ? `pachanga.tour.${user.id}` : null;
 
     useEffect(() => {
         if (!tourKey) return;
         let seen = true;
         try { seen = localStorage.getItem(tourKey) === 'seen'; } catch { /* sin almacenamiento: no se insiste */ }
-        if (!seen) setTourRequested(true);
+        if (!seen) setTour(t => (t === 'idle' ? 'pending' : t));
     }, [tourKey]);
 
     useEffect(() => {
         // En móvil no hay tour: el menú vive plegado en el cajón y la mitad de los
         // pasos no tendrían a qué señalar. Queda pendiente para cuando entre desde el
         // ordenador, porque no se marca como visto.
-        if (isMobile || !tourRequested || location.pathname !== '/') return;
+        if (isMobile || tour !== 'pending' || location.pathname !== '/') return;
         // Inicio carga sus datos al montarse; el margen es para que existan las
         // tarjetas que el tour señala.
         const t = setTimeout(() => {
-            setTourRequested(false);
-            setTourOpen(true);
+            setTour('open');
         }, 1200);
         return () => clearTimeout(t);
-    }, [tourRequested, location.pathname, isMobile]);
+    }, [tour, location.pathname, isMobile]);
 
     const startTour = () => {
         if (location.pathname !== '/') nav('/');
-        setTourRequested(true);
+        setTour('pending');
     };
 
     const closeTour = () => {
-        setTourOpen(false);
+        setTour('idle');
         if (tourKey) {
             try { localStorage.setItem(tourKey, 'seen'); } catch { /* sin almacenamiento */ }
         }
@@ -514,7 +516,7 @@ const UserMenu = ({ children }) => {
                 </div>
             </Modal>
 
-            <WelcomeTour open={tourOpen && !isMobile} onClose={closeTour} />
+            <WelcomeTour open={tour === 'open' && !isMobile} onClose={closeTour} />
 
             <ChangelogModal
                 open={changelogOpen}

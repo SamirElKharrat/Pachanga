@@ -8,7 +8,7 @@ import YearFilter from '../atoms/YearFilter';
 import WinnerCelebration from '../atoms/WinnerCelebration';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 import SegmentedControl from '../atoms/SegmentedControl';
-import { API } from '../../services/api';
+import { showAlert } from '../atoms/AlertInfo';
 import { STATUS_COLORS, RANK_STYLES, QUESTION_POINTS } from '../../constants/pachanga';
 
 const { Text } = Typography;
@@ -380,7 +380,9 @@ function Home() {
         weeks,
         questions,
         questionAnswers,
+        status,
         loading,
+        reload,
         predictionsMade,
         currentUser,
     } = useHomeData(selectedLeague, selectedWeek);
@@ -436,43 +438,42 @@ function Home() {
 
 
 
-    // Check and update league status (scheduled -> live -> finished) based on current date
-    useEffect(() => {
-        if (!leagues || leagues.length === 0) return;
-
-        const checkAndUpdateLeagues = async () => {
-            const now = new Date();
-            let statusChanged = false;
-
-            for (const league of leagues) {
-                const startDate = new Date(league.start_date);
-                const endDate = new Date(league.end_date);
-                let newStatus = null;
-
-                if (now >= startDate && now <= endDate && league.status === 'scheduled') {
-                    newStatus = 'live';
-                } else if (now > endDate && league.status !== 'finished') {
-                    newStatus = 'finished';
-                }
-
-                if (newStatus) {
-                    try {
-                        await API.put(`/leagues/update/${league.id}`, { status: newStatus });
-                        statusChanged = true;
-                    } catch (error) {
-                        console.error(`Error updating league ${league.id} status:`, error);
-                    }
-                }
-            }
-        };
-
-        checkAndUpdateLeagues();
-    }, [leagues]);
+    // El estado de las ligas (scheduled → live → finished) lo avanza el servidor por
+    // calendario: server/utils/lifecycle.js. Aquí solo se lee.
 
     // Reset celebration state when selected league changes
     useEffect(() => {
         setShowCelebration(true);
     }, [selectedLeague]);
+
+    // Si falla una recarga con la pantalla ya pintada, se deja lo que había y se
+    // avisa. Sin datos que enseñar, el aviso es la pantalla de abajo.
+    useEffect(() => {
+        if (status === 'error' && leagues.length > 0) {
+            showAlert('error', 'No se pudieron actualizar los datos de la jornada.');
+        }
+    }, [status, leagues.length]);
+
+    // Antes un fallo de red caía en «No estás unido a ninguna liga», que es mentira
+    // y manda a unirse otra vez a quien ya está dentro.
+    if (status === 'error' && leagues.length === 0) {
+        return (
+            <Flex vertical align="center" justify="center" style={{ minHeight: '60vh', padding: 24 }}>
+                <Empty
+                    description={
+                        <Space direction="vertical">
+                            <Text strong>No se pudieron cargar tus ligas</Text>
+                            <Text type="secondary">Puede ser un corte momentáneo del servidor.</Text>
+                        </Space>
+                    }
+                >
+                    <Button type="primary" size="large" onClick={reload}>
+                        Reintentar
+                    </Button>
+                </Empty>
+            </Flex>
+        );
+    }
 
     if (!loading && leagues.length === 0) {
         return (

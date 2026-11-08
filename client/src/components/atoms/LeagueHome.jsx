@@ -26,6 +26,8 @@ const LeagueHome = () => {
     const [joinedLeagues, setJoinedLeagues] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    // Mientras se envía la unión: bloquea el OK para que dos clics no unan dos veces.
+    const [joining, setJoining] = useState(false);
     const nav = useNavigate();
 
     /**
@@ -68,6 +70,9 @@ const LeagueHome = () => {
 
             setTeams(resTeams);
             setSelectedLeague(league);
+            // El favorito elegido para otra liga no vale aquí: si quedaba marcado, se
+            // podía enviar un equipo que esta liga ni tiene.
+            setSelectedTeam(null);
             setOpenModal(true);
         } catch (e) {
             console.error(e);
@@ -79,11 +84,13 @@ const LeagueHome = () => {
      * Finalizes the league joining process.
      */
     const handleSuccess = async () => {
+        if (joining) return;
         if (!selectedTeam) {
             showAlert('error', "Debes seleccionar un equipo favorito");
             return;
         }
 
+        setJoining(true);
         try {
             await Promise.all([
                 API.post('/favoriteTeams/set', {
@@ -103,6 +110,8 @@ const LeagueHome = () => {
         } catch (error) {
             console.error("Error joining league:", error);
             showAlert('error', "Hubo un problema al unirte a la liga");
+        } finally {
+            setJoining(false);
         }
     };
 
@@ -205,6 +214,7 @@ const LeagueHome = () => {
                 }
                 onSuccess={handleSuccess}
                 onClose={() => setOpenModal(false)}
+                confirmLoading={joining}
             />
         </div>
     );

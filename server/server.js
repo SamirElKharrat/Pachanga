@@ -134,6 +134,10 @@ League.hasMany(Rule, { as: 'Rules', foreignKey: 'league_id' });
 const hallController = require('./controllers/hallController');
 const pachangaController = require('./controllers/pachangaController');
 const statsAggregator = require('./utils/statsAggregator');
+const { advanceLifecycles } = require('./utils/lifecycle');
+
+// Cada cuánto se avanzan ligas y partidos por calendario (ver utils/lifecycle.js).
+const LIFECYCLE_INTERVAL_MS = 60 * 1000;
 
 /**
  * Makes sure the columns the models declare actually exist before anything queries
@@ -257,6 +261,10 @@ const syncDatabase = async () => {
 
     // Auto-inicialización segura en arranque (Render & local)
     try {
+      // Primero, que las ligas que terminaron con el servidor parado pasen a
+      // `finished`: lo de abajo solo reparte títulos y puntos de las terminadas.
+      await advanceLifecycles();
+
       if (hallController.seedHistoricalHallIfEmpty) {
         await hallController.seedHistoricalHallIfEmpty();
       }
@@ -279,6 +287,8 @@ const syncDatabase = async () => {
     app.listen(PORT, () => {
       console.log(`Servidor ejecutándose en el puerto ${PORT}`);
     });
+
+    setInterval(advanceLifecycles, LIFECYCLE_INTERVAL_MS);
   } catch (error) {
     console.error('Error al sincronizar con la base de datos:', error);
   }

@@ -8,8 +8,18 @@ const { Op } = require('sequelize');
 /**
  * Automatically inspects finished leagues and assigns Hall entries to the winner(s)
  * if not already recorded.
+ *
+ * Va en fila: «mirar si hay entrada y, si no, crearla» no es atómico, y dos pasadas
+ * a la vez (dos visitas al Hall, o una visita mientras termina una liga) creaban
+ * el título dos veces. Cada llamada espera a que acabe la anterior.
  */
-const syncFinishedLeagueWinners = async () => {
+let syncQueue = Promise.resolve();
+const syncFinishedLeagueWinners = () => {
+    syncQueue = syncQueue.then(runSyncFinishedLeagueWinners);
+    return syncQueue;
+};
+
+const runSyncFinishedLeagueWinners = async () => {
     try {
         const finishedLeagues = await League.findAll({
             where: { status: 'finished' }

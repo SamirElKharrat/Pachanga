@@ -85,6 +85,8 @@ const Prediction = () => {
         allUserPredictions,
         questions,
         reload,
+        leaguesStatus,
+        reloadLeagues,
         loading,
     } = usePredictionData(selectedLeague, selectedWeek);
 
@@ -218,6 +220,27 @@ const Prediction = () => {
         setSelectedLeague(val);
         setSelectedWeek(null);
     };
+
+    // ── Error state ────────────────────────────────────────────────────────────
+    // Sin esto, un fallo de red se pintaba como «No tienes ligas activas».
+    if (leaguesStatus === 'error') {
+        return (
+            <Flex vertical align="center" justify="center" style={{ minHeight: '60vh', padding: 24 }}>
+                <Empty
+                    description={
+                        <Space direction="vertical">
+                            <Text strong>No se pudieron cargar tus ligas</Text>
+                            <Text type="secondary">Puede ser un corte momentáneo del servidor.</Text>
+                        </Space>
+                    }
+                >
+                    <Button type="primary" size="large" onClick={reloadLeagues}>
+                        Reintentar
+                    </Button>
+                </Empty>
+            </Flex>
+        );
+    }
 
     // ── Empty state ────────────────────────────────────────────────────────────
     if (!loading && leagues.length === 0) {
@@ -522,6 +545,9 @@ const Prediction = () => {
                 open={confirmOpen}
                 onSuccess={submitAll}
                 onClose={() => setConfirmOpen(false)}
+                // Sin esto `submitting` no se veía: el botón seguía activo durante el
+                // envío y un segundo clic mandaba la jornada dos veces.
+                confirmLoading={submitting}
                 okText="Confirmar"
                 cancelText="Cancelar"
             />

@@ -44,6 +44,9 @@ const calculateWeeks = (startDateStr, endDateStr) => {
  *
  * Phase 1 (runs on mount): loads leagues + user points for selected league.
  * Phase 2 (runs when league + week are set): loads match/prediction/result data.
+ *
+ * `leaguesStatus` ('loading' → 'ready' | 'error') separa «no tienes ligas» de «no
+ * se pudieron cargar»: las dos dejan `leagues` vacío y antes se pintaban igual.
  */
 export const usePredictionData = (selectedLeague, selectedWeek) => {
     const [leagues, setLeagues]                                   = useState([]);
@@ -60,7 +63,9 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
     // respuestas: la pantalla tiene que pasar de formulario a vista bloqueada sin
     // sacar al usuario de donde estaba.
     const [nonce, setNonce]                                       = useState(0);
-    const [loadingLeagues, setLoadingLeagues]                     = useState(true);
+    /** @type {['loading'|'ready'|'error', Function]} */
+    const [leaguesStatus, setLeaguesStatus]                       = useState('loading');
+    const [leaguesNonce, setLeaguesNonce]                         = useState(0);
     const [loadingData, setLoadingData]                           = useState(false);
     const [error, setError]                                       = useState(null);
 
@@ -69,7 +74,7 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
         let cancelled = false;
 
         const fetchLeagues = async () => {
-            setLoadingLeagues(true);
+            setLeaguesStatus('loading');
             try {
                 const participations = await API.get('/leagueParticipations/get/');
                 if (cancelled) return;
@@ -80,17 +85,19 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
                 if (cancelled) return;
 
                 setLeagues(leagueArray.sort((a, b) => b.id - a.id));
+                setLeaguesStatus('ready');
             } catch (err) {
                 console.error('[usePredictionData] leagues fetch failed:', err);
-                if (!cancelled) setError(err.message);
-            } finally {
-                if (!cancelled) setLoadingLeagues(false);
+                if (!cancelled) {
+                    setError(err.message);
+                    setLeaguesStatus('error');
+                }
             }
         };
 
         fetchLeagues();
         return () => { cancelled = true; };
-    }, []);
+    }, [leaguesNonce]);
 
     // ── Phase 1b: Load user points whenever selected league changes ───────────
     useEffect(() => {
@@ -210,7 +217,9 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
         allUserPredictions,
         questions,
         reload: () => setNonce(n => n + 1),
-        loading: loadingLeagues || loadingData,
+        leaguesStatus,
+        reloadLeagues: () => setLeaguesNonce(n => n + 1),
+        loading: leaguesStatus === 'loading' || loadingData,
         error,
     };
 };

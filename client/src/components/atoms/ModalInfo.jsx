@@ -12,9 +12,11 @@ import { Modal } from 'antd';
  * @param {Function} props.onClose - Callback on Cancel/Close.
  * @param {string} [props.okText] - Label for the OK button.
  * @param {string} [props.cancelText] - Label for the Cancel button.
+ * @param {boolean} [props.confirmLoading] - Mientras dura la acción del OK: lo deja
+ *   girando y no se puede volver a pulsar. Lo necesita todo OK que haga una petición.
  * @returns {React.ReactElement} The rendered Modal component.
  */
-const ModalInfo = ({ title, description, open, onSuccess, onClose, okText, cancelText }) => {
+const ModalInfo = ({ title, description, open, onSuccess, onClose, okText, cancelText, confirmLoading = false }) => {
     return (
         <Modal
             title={title}
@@ -23,6 +25,7 @@ const ModalInfo = ({ title, description, open, onSuccess, onClose, okText, cance
             onCancel={onClose}
             okText={okText}
             cancelText={cancelText}
+            confirmLoading={confirmLoading}
             centered
             destroyOnClose
             width={800}

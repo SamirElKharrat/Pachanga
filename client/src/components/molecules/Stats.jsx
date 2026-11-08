@@ -57,8 +57,11 @@ export default function Stats() {
 
     const [meta, setMeta] = useState(null);      // ligas y temporadas disponibles
     const [data, setData] = useState(null);      // overview + players del ámbito
-    const [detail, setDetail] = useState(null);  // ficha o comparación
-    const [detailFailed, setDetailFailed] = useState(false);
+    // La ficha o la comparación, con la `key` de la petición que la trajo. Solo se
+    // enseña si coincide con lo que se mira ahora: antes, al cambiar de jugador, la
+    // ficha del anterior seguía en pantalla con el nombre del nuevo en el selector
+    // hasta que llegaba la respuesta. Lo mismo con el fallo.
+    const [detailState, setDetailState] = useState({ key: null, status: 'idle', data: null });
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
 
@@ -110,32 +113,36 @@ export default function Stats() {
     const bId = Number(params.get('b')) || (players[1] && players[1].user.id);
 
     // ── El detalle de la pestaña abierta ──
+    // Qué detalle toca ahora mismo; null si la pestaña no lleva.
+    const detailKey = !players.length ? null
+        : tab === 'jugador' && focusId ? `jugador|${focusId}|${scopeQuery}`
+        : tab === 'comparar' && aId && bId && aId !== bId ? `comparar|${aId}|${bId}|${scopeQuery}`
+        : null;
+
     useEffect(() => {
+        if (!detailKey) return undefined;
         let cancelled = false;
-        if (!players.length) return undefined;
+        setDetailState({ key: detailKey, status: 'loading', data: null });
 
         (async () => {
             try {
-                if (!cancelled) setDetailFailed(false);
-
-                if (tab === 'jugador' && focusId) {
-                    const r = await API.get(`/stats/player/${focusId}?${scopeQuery}`);
-                    if (!cancelled) setDetail({ kind: 'jugador', ...r });
-                } else if (tab === 'comparar' && aId && bId && aId !== bId) {
-                    const r = await API.get(`/stats/compare?${scopeQuery}&a=${aId}&b=${bId}`);
-                    if (!cancelled) setDetail({ kind: 'comparar', ...r });
-                } else {
-                    if (!cancelled) setDetail(null);
-                }
+                const r = tab === 'jugador'
+                    ? { kind: 'jugador', ...await API.get(`/stats/player/${focusId}?${scopeQuery}`) }
+                    : { kind: 'comparar', ...await API.get(`/stats/compare?${scopeQuery}&a=${aId}&b=${bId}`) };
+                if (!cancelled) setDetailState({ key: detailKey, status: 'ready', data: r });
             } catch (error) {
                 // Sin esto, un jugador sin datos en el ámbito deja el esqueleto girando
                 // para siempre: «cargando» y «no hay nada» se veían igual.
                 console.error('Error cargando el detalle:', error);
-                if (!cancelled) { setDetail(null); setDetailFailed(true); }
+                if (!cancelled) setDetailState({ key: detailKey, status: 'error', data: null });
             }
         })();
         return () => { cancelled = true; };
-    }, [tab, focusId, aId, bId, scopeQuery, players.length]);
+    }, [detailKey]); // eslint-disable-line react-hooks/exhaustive-deps -- la key ya los recoge todos
+
+    const current = detailState.key === detailKey ? detailState : null;
+    const detail = current && current.status === 'ready' ? current.data : null;
+    const detailFailed = !!current && current.status === 'error';
 
     /**
      * Teclado en las pestañas, como manda el patrón de tablist: flechas para moverse,
