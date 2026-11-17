@@ -62,7 +62,6 @@ const CardInfo = ({
             style={{
                 height: '100%',
                 background: `linear-gradient(135deg, ${token.colorBgContainer}B3 0%, ${token.colorBgBase}CC 100%)`,
-                backdropFilter: 'blur(8px)',
                 border: `1px solid ${token.colorBorderSecondary}66`,
                 borderRadius: `${token.borderRadius * 2}px`,
                 boxShadow: token.boxShadowTertiary || `0 8px 32px 0 ${isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.3)'}`,

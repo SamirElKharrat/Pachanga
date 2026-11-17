@@ -17,7 +17,9 @@
   padding: 28px;
   margin-bottom: 32px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(12px);
+  /* Sin backdrop-filter: detrás solo hay el fondo (y en Worlds, un escudo fijo al
+     4,5 %), así que el desenfoque no se veía, pero obligaba a Firefox a recalcularlo
+     en cada fotograma de scroll. Era lo que hacía ir a tirones esta pantalla. */
 }
 
 .league-hero-logo {
@@ -178,7 +180,7 @@
   background: rgba(var(--tint), 0.02);
   border: 1px solid rgba(var(--tint), 0.05);
   margin-bottom: 8px;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .league-standing-row:hover {
@@ -262,7 +264,9 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  transition: all 0.25s ease;
+  /* Solo lo que cambia al pasar el ratón, y sin la sombra: animar box-shadow repinta
+     la tarjeta entera en cada fotograma. La sombra aparece de golpe y no se nota. */
+  transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
   position: relative;
   overflow: hidden;
 }
@@ -287,7 +291,8 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+  /* Sin filter: drop-shadow. Con 20 logos eran 20 capas filtradas que Firefox
+     volvía a rasterizar al escalar cada logo en el hover. */
   transition: transform 0.25s ease;
 }
 
