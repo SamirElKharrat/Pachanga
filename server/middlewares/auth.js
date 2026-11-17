@@ -58,9 +58,18 @@ const requireAdmin = async (req, res, next) => {
     }
 };
 
-// Check that the user acts on their own account (`:id`), or is an admin.
-// Leaves `req.isAdmin` set so the controller can decide which fields to accept.
-const requireSelfOrAdmin = async (req, res, next) => {
+/**
+ * Check that the user acts on themselves, or is an admin.
+ *
+ * `idOf(req)` says where the user the request acts on comes from: the `:id` of the
+ * URL, a `user_id` in the body… A request that names nobody acts on the session user.
+ * Leaves `req.fullUser` and `req.isAdmin` set so the controller can decide which
+ * fields to accept.
+ *
+ * @param {Function} idOf - (req) → the id of the user the request acts on.
+ * @param {string} [message] - What a 403 says.
+ */
+const selfOrAdmin = (idOf, message = 'You can only modify your own account') => async (req, res, next) => {
     try {
         if (!req.user || !req.user.email) {
             return res.status(401).json({ message: 'Authentication required' });
@@ -79,17 +88,21 @@ const requireSelfOrAdmin = async (req, res, next) => {
         }
 
         const isAdmin = Boolean(user.Roles && user.Roles.some(role => role.name === 'admin'));
-        if (!isAdmin && String(user.id) !== String(req.params.id)) {
-            return res.status(403).json({ error: 'You can only modify your own account' });
+        const target = idOf(req);
+        if (!isAdmin && target !== undefined && target !== null && String(user.id) !== String(target)) {
+            return res.status(403).json({ error: message });
         }
 
         req.fullUser = user;
         req.isAdmin = isAdmin;
         next();
     } catch (error) {
-        console.error('Error in requireSelfOrAdmin middleware:', error);
+        console.error('Error in selfOrAdmin middleware:', error);
         return res.status(500).json({ error: error.message });
     }
 };
 
-module.exports = { authenticateJwtToken, requireAdmin, requireSelfOrAdmin };
+// Check that the user acts on their own account (`:id`), or is an admin.
+const requireSelfOrAdmin = selfOrAdmin((req) => req.params.id);
+
+module.exports = { authenticateJwtToken, requireAdmin, requireSelfOrAdmin, selfOrAdmin };

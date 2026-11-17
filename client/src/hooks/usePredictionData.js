@@ -142,15 +142,16 @@ export const usePredictionData = (selectedLeague, selectedWeek) => {
                     weekMatches.some(m => m.id === p.match_id)
                 );
                 const predictedIds = new Set(userWeekPreds.map(p => p.match_id));
-                const didPredictAll =
-                    weekMatches.length > 0 &&
-                    weekMatches.every(m => predictedIds.has(m.id));
-
-                const formMatches = didPredictAll
-                    ? weekMatches
-                    : weekMatches.filter(m => !predictedIds.has(m.id));
-
                 const resultMatchIds = new Set(allRes.map(r => r.match_id));
+
+                // Lo que aún se puede votar: sin voto tuyo y sin resultado. Un partido
+                // con resultado ya no se vota (el servidor lo rechaza), así que quien
+                // llega a mitad de jornada la tiene «completa» cuando ha votado lo que
+                // quedaba, y el formulario no le ofrece lo que ya se jugó.
+                const openMatches = weekMatches.filter(m => !predictedIds.has(m.id) && !resultMatchIds.has(m.id));
+                const didPredictAll = weekMatches.length > 0 && openMatches.length === 0;
+
+                const formMatches = didPredictAll ? weekMatches : openMatches;
                 const withResults = allLeagueMatches
                     .filter(m => resultMatchIds.has(m.id) && m.round_id === week.roundId)
                     .sort((a, b) => new Date(b.date) - new Date(a.date));

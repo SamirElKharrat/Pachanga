@@ -125,8 +125,12 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                         );
                         results = resultsResponse.filter(Boolean);
 
+                        // Has votado todo lo que aún se podía: un partido con resultado
+                        // ya no se vota, así que no cuenta si no lo votaste.
+                        const resolved = new Set(results.map(r => r.match_id));
                         predictionsMade = matches.every(match =>
-                            predictions.some(p => p.match_id === match.id && p.User?.id === currentUserInfo.id)
+                            resolved.has(match.id)
+                            || predictions.some(p => p.match_id === match.id && p.User?.id === currentUserInfo.id)
                         );
                     }
                 }

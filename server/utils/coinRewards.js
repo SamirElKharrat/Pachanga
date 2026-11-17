@@ -91,11 +91,16 @@ async function onPredictionSaved(userId, matchId) {
     const league = await League.findByPk(match.league_id, { attributes: ['id', 'name', 'status'] });
     if (!league || league.status === 'finished') return [];
 
+    // Completa = has votado todo lo que aún se podía votar. Un partido con resultado
+    // ya no se vota, así que quien llega a mitad de jornada la completa votando lo que
+    // queda. Y tiene que quedar algo: una jornada ya resuelta no paga.
     const roundMatches = await Match.findAll({ where: { round_id: match.round_id }, attributes: ['id'] });
     const ids = roundMatches.map(m => m.id);
-    const predicted = await Prediction.findAll({ where: { user_id: userId, match_id: ids }, attributes: ['match_id'] });
-    if (new Set(predicted.map(p => p.match_id)).size < ids.length) return [];
-    if (await Result.count({ where: { match_id: ids } }) >= ids.length) return [];
+    const resolved = new Set((await Result.findAll({ where: { match_id: ids }, attributes: ['match_id'] })).map(r => r.match_id));
+    const open = ids.filter(id => !resolved.has(id));
+    if (open.length === 0) return [];
+    const predicted = new Set((await Prediction.findAll({ where: { user_id: userId, match_id: ids }, attributes: ['match_id'] })).map(p => p.match_id));
+    if (!open.every(id => predicted.has(id))) return [];
 
     const rounds = (await describeRounds(league.id)).filter(r => r.matches > 0);
     const round = rounds.find(r => r.id === match.round_id);

@@ -5,7 +5,9 @@ const League = require('../models/league');
 
 // Set user's favorite team for a league
 exports.setFavoriteTeam = async (req, res) => {
-    const { user_id, team_id, league_id } = req.body;
+    const { team_id, league_id } = req.body;
+    // La ruta ya ha comprobado que es uno mismo (o un admin). Sin user_id, uno mismo.
+    const user_id = req.body.user_id ?? req.fullUser.id;
 
     try {
         // Check if user already has a favorite team in this league

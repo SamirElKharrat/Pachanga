@@ -150,7 +150,9 @@ exports.getLeagueParticipationsByLeague = async (req, res) => {
 
 
 exports.joinLeague = async (req, res) => {
-    const { user_id, league_id } = req.body;
+    const { league_id } = req.body;
+    // La ruta ya ha comprobado que es uno mismo (o un admin). Sin user_id, uno mismo.
+    const user_id = req.body.user_id ?? req.fullUser.id;
 
     try {
         const existingParticipation = await leagueParticipation.findOne({
@@ -177,7 +179,10 @@ exports.joinLeague = async (req, res) => {
 };
 
 exports.leaveLeague = async (req, res) => {
-    const { user_id, league_id } = req.body;
+    // De la URL (/leave/:userId/:leagueId), que es lo que la ruta comprueba. Antes se
+    // leían del cuerpo, que en un DELETE no llega: no funcionaba nunca.
+    const user_id = req.params.userId;
+    const league_id = req.params.leagueId;
 
     try {
         const count = await leagueParticipation.destroy({
