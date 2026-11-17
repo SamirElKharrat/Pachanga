@@ -542,7 +542,11 @@ const AdminPanel = ({ table, names, fields, relation, optional }) => {
             <ModalInfo
                 open={openDeleteModal}
                 title="Confirmar Eliminación"
-                description={`¿Eliminar este registro de ${table}? Esta acción no se puede deshacer.`}
+                description={table === 'leagues'
+                    // Borrar una liga se lleva todo lo suyo (server: LEAGUE_CASCADE en
+                    // leagueController). Mejor decirlo antes que después.
+                    ? '¿Eliminar esta liga? Se borrarán también sus jornadas, partidos, resultados, predicciones, preguntas y respuestas, estadísticas, normas, sus títulos del Hall of Flame y sus puntos de la Pachanga. Los equipos y los jugadores se quedan. No se puede deshacer.'
+                    : `¿Eliminar este registro de ${table}? Esta acción no se puede deshacer.`}
                 okText="Eliminar"
                 cancelText="Cancelar"
                 onSuccess={async () => {

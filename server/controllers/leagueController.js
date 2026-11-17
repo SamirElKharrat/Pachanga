@@ -1,11 +1,7 @@
 const { Op } = require('sequelize');
 const League = require('../models/league');
 const Team = require('../models/team');
-const FavoriteTeam = require('../models/favoriteTeam');
-const LeagueParticipation = require('../models/leagueParticipation');
-const Match = require('../models/match');
-const Prediction = require('../models/prediction');
-const Result = require('../models/result');
+const sequelize = require('../config/configdb');
 const hallController = require('./hallController');
 const pachangaController = require('./pachangaController');
 
@@ -153,6 +149,51 @@ exports.updateLeague = async (req, res) => {
 };
 
 // Delete league
+/**
+ * Todo lo que cuelga de una liga, en el orden en que hay que borrarlo para que
+ * ninguna clave foránea lo impida: primero lo que apunta a partidos y preguntas,
+ * luego partidos y preguntas, luego jornadas, y al final lo que apunta a la liga.
+ *
+ * Los equipos y los usuarios NO están: son de la web, no de la liga. Solo se borra
+ * su enlace con ella (TeamLeagues, LeagueParticipation…).
+ *
+ * Se borra todo a mano, sin fiarse de los ON DELETE CASCADE: la base de producción
+ * nació de `db.sync` y no tiene por qué tener las mismas reglas que la local. Y
+ * `Rule` tiene SET NULL: dejarla al cascade convertiría las normas de la liga en
+ * normas generales de la web, que es justo lo que significa `league_id` vacío.
+ *
+ * Cada paso: [qué es, para el resumen; SQL con :id].
+ */
+const MATCHES_OF = `SELECT id FROM "Match" WHERE league_id = :id`;
+const LEAGUE_CASCADE = [
+    ['respuestas', `DELETE FROM "QuestionAnswer" WHERE question_id IN (SELECT id FROM "Question" WHERE league_id = :id)`],
+    ['preguntas', `DELETE FROM "Question" WHERE league_id = :id`],
+    ['predicciones', `DELETE FROM "Prediction" WHERE match_id IN (${MATCHES_OF})`],
+    ['resultados', `DELETE FROM "Result" WHERE match_id IN (${MATCHES_OF})`],
+    ['estadisticasPartido', `DELETE FROM "MatchStat" WHERE league_id = :id OR match_id IN (${MATCHES_OF})`],
+    ['equiposDePartido', `DELETE FROM "TeamMatches" WHERE match_id IN (${MATCHES_OF})`],
+    ['partidos', `DELETE FROM "Match" WHERE league_id = :id`],
+    ['jornadas', `DELETE FROM "Round" WHERE league_id = :id`],
+    ['equiposFavoritos', `DELETE FROM "FavoriteTeam" WHERE league_id = :id`],
+    ['participaciones', `DELETE FROM "LeagueParticipation" WHERE league_id = :id`],
+    ['estadisticasJornada', `DELETE FROM "PlayerWeekStat" WHERE league_id = :id`],
+    ['estadisticasLiga', `DELETE FROM "PlayerLeagueStat" WHERE league_id = :id`],
+    ['hallOfFlame', `DELETE FROM "Hall" WHERE league_id = :id`],
+    ['puntosPachanga', `DELETE FROM "PachangaPoint" WHERE league_id = :id`],
+    ['normas', `DELETE FROM "Rule" WHERE league_id = :id`],
+    ['equiposDeLiga', `DELETE FROM "TeamLeagues" WHERE league_id = :id`],
+];
+
+/**
+ * Borra una liga y todo lo suyo (ver LEAGUE_CASCADE), todo o nada.
+ *
+ * Antes cada borrado iba en un `forEach(async …)` sin esperar: la liga se borraba
+ * antes que sus partidos (o fallaba por clave foránea a medias), y una liga sin
+ * participantes ni respondía. Ahora es una transacción: si algo falla, no se borra
+ * nada.
+ *
+ * DELETE /leagues/delete/:id → { deleted: { partidos: 46, predicciones: 552, … } }
+ */
 exports.deleteLeague = async (req, res) => {
     try {
         const league = await League.findByPk(req.params.id);
@@ -160,48 +201,17 @@ exports.deleteLeague = async (req, res) => {
             return res.status(404).json({ error: 'League not found' });
         }
 
-        //Eliminamos todos los equipos favoritos seleccionados
-        const favoriteTeams = await FavoriteTeam.findAll({ where: { league_id: req.params.id } });
-        const leagueParticipations = await LeagueParticipation.findAll({ where: { league_id: req.params.id } });
-        if (favoriteTeams) {
-            favoriteTeams.forEach(async (favoriteTeam) => {
-                await favoriteTeam.destroy();
-            });
-        }
-
-        //Eliminamos todas las participaciones
-        if (leagueParticipations) {
-            leagueParticipations.forEach(async (leagueParticipation) => {
-                await leagueParticipation.destroy();
-            });
-
-            //Eliminamos todos los partidos
-            const matches = await Match.findAll({ where: { league_id: req.params.id } });
-            if (matches) {
-                matches.forEach(async (match) => {
-
-                    //Eliminamos todas las predicciones
-                    const predictions = await Prediction.findAll({ where: { match_id: match.id } });
-                    if (predictions) {
-                        predictions.forEach(async (prediction) => {
-                            await prediction.destroy();
-                        });
-                    }
-
-                    //Eliminamos todos los resultados
-                    const results = await Result.findAll({ where: { match_id: match.id } });
-                    if (results) {
-                        results.forEach(async (result) => {
-                            await result.destroy();
-                        });
-                    }
-
-                    await match.destroy();
-                });
+        const deleted = await sequelize.transaction(async (transaction) => {
+            const counts = {};
+            for (const [what, sql] of LEAGUE_CASCADE) {
+                const [, meta] = await sequelize.query(sql, { replacements: { id: league.id }, transaction });
+                counts[what] = meta?.rowCount ?? 0;
             }
-            await league.destroy();
-            res.status(204).send();
-        }
+            await league.destroy({ transaction });
+            return counts;
+        });
+
+        res.json({ deleted });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
