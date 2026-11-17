@@ -83,10 +83,13 @@ export const useHomeData = (selectedLeague, selectedWeek) => {
                     : participantsResponse;
 
                 // 4. Favorite Teams
+                // Quien no ha elegido equipo da 404: es normal y no puede tirar toda la
+                // carga del Inicio (antes un solo jugador sin favorito dejaba la página
+                // en «No se pudieron cargar tus ligas»).
                 const favoriteTeamsArray = await Promise.all(
-                    sortedParticipants.map(p => API.get(`/favoriteTeams/get/${p.User.id}/${leagueId}`))
+                    sortedParticipants.map(p => API.get(`/favoriteTeams/get/${p.User.id}/${leagueId}`).catch(() => null))
                 );
-                const formattedFavorites = favoriteTeamsArray.map(item => ({
+                const formattedFavorites = favoriteTeamsArray.filter(Boolean).map(item => ({
                     user_id: item.favorite?.user_id || item.user_id,
                     team: item.team
                 }));

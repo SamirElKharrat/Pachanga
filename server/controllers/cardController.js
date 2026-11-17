@@ -147,3 +147,34 @@ exports.annul = async (req, res) => {
         fail(res, error);
     }
 };
+
+/**
+ * Los avisos de Gafe que me quedan por ver (para el aviso a pantalla completa).
+ *
+ * GET /cards/notices
+ */
+exports.getNotices = async (req, res) => {
+    try {
+        const { user } = await sessionUser(req);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(await cards.gafeNotices(user.id));
+    } catch (error) {
+        fail(res, error);
+    }
+};
+
+/**
+ * Marcar un aviso de Gafe como visto. Body: { state: 'pending' | 'resolved' }.
+ *
+ * POST /cards/notices/:id/seen
+ */
+exports.markNoticeSeen = async (req, res) => {
+    try {
+        const { user } = await sessionUser(req);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        await cards.markNoticeSeen({ userId: user.id, playId: Number(req.params.id), state: req.body?.state });
+        res.json({ ok: true });
+    } catch (error) {
+        fail(res, error);
+    }
+};

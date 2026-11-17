@@ -69,6 +69,14 @@ const CardPlay = sequelize.define('CardPlay', {
         allowNull: false,
         defaultValue: 'active'
     },
+    // Hasta dónde ha visto el aviso quien recibe un castigo (Gafe):
+    //   null       nada todavía
+    //   pending    el de «te han echado el Gafe» (al empezar el partido)
+    //   resolved   el del resultado (te ha pillado / te has librado)
+    target_seen: {
+        type: DataTypes.STRING(16),
+        allowNull: true
+    },
     created_at: {
         type: DataTypes.DATE,
         allowNull: false,

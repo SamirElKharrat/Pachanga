@@ -38,3 +38,12 @@ export async function announceFreeCards(leagueId) {
         // Sin cartas o sin liga: no hay nada que avisar.
     }
 }
+
+/** El nombre de cada rareza, como se enseña en la carta. */
+export const RARITY_LABEL = {
+    comun: 'Común',
+    poco: 'Poco común',
+    raro: 'Rara',
+    epico: 'Épica',
+    leg: 'Legendaria',
+};

@@ -534,7 +534,77 @@ async function leaguePlays(leagueId) {
     }));
 }
 
+/**
+ * Los avisos de Gafe que le quedan por ver a alguien, para el aviso a pantalla
+ * completa al entrar.
+ *
+ * Un Gafe avisa dos veces como mucho: al empezar su partido (`pending`: ya no es
+ * secreto, aún no se sabe) y con el resultado (`hit` si falló el ganador o no votó,
+ * `miss` si acertó). Quien entra ya con el resultado ve solo el segundo.
+ *
+ * `points` es lo que le ha quitado de verdad (el castigo no deja la jornada por debajo
+ * de 0, así que puede ser 0 aunque le haya pillado).
+ */
+async function gafeNotices(userId) {
+    const { Op } = require('sequelize');
+    const Team = require('../models/team');
+    const plays = await CardPlay.findAll({
+        where: {
+            target_user_id: userId,
+            card: 'gafe',
+            status: 'active',
+            [Op.or]: [{ target_seen: null }, { target_seen: 'pending' }],
+        },
+        order: [['id', 'ASC']],
+    });
+    const notices = [];
+    const effectsOf = {};
+    for (const play of plays) {
+        if (!(await lockOf(play)).started) continue; // aún es secreto
+        if (!effectsOf[play.round_id]) effectsOf[play.round_id] = (await roundEffects(await Round.findByPk(play.round_id))).effects;
+        const effect = effectsOf[play.round_id][play.id];
+        const result = await Result.findOne({ where: { match_id: play.match_id } });
+        const resolved = Boolean(result) && effect !== null && effect !== undefined;
+        if (!resolved && play.target_seen === 'pending') continue;
+
+        let state = 'pending';
+        if (resolved) {
+            const pick = await Prediction.findOne({ where: { user_id: userId, match_id: play.match_id }, order: [['id', 'DESC']] });
+            state = pick && pick.winner === result.winner ? 'miss' : 'hit';
+        }
+        const [from, match, league] = await Promise.all([
+            User.findByPk(play.user_id, { attributes: PUBLIC_USER }),
+            Match.findByPk(play.match_id, { include: [{ model: Team, attributes: ['id', 'name', 'acronym'], through: { attributes: [] } }] }),
+            League.findByPk(play.league_id, { attributes: ['id', 'name'] }),
+        ]);
+        notices.push({
+            id: play.id,
+            state,
+            points: resolved ? Math.abs(effect) : null,
+            from,
+            league,
+            match: match && { id: match.id, Teams: match.Teams },
+        });
+    }
+    return notices;
+}
+
+/**
+ * Marca un aviso de Gafe como visto por quien lo recibió. Solo avanza (de nada a
+ * `pending`, de lo que sea a `resolved`), así que dos pestañas no lo desordenan.
+ */
+async function markNoticeSeen({ userId, playId, state }) {
+    if (!['pending', 'resolved'].includes(state)) throw new CardError(400, 'Estado de aviso no válido');
+    const play = await CardPlay.findByPk(playId);
+    if (!play || play.target_user_id !== userId) throw new CardError(404, 'Aviso no encontrado');
+    if (play.target_seen === 'resolved' || play.target_seen === state) return;
+    play.target_seen = state;
+    await play.save();
+}
+
 module.exports = {
+    gafeNotices,
+    markNoticeSeen,
     CARDS,
     FREE_POOL,
     HAND_LIMIT,

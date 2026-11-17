@@ -304,12 +304,14 @@ const ensureCardColumns = async () => {
   const [columns] = await db.query(
     `SELECT table_name, column_name FROM information_schema.columns
       WHERE (table_name = 'League' AND column_name = 'cards_enabled')
-         OR (table_name IN ('PlayerWeekStat', 'PlayerLeagueStat') AND column_name = 'points_card')`
+         OR (table_name IN ('PlayerWeekStat', 'PlayerLeagueStat') AND column_name = 'points_card')
+         OR (table_name = 'CardPlay' AND column_name = 'target_seen')`
   );
   const wanted = [
     ['League', 'cards_enabled', 'BOOLEAN NOT NULL DEFAULT false'],
     ['PlayerWeekStat', 'points_card', 'INTEGER NOT NULL DEFAULT 0'],
     ['PlayerLeagueStat', 'points_card', 'INTEGER NOT NULL DEFAULT 0'],
+    ['CardPlay', 'target_seen', 'VARCHAR(16)'],
   ];
   for (const [table, column, ddl] of wanted) {
     if (columns.some(c => c.table_name === table && c.column_name === column)) continue;

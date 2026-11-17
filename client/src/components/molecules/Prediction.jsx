@@ -464,6 +464,19 @@ const Prediction = () => {
                             </div>
                         </Skeleton>
                     </Card>
+
+                    {/* Las cartas de la liga, si las juega, debajo de los partidos: son 3
+                        como mucho y no necesitan todo el ancho. Se juegan aparte del envío
+                        de la jornada: hasta que empieza su partido, se pueden jugar y retirar. */}
+                    {!loading && selectedRound && (
+                        <div style={{ marginTop: 16 }}>
+                            <CardHand
+                                key={`cards-${selectedLeague}`}
+                                league={leagues.find(l => l.id === selectedLeague)}
+                                round={selectedRound}
+                            />
+                        </div>
+                    )}
                 </Col>
 
                 {/* Historial de resultados (toda la liga) */}
@@ -486,18 +499,6 @@ const Prediction = () => {
                     </Card>
                 </Col>
             </Row>
-
-            {/* Las cartas de la liga, si las juega. Se juegan aparte del envío de la
-                jornada: hasta que empieza su partido, se pueden jugar y retirar. */}
-            {!loading && selectedRound && (
-                <div style={{ marginTop: 16 }}>
-                    <CardHand
-                        key={`cards-${selectedLeague}`}
-                        league={leagues.find(l => l.id === selectedLeague)}
-                        round={selectedRound}
-                    />
-                </div>
-            )}
 
             {/* La confirmación es una sola, porque el envío es uno solo. */}
             <ModalInfo

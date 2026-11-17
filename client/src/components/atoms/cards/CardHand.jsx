@@ -3,7 +3,8 @@ import { Button, Card, Empty, Select, Skeleton, Space, Typography } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { API } from '../../../services/api';
 import { showAlert } from '../AlertInfo';
-import { effectText, matchName, matchStarted } from '../../../utils/cards';
+import { effectText, matchName, matchStarted, RARITY_LABEL } from '../../../utils/cards';
+import { CardEmblem } from './CardArt';
 import '../css/cards.css';
 
 const { Text } = Typography;
@@ -128,13 +129,12 @@ export default function CardHand({ league, round }) {
         <Card
             className="cards-panel"
             title={
-                <Space size={8}>
-                    <ThunderboltOutlined style={{ color: 'var(--accent)' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>Tus cartas</span>
-                    {hand && <Text type="secondary" style={{ fontSize: 12 }}>· {hand.hand.length} de {limit} en la mano</Text>}
+                <Space>
+                    <ThunderboltOutlined />
+                    <span>Tus cartas</span>
                 </Space>
             }
-            style={{ background: 'rgba(var(--tint), 0.02)', border: '1px solid rgba(var(--tint), 0.06)', borderRadius: 16 }}
+            extra={hand && <Text type="secondary" style={{ fontSize: 12 }}>{hand.hand.length} de {limit} en la mano</Text>}
         >
             <Skeleton loading={loading && !hand} active paragraph={{ rows: 3 }}>
                 {!hand ? (
@@ -162,10 +162,14 @@ export default function CardHand({ league, round }) {
                                         title={why || c.description}
                                         onClick={() => { setSelected(selected === c.id ? null : c.id); setMatchId(null); setTargetId(null); }}
                                     >
-                                        {c.source === 'free' && <span className="card-tag">gratis</span>}
+                                        <span className="card-rar">
+                                            <span>{RARITY_LABEL[c.rarity] || ''}</span>
+                                            {c.source === 'free' ? <span className="card-tag">gratis</span> : <span className="card-gem" />}
+                                        </span>
+                                        <CardEmblem cardKey={c.key} />
                                         <b>{c.label}</b>
                                         <p>{c.description}</p>
-                                        {why && <p style={{ color: 'var(--warning)' }}>{why}</p>}
+                                        {why && <p className="card-why">{why}</p>}
                                     </button>
                                 );
                             })}
@@ -173,6 +177,7 @@ export default function CardHand({ league, round }) {
 
                         {card && (
                             <div className="card-play-form">
+                                <span className="cards-note"><b style={{ color: 'var(--text)' }}>{card.label}:</b> {card.description}</span>
                                 {card.aim !== 'round' && (
                                     <Select
                                         placeholder="¿En qué partido?"

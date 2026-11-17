@@ -7,6 +7,8 @@ router.get('/hand/:leagueId', authenticateJwtToken, cardController.getHand);
 router.post('/play', authenticateJwtToken, cardController.play);
 router.delete('/play/:id', authenticateJwtToken, cardController.withdraw);
 router.get('/round/:roundId', authenticateJwtToken, cardController.getRound);
+router.get('/notices', authenticateJwtToken, cardController.getNotices);
+router.post('/notices/:id/seen', authenticateJwtToken, cardController.markNoticeSeen);
 
 // Admin
 router.post('/grant', authenticateJwtToken, requireAdmin, cardController.grant);
