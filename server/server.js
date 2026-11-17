@@ -24,6 +24,8 @@ const QuestionAnswer = require('./models/questionAnswer');
 const Changelog = require('./models/changelog'); // eslint-disable-line no-unused-vars
 const Rule = require('./models/rule');
 const Round = require('./models/round');
+// Sin asociaciones; como Changelog, se requiere para que `db.sync` cree la tabla.
+const CoinTransaction = require('./models/coinTransaction'); // eslint-disable-line no-unused-vars
 
 const app = express();
 const PORT = 3001;

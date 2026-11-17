@@ -17,6 +17,7 @@ import { usePredictionData } from '../../hooks/usePredictionData';
 import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
 import ModalInfo from '../atoms/ModalInfo';
+import { refreshCoins } from '../../hooks/useCoins';
 
 const { Text } = Typography;
 
@@ -136,6 +137,9 @@ const Prediction = () => {
             }
 
             showAlert('success', '¡Jornada enviada con éxito!');
+            // Enviar la jornada paga monedas (jornada completa, preguntas, racha):
+            // así salen sus avisos y el saldo del menú se pone al día.
+            refreshCoins();
             setConfirmOpen(false);
             nav('/', { state: { leagueId: selectedLeague } });
         } catch (error) {
@@ -146,6 +150,7 @@ const Prediction = () => {
             // Recarga para que se vea qué entró y qué no, en vez de dejar la
             // pantalla enseñando un estado que ya no es cierto.
             reload();
+            refreshCoins();
         } finally {
             setSubmitting(false);
         }

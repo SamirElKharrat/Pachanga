@@ -420,6 +420,17 @@ exports.recomputeLeagueWeek = async (leagueId, week, options = {}) => {
 };
 
 /**
+ * Las monedas que dependen de cómo acabó la jornada (pleno y mitad de abajo), puestas
+ * al día con los puntos que se acaban de escribir. Va DESPUÉS de los puntos y nunca
+ * los tumba: un fallo aquí deja las monedas para la siguiente vez que se puntúe la
+ * jornada. Se carga aquí dentro para no crear un require circular.
+ */
+const syncWeekCoins = async (leagueId, week) => {
+    const { safely, syncWeek } = require('./coinRewards');
+    await safely('pleno y mitad de abajo', () => syncWeek(leagueId, week));
+};
+
+/**
  * Recomputes one week AND moves the league standings to match, by difference.
  *
  * This is what runs when a result is created, corrected or deleted. It never rebuilds
@@ -449,6 +460,7 @@ exports.applyWeekPoints = async (leagueId, week) => {
 
     if (computed.empty) {
         await exports.rollUpLeague(leagueId);
+        await syncWeekCoins(leagueId, week);
         return { week, changedPredictions: 0, changedAnswers: 0, playersAffected: 0, delta: 0 };
     }
 
@@ -507,6 +519,7 @@ exports.applyWeekPoints = async (leagueId, week) => {
     });
 
     await exports.rollUpLeague(leagueId);
+    await syncWeekCoins(leagueId, week);
 
     return {
         week,

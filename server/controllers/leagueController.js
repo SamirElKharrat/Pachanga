@@ -182,6 +182,9 @@ const LEAGUE_CASCADE = [
     ['puntosPachanga', `DELETE FROM "PachangaPoint" WHERE league_id = :id`],
     ['normas', `DELETE FROM "Rule" WHERE league_id = :id`],
     ['equiposDeLiga', `DELETE FROM "TeamLeagues" WHERE league_id = :id`],
+    // Las monedas NO se borran: son del jugador y valen en todas las ligas. Solo se
+    // olvida de qué liga salieron.
+    ['monedasDesenlazadas', `UPDATE "CoinTransaction" SET league_id = NULL WHERE league_id = :id`],
 ];
 
 /**

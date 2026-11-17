@@ -31,6 +31,8 @@ import { showAlert } from './AlertInfo';
 import BrandMark from './BrandMark';
 import ChangelogModal from './ChangelogModal';
 import WelcomeTour from './WelcomeTour';
+import CoinBalance from './CoinBalance';
+import { refreshCoins } from '../../hooks/useCoins';
 import { croakOnce } from '../../utils/croak';
 import { GUILLE_ID } from '../../constants/pachanga';
 
@@ -118,7 +120,12 @@ const UserMenu = ({ children }) => {
 
     useEffect(() => {
         API.getUserByToken()
-            .then(data => setUser(data))
+            .then(data => {
+                setUser(data);
+                // Después de la sesión y no a la vez: es al cargarla cuando el
+                // servidor paga la moneda del día, y así el aviso sale ya.
+                refreshCoins();
+            })
             .catch(() => {
                 showAlert('error', "Sesión expirada");
                 nav('/login');
@@ -257,6 +264,16 @@ const UserMenu = ({ children }) => {
                         )}
                     </div>
                 </Dropdown>
+                {/* Monedas: pinchando, al historial del perfil */}
+                <div style={{ display: 'flex', justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start', marginTop: 10 }}>
+                    <CoinBalance
+                        compact={collapsed && !isMobile}
+                        onClick={() => {
+                            nav('/user#monedas');
+                            if (isMobile) setDrawerOpen(false);
+                        }}
+                    />
+                </div>
             </div>
 
             {/* Navigation */}
@@ -367,13 +384,16 @@ const UserMenu = ({ children }) => {
                         style={{ width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                     />
                     <BrandMark logoWidth={100} crestSize={32} onClick={() => nav("/")} />
-                    <Avatar
-                        size={32}
-                        icon={<UserOutlined />}
-                        src={getAvatarSrc(user?.logo_url)}
-                        onClick={() => nav("/user")}
-                        style={{ cursor: 'pointer' }}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <CoinBalance compact onClick={() => nav('/user#monedas')} />
+                        <Avatar
+                            size={32}
+                            icon={<UserOutlined />}
+                            src={getAvatarSrc(user?.logo_url)}
+                            onClick={() => nav("/user")}
+                            style={{ cursor: 'pointer' }}
+                        />
+                    </div>
                 </Header>
             )}
 

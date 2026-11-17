@@ -7,6 +7,7 @@ const User = require('../models/user');
 const statsAggregator = require('../utils/statsAggregator');
 const Round = require('../models/round');
 const { roundFor } = require('../utils/rounds');
+const { safely, onAnswersSaved } = require('../utils/coinRewards');
 const {
     ANSWER_TYPES, TEXT_ANSWER_MAX, normalizeAnswer, isSettled, isAnswerCorrect,
 } = require('../utils/pointsCalculator');
@@ -380,6 +381,9 @@ exports.answerQuestions = async (req, res) => {
                 { transaction }
             )
         );
+
+        // Con todas las de la jornada contestadas, su moneda. Nunca tumba el envío.
+        await safely('todas las preguntas', () => onAnswersSaved(user.id, questionIds));
 
         res.status(201).json(created);
     } catch (error) {

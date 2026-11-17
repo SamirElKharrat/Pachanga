@@ -16,6 +16,7 @@ const questionRoute = require("./question");
 const changelogRoute = require("./changelog");
 const ruleRoute = require("./rule");
 const roundRoute = require("./round");
+const coinRoute = require("./coin");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -34,5 +35,6 @@ router.use("/questions", questionRoute);
 router.use("/changelog", changelogRoute);
 router.use("/rules", ruleRoute);
 router.use("/rounds", roundRoute);
+router.use("/coins", coinRoute);
 
 module.exports = router;

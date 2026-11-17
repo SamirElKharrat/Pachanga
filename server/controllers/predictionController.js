@@ -3,6 +3,7 @@ const User = require('../models/user');
 const { authenticateJwtToken } = require('../middlewares/auth');
 const Match = require('../models/match');
 const Team = require('../models/team');
+const { safely, onPredictionSaved } = require('../utils/coinRewards');
 
 
 // Get all predictions
@@ -118,6 +119,9 @@ exports.getPredictionsByUserId = async (req, res) => {
 exports.createPrediction = async (req, res) => {
     try {
         const prediction = await Prediction.create(req.body);
+        // Si con esta la jornada queda completa, se pagan sus monedas (y la racha).
+        // Nunca tumba la predicción: ver utils/coinRewards.js.
+        await safely('jornada completa', () => onPredictionSaved(prediction.user_id, prediction.match_id));
         res.status(201).json(prediction);
     } catch (error) {
         res.status(400).json({ error: error.message });

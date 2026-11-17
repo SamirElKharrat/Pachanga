@@ -3,6 +3,8 @@ import { Card, Tabs, Typography } from 'antd';
 import AdminPanel from '../atoms/AdminPanel';
 import StatsRecalc from '../atoms/StatsRecalc';
 import QuestionCorrection from '../atoms/QuestionCorrection';
+import CoinsAdmin from '../atoms/CoinsAdmin';
+import { CoinIcon } from '../atoms/CoinBalance';
 import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
@@ -164,6 +166,11 @@ const Admin = () => {
             key: '10',
             label: <span><BarChartOutlined /> Estadísticas</span>,
             children: <StatsRecalc />
+        },
+        {
+            key: '11',
+            label: <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CoinIcon size={13} /> Monedas</span>,
+            children: <CoinsAdmin />
         }
     ];
 

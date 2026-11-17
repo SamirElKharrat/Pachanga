@@ -3,8 +3,11 @@ import { Card, Form, Input, Upload, Button, Spin, Avatar, Typography, Space, Div
 import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
 import { LoadingOutlined, UserOutlined, LockOutlined, IdcardOutlined, CameraOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
+import CoinHistory from '../atoms/CoinHistory';
+import { CoinIcon } from '../atoms/CoinBalance';
+import useCoins, { refreshCoins } from '../../hooks/useCoins';
 
 const { Title, Text } = Typography;
 
@@ -13,10 +16,23 @@ export default function User() {
     const [loading, setLoading]       = useState(true);
     const [previewImage, setPreviewImage] = useState('');
     const [image, setImage]           = useState('');
-    const [activeTab, setActiveTab]   = useState('profile'); // 'profile' | 'security'
+    const location = useLocation();
+    // La píldora de monedas del menú trae aquí con #monedas.
+    const [activeTab, setActiveTab]   = useState(location.hash === '#monedas' ? 'coins' : 'profile'); // 'profile' | 'security' | 'coins'
     const [form] = Form.useForm();
     const nav = useNavigate();
     const { getAvatarSrc } = useAppTheme();
+    const wallet = useCoins();
+
+    // Ya en el perfil, pinchar otra vez la píldora solo cambia el hash.
+    useEffect(() => {
+        if (location.hash === '#monedas') setActiveTab('coins');
+    }, [location.hash]);
+
+    // Al abrir la pestaña, el historial al día (sin repetir avisos).
+    useEffect(() => {
+        if (activeTab === 'coins') refreshCoins({ quiet: true });
+    }, [activeTab]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -100,9 +116,12 @@ export default function User() {
                 {[
                     { key: 'profile', label: 'Información Personal', icon: <IdcardOutlined /> },
                     { key: 'security', label: 'Seguridad', icon: <LockOutlined /> },
+                    { key: 'coins', label: 'Monedas', icon: <CoinIcon size={13} /> },
                 ].map(tab => (
                     <button
                         key={tab.key}
+                        type="button"
+                        aria-pressed={activeTab === tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         style={{
                             flex: 1,
@@ -247,6 +266,19 @@ export default function User() {
                             Cambiar Contraseña
                         </Button>
                     </Form>
+                </Card>
+            )}
+
+            {/* ── Monedas ── */}
+            {activeTab === 'coins' && (
+                <Card id="monedas">
+                    <CoinHistory
+                        balance={wallet.balance}
+                        cap={wallet.cap}
+                        movements={wallet.movements}
+                        howToEarn={wallet.howToEarn}
+                        loading={wallet.status !== 'ready'}
+                    />
                 </Card>
             )}
         </Flex>

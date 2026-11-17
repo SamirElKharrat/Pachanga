@@ -3,6 +3,7 @@ const Role = require('../models/role')
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
+const { safely, onSession } = require('../utils/coinRewards');
 
 // Get all users
 exports.getAllUsers = async (req, res) => {
@@ -49,6 +50,9 @@ exports.getUserByToken = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
+    // La web pide esto al abrirse: es el momento de la moneda del día. Idempotente,
+    // así que da igual cuántas veces se llame.
+    await safely('entrar a la web', () => onSession(user.id));
     res.json(user);
   } catch (error) {
     console.error('Error checking admin role:', error);
