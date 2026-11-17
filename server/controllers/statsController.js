@@ -143,6 +143,7 @@ const foldByPlayer = (rows) => {
             pointsStreak: 0,
             pointsFavorite: 0,
             pointsQuestion: 0,
+            pointsCard: 0,
             pointsManual: 0,
             questionsAvailable: 0,
             questionsAnswered: 0,
@@ -162,6 +163,7 @@ const foldByPlayer = (rows) => {
         acc.pointsStreak += row.points_streak;
         acc.pointsFavorite += row.points_favorite;
         acc.pointsQuestion += row.points_question;
+        acc.pointsCard += row.points_card || 0;
         acc.pointsManual += row.points_manual;
         acc.questionsAvailable += row.questions_available;
         acc.questionsAnswered += row.questions_answered;
@@ -550,6 +552,9 @@ exports.getPlayer = async (req, res) => {
                 streak: player.pointsStreak,
                 favorite: player.pointsFavorite,
                 question: player.pointsQuestion,
+                // Las cartas. Con signo: un Gafe puede dejarlas en negativo, y
+                // entonces no se pinta como porción de la barra.
+                card: player.pointsCard,
                 // Aparte de los cinco de arriba: no es una porción más de la barra
                 // apilada, sino una línea suelta. Puede ser negativo.
                 manual: player.pointsManual

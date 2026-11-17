@@ -18,6 +18,8 @@ import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
 import ModalInfo from '../atoms/ModalInfo';
 import { refreshCoins } from '../../hooks/useCoins';
+import { announceFreeCards } from '../../utils/cards';
+import CardHand from '../atoms/cards/CardHand';
 
 const { Text } = Typography;
 
@@ -140,6 +142,8 @@ const Prediction = () => {
             // Enviar la jornada paga monedas (jornada completa, preguntas, racha):
             // así salen sus avisos y el saldo del menú se pone al día.
             refreshCoins();
+            // Y, si la liga juega cartas, la carta gratis de la jornada completa.
+            announceFreeCards(selectedLeague);
             setConfirmOpen(false);
             nav('/', { state: { leagueId: selectedLeague } });
         } catch (error) {
@@ -482,6 +486,18 @@ const Prediction = () => {
                     </Card>
                 </Col>
             </Row>
+
+            {/* Las cartas de la liga, si las juega. Se juegan aparte del envío de la
+                jornada: hasta que empieza su partido, se pueden jugar y retirar. */}
+            {!loading && selectedRound && (
+                <div style={{ marginTop: 16 }}>
+                    <CardHand
+                        key={`cards-${selectedLeague}`}
+                        league={leagues.find(l => l.id === selectedLeague)}
+                        round={selectedRound}
+                    />
+                </div>
+            )}
 
             {/* La confirmación es una sola, porque el envío es uno solo. */}
             <ModalInfo

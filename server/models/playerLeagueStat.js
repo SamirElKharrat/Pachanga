@@ -123,6 +123,13 @@ const PlayerLeagueStat = sequelize.define('PlayerLeagueStat', {
         allowNull: false,
         defaultValue: 0
     },
+    // Las cartas de toda la liga. Cuenta para `points`, igual que las preguntas, y
+    // por eso no acaba en `points_manual`. Con signo.
+    points_card: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
     // Whatever the standings hold on top of what the predictions add up to under
     // today's rules. Measured as `points_official - points`, so the two always
     // reconcile whatever went in there. For the frozen leagues it covers the

@@ -12,6 +12,7 @@ import RoundPicker from '../atoms/RoundPicker';
 import { defaultRound } from '../../utils/rounds';
 import { showAlert } from '../atoms/AlertInfo';
 import { STATUS_COLORS, RANK_STYLES, QUESTION_POINTS } from '../../constants/pachanga';
+import RoundCards from '../atoms/cards/RoundCards';
 
 const { Text } = Typography;
 
@@ -835,6 +836,13 @@ function Home() {
                     </Card>
                 </Col>
             </Row>
+
+            {/* ── Cartas de la jornada ── (solo si la liga juega cartas y hay alguna que ver) */}
+            <RoundCards
+                league={leagues.find(l => l.id === selectedLeague)}
+                round={selectedRound}
+                matches={matches}
+            />
 
             {/* ── Rules Modal ── */}
             <Modal

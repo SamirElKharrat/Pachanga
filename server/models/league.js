@@ -61,6 +61,14 @@ const League = sequelize.define('League', {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
+    },
+    // Si en esta liga se juegan cartas (utils/cards.js). Apagado por defecto: las
+    // ligas de antes no cambian ni un punto, y se enciende liga a liga para el piloto.
+    // Apagarlo a mitad de liga impide jugar más, pero lo ya jugado sigue contando.
+    cards_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
     }
 }, {
     tableName: 'League',

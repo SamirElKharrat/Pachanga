@@ -166,6 +166,9 @@ exports.updateLeague = async (req, res) => {
  */
 const MATCHES_OF = `SELECT id FROM "Match" WHERE league_id = :id`;
 const LEAGUE_CASCADE = [
+    // Las cartas, lo primero: sus jugadas apuntan a partidos, jornadas y a la mano.
+    ['jugadasDeCartas', `DELETE FROM "CardPlay" WHERE league_id = :id`],
+    ['cartas', `DELETE FROM "UserCard" WHERE league_id = :id`],
     ['respuestas', `DELETE FROM "QuestionAnswer" WHERE question_id IN (SELECT id FROM "Question" WHERE league_id = :id)`],
     ['preguntas', `DELETE FROM "Question" WHERE league_id = :id`],
     ['predicciones', `DELETE FROM "Prediction" WHERE match_id IN (${MATCHES_OF})`],

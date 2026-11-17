@@ -25,6 +25,7 @@ const REASONS = Object.freeze({
     pleno: 'Pleno',
     bottom_half: 'Mitad de abajo de la jornada',
     admin: 'Ajuste del administrador',
+    card_refund: 'Carta que no cabía en la mano',
 });
 
 // Espacio de nombres del candado, para no chocar con otros advisory locks.

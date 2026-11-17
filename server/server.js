@@ -26,6 +26,9 @@ const Rule = require('./models/rule');
 const Round = require('./models/round');
 // Sin asociaciones; como Changelog, se requiere para que `db.sync` cree la tabla.
 const CoinTransaction = require('./models/coinTransaction'); // eslint-disable-line no-unused-vars
+// Las cartas: también sin asociaciones; se requieren para que `db.sync` cree sus tablas.
+const UserCard = require('./models/userCard'); // eslint-disable-line no-unused-vars
+const CardPlay = require('./models/cardPlay'); // eslint-disable-line no-unused-vars
 
 const app = express();
 const PORT = 3001;
@@ -293,6 +296,29 @@ const ensureRoundColumns = async () => {
 };
 
 /**
+ * Lo mismo, para las cartas: `League.cards_enabled` y `points_card` en las dos
+ * tablas de estadísticas. El agregador escribe `points_card` en cuanto puntúa
+ * cualquier jornada, así que sin la columna fallaría el reparto de puntos entero.
+ */
+const ensureCardColumns = async () => {
+  const [columns] = await db.query(
+    `SELECT table_name, column_name FROM information_schema.columns
+      WHERE (table_name = 'League' AND column_name = 'cards_enabled')
+         OR (table_name IN ('PlayerWeekStat', 'PlayerLeagueStat') AND column_name = 'points_card')`
+  );
+  const wanted = [
+    ['League', 'cards_enabled', 'BOOLEAN NOT NULL DEFAULT false'],
+    ['PlayerWeekStat', 'points_card', 'INTEGER NOT NULL DEFAULT 0'],
+    ['PlayerLeagueStat', 'points_card', 'INTEGER NOT NULL DEFAULT 0'],
+  ];
+  for (const [table, column, ddl] of wanted) {
+    if (columns.some(c => c.table_name === table && c.column_name === column)) continue;
+    console.log(`Añadiendo ${table}.${column} (la migración no se había lanzado)...`);
+    await db.query(`ALTER TABLE "${table}" ADD COLUMN ${column} ${ddl}`);
+  }
+};
+
+/**
  * Fills the stats tables the first time the server boots with them in place.
  *
  * Skips itself as soon as there is a single row, so it costs one COUNT on every
@@ -339,6 +365,7 @@ const syncDatabase = async () => {
     await ensureQuestionPoints();
     await ensureQuestionColumns();
     await ensureRoundColumns();
+    await ensureCardColumns();
 
     // Auto-inicialización segura en arranque (Render & local)
     try {

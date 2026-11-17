@@ -126,6 +126,14 @@ const PlayerWeekStat = sequelize.define('PlayerWeekStat', {
         allowNull: false,
         defaultValue: 0
     },
+    // Lo que las cartas de la jornada sumaron o quitaron (utils/cards.js). Su propia
+    // columna por lo mismo que las preguntas: sin ella, points_manual lo contaría
+    // como «añadido a mano». Puede ser negativa: un Gafe quita puntos.
+    points_card: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
     computed_at: {
         type: DataTypes.DATE,
         allowNull: false,

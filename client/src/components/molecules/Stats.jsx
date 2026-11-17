@@ -532,6 +532,7 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, t
         // El `key` es lo que da el campo (`points` + Question), así que esta lista y
         // la del detalle de jugador tienen que decir lo mismo.
         { key: 'question', name: 'Preguntas', color: chart.series[4] },
+        { key: 'card', name: 'Cartas', color: chart.series[5] },
     ];
 
     return (
@@ -816,6 +817,7 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
         // pero sí sale del agregador, así que es una porción más de la barra y no la
         // línea suelta de abajo.
         { key: 'question', name: 'Preguntas', color: chart.series[4], value: breakdown.question ?? 0 },
+        { key: 'card', name: 'Cartas', color: chart.series[5], value: breakdown.card ?? 0 },
     ];
     const bestLeaguePoints = Math.max(1, ...byLeague.map(b => b.pointsOfficial));
 

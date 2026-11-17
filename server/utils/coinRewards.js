@@ -8,6 +8,7 @@ const PlayerWeekStat = require('../models/playerWeekStat');
 const CoinTransaction = require('../models/coinTransaction');
 const { describeRounds } = require('./rounds');
 const coins = require('./coins');
+const { grantFreeCard } = require('./cards');
 
 /**
  * Cuándo se ganan monedas. Lo que valen las cosas está aquí y en ningún otro sitio.
@@ -88,7 +89,7 @@ async function onSession(userId, now = new Date()) {
 async function onPredictionSaved(userId, matchId) {
     const match = await Match.findByPk(matchId, { attributes: ['id', 'league_id', 'round_id'] });
     if (!match || !match.round_id) return [];
-    const league = await League.findByPk(match.league_id, { attributes: ['id', 'name', 'status'] });
+    const league = await League.findByPk(match.league_id, { attributes: ['id', 'name', 'status', 'cards_enabled'] });
     if (!league || league.status === 'finished') return [];
 
     // Completa = has votado todo lo que aún se podía votar. Un partido con resultado
@@ -130,6 +131,9 @@ async function onPredictionSaved(userId, matchId) {
         });
         if (streak) out.push(streak);
     }
+
+    // La carta gratis va con la jornada completa: la misma vez, y solo esa.
+    await safely('carta gratis', () => grantFreeCard({ userId, league, round }));
     return out;
 }
 

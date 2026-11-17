@@ -4,12 +4,13 @@ import AdminPanel from '../atoms/AdminPanel';
 import StatsRecalc from '../atoms/StatsRecalc';
 import QuestionCorrection from '../atoms/QuestionCorrection';
 import CoinsAdmin from '../atoms/CoinsAdmin';
+import CardsAdmin from '../atoms/cards/CardsAdmin';
 import { CoinIcon } from '../atoms/CoinBalance';
 import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
     ControlOutlined, FileTextOutlined, BarChartOutlined,
-    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined, CalendarOutlined
+    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined, CalendarOutlined, ThunderboltOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -52,8 +53,9 @@ const Admin = () => {
                     table="leagues"
                     relation={['teams']}
                     name="Liga"
-                    fields={['text', 'date', 'date', 'file', 'multiselect', 'select', 'select']}
-                    names={['name', 'start_date', 'end_date', 'logo_url', 'teams', 'status', 'theme']}
+                    fields={['text', 'date', 'date', 'file', 'multiselect', 'select', 'select', 'boolean']}
+                    names={['name', 'start_date', 'end_date', 'logo_url', 'teams', 'status', 'theme', 'cards_enabled']}
+                    optional={['cards_enabled']}
                 />
             )
         },
@@ -171,6 +173,11 @@ const Admin = () => {
             key: '11',
             label: <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CoinIcon size={13} /> Monedas</span>,
             children: <CoinsAdmin />
+        },
+        {
+            key: '12',
+            label: <span><ThunderboltOutlined /> Cartas</span>,
+            children: <CardsAdmin />
         }
     ];
 
