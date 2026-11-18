@@ -30,6 +30,7 @@ const CoinTransaction = require('./models/coinTransaction'); // eslint-disable-l
 const UserCard = require('./models/userCard'); // eslint-disable-line no-unused-vars
 const CardPlay = require('./models/cardPlay'); // eslint-disable-line no-unused-vars
 const UserCosmetic = require('./models/userCosmetic'); // eslint-disable-line no-unused-vars
+const ChestOpen = require('./models/chestOpen'); // eslint-disable-line no-unused-vars
 
 const app = express();
 const PORT = 3001;

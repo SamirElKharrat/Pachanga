@@ -173,7 +173,7 @@
    así que dentro de ellos se redefinen los tokens de texto, superficie y tinte.
    Mismo mecanismo que .pstats.is-light: solo cambian los valores.
    El atributo lo pone ThemeContext solo en el tema claro. */
-[data-color-mode="light"] :is(.cards-panel, .shop-page, .inventory, .profile-page, .coin-balance, .coin-card-big, .coin-list, .coin-rules) {
+[data-color-mode="light"] :is(.cards-panel, .shop-page, .inventory, .profile-page, .chest-odds, .coin-balance, .coin-card-big, .coin-list, .coin-rules) {
   --tint: 15, 23, 42;
   --bg-surface: #ffffff;
   --bg-surface-2: #f8fafc;

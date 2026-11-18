@@ -10,6 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
 import { CardEmblem } from '../atoms/cards/CardArt';
 import { Banner, BannerBackground } from '../atoms/cosmetics/Banner';
+import Chests from '../atoms/chests/Chests';
 import { RARITY_LABEL } from '../../utils/cards';
 import '../atoms/css/cards.css';
 import '../atoms/css/shop.css';
@@ -176,6 +177,9 @@ export default function Shop() {
                 </Text>
                 </div>
             </Card>
+
+            {/* Los cofres de competición: uno por liga en juego con cartas */}
+            <Chests me={me} balance={shop.balance} onOpened={load} />
 
             <Card
                 className="shop-section"

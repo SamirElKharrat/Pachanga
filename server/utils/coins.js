@@ -27,6 +27,8 @@ const REASONS = Object.freeze({
     admin: 'Ajuste del administrador',
     card_refund: 'Carta que no cabía en la mano',
     shop: 'Compra en la tienda',
+    chest: 'Cofre',
+    chest_prize: 'Premio de cofre',
 });
 
 // Espacio de nombres del candado, para no chocar con otros advisory locks.

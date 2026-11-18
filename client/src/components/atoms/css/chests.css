@@ -1,0 +1,51 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                                    COFRES                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* La lista de cofres de la tienda, las probabilidades y el premio dentro de la
+   carta de la apertura (la apertura en sí, en chest-opening.css). Los colores salen de cards.css (.rar-* → --rc). Solo se
+   anima transform y opacity: nada de backdrop-filter ni filtros (la lección de la
+   página de Ligas en Firefox). */
+
+.rar-comun { --rc: var(--text-muted); }
+
+/* ── En la tienda ── */
+.chest-list { display: flex; flex-direction: column; gap: 12px; }
+.chest-item {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.1fr); gap: 14px 20px; align-items: center;
+  padding: 16px; border-radius: 12px;
+  background: rgba(var(--tint), 0.03); border: 1px solid rgba(var(--tint), 0.08);
+}
+.chest-item .es-chest { margin: 6px 8px; }
+.chest-item-body { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.chest-item-name { font-size: 16px; color: var(--text-strong); }
+.chest-item-guarantee { font-size: 12.5px; color: var(--text-dim); }
+.chest-item-why { font-size: 12px; color: var(--warning); }
+.chest-item .ant-btn .coin-icon { vertical-align: -2px; }
+.chest-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12.5px; color: var(--text-muted); }
+.chest-history li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chest-history i { width: 8px; height: 8px; border-radius: 2px; transform: rotate(45deg); background: var(--rc); flex: none; }
+.chest-history span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chest-history small { color: var(--text-dim); flex: none; }
+
+.chest-odds-toggle { margin-top: 12px; font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; }
+.chest-odds-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chest-odds { display: flex; flex-direction: column; gap: 6px; }
+.chest-odds-row { display: grid; grid-template-columns: 110px 56px minmax(0, 1fr); gap: 10px; align-items: baseline; font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(var(--tint), 0.06); }
+.chest-odds-rar { font-weight: 700; color: var(--rc); }
+.chest-odds-pct { font-variant-numeric: tabular-nums; color: var(--text-strong); text-align: right; }
+.chest-odds-prizes { color: var(--text-muted); }
+.chest-odds-rules { margin: 6px 0 0; font-size: 12px; color: var(--text-dim); }
+
+@media (max-width: 760px) {
+  .chest-item { grid-template-columns: auto minmax(0, 1fr); }
+  .chest-history { grid-column: 1 / -1; }
+  .chest-odds-row { grid-template-columns: 90px 48px minmax(0, 1fr); font-size: 12px; }
+}
+
+/* ── El premio dentro de la carta de la apertura (chest-opening.css) ── */
+.prize-coins { display: inline-flex; align-items: center; gap: 8px; font-family: 'Barlow Condensed', 'League Spartan', sans-serif; font-size: 38px; font-weight: 800; color: #f8fafc; }
+.prize-card-emb .card-emb { width: 64px; height: 64px; margin: 0; }
+.prize-card-emb .card-ico { width: 30px; height: 30px; }
+.prize-card-emb .card-x2 { font-size: 26px; }
+.prize-name { font-size: 20px; font-weight: 800; color: #f8fafc; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+.prize-banner { width: 128px; height: 56px; border-radius: 8px; }
