@@ -99,3 +99,4 @@
 .inv-card-name { font-size: 12.5px; font-weight: 600; color: var(--text-strong); }
 .inv-card-rar { font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc); }
 @media (max-width: 576px) { .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.inv-progress.alone { margin-top: 0; }

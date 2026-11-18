@@ -32,8 +32,10 @@ const KINDS = [
  *
  * @param {Object} props
  * @param {Object} props.user - El usuario de la sesión (id, username, logo_url).
+ * @param {boolean} [props.preview=true] - Enseñar «Así te ven». En el perfil no hace
+ *   falta: la cabecera ya lo enseña.
  */
-export default function Inventory({ user }) {
+export default function Inventory({ user, preview = true }) {
     const { getAvatarSrc } = useTheme();
     const nav = useNavigate();
     const [shop, setShop] = useState(null);
@@ -89,7 +91,7 @@ export default function Inventory({ user }) {
     return (
         <div className="inventory">
             <Card className="shop-section">
-                <div className="shop-me-row">
+                {preview && <div className="shop-me-row">
                     <CosmeticFrame userId={user?.id}>
                         <Avatar size={56} src={getAvatarSrc(user?.logo_url)} icon={<UserOutlined />} />
                     </CosmeticFrame>
@@ -98,8 +100,8 @@ export default function Inventory({ user }) {
                         <span className="shop-me-name"><CosmeticName userId={user?.id}>{name}</CosmeticName></span>
                         <CosmeticTitle userId={user?.id} />
                     </div>
-                </div>
-                <div className="inv-progress">
+                </div>}
+                <div className={`inv-progress${preview ? '' : ' alone'}`}>
                     <Text type="secondary" style={{ fontSize: 12 }}>Desbloqueados <b>{unlocked}</b> de {cosmetics.length}</Text>
                     <Progress percent={Math.round((unlocked / cosmetics.length) * 100)} showInfo={false} size="small" strokeColor="var(--accent)" />
                 </div>

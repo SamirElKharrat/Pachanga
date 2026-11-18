@@ -1,108 +1,175 @@
-import React, { useEffect, useState } from 'react';
-import { Card, Form, Input, Upload, Button, Spin, Avatar, Typography, Space, Divider, Flex } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Card, Form, Input, Upload, Button, Spin, Avatar, Typography, Flex } from 'antd';
+import { UserOutlined, LockOutlined, CameraOutlined, MailOutlined, TrophyOutlined, EditOutlined, CheckOutlined, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
-import { LoadingOutlined, UserOutlined, LockOutlined, IdcardOutlined, CameraOutlined, InboxOutlined } from '@ant-design/icons';
 import Inventory from '../atoms/cosmetics/Inventory';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import CoinHistory from '../atoms/CoinHistory';
 import { CoinIcon } from '../atoms/CoinBalance';
 import useCoins, { refreshCoins } from '../../hooks/useCoins';
 import { useEquipped } from '../../hooks/useCosmetics';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
+import '../atoms/css/profile.css';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
+/** Las pestañas y su hash. #seguridad (el de antes) lleva a Ajustes. */
+const TABS = [
+    { key: 'resumen', label: 'Resumen' },
+    { key: 'inventario', label: 'Inventario' },
+    { key: 'monedas', label: 'Monedas' },
+    { key: 'ajustes', label: 'Ajustes' },
+];
+const tabFromHash = (hash) => {
+    const h = (hash || '').replace('#', '');
+    if (h === 'seguridad') return 'ajustes';
+    return TABS.some(t => t.key === h) ? h : null;
+};
+
+/**
+ * El perfil: una cabecera de jugador (portada, foto con su marco, nombre con su color
+ * y título, y tus cifras) y cuatro pestañas: Resumen, Inventario, Monedas y Ajustes
+ * (tus datos y la contraseña).
+ *
+ * La pestaña va en el hash (#inventario, #monedas, #ajustes), así que los enlaces de
+ * la píldora de monedas y de la tienda llevan directos a la suya.
+ */
 export default function User() {
-    const [user, setUser]             = useState(null);
-    const hasFrame = Boolean(useEquipped(user?.id).frame);
-    const [loading, setLoading]       = useState(true);
-    const [previewImage, setPreviewImage] = useState('');
-    const [image, setImage]           = useState('');
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [editingName, setEditingName] = useState(false);
+    const [nameDraft, setNameDraft] = useState('');
+    const [savingName, setSavingName] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [leagues, setLeagues] = useState(null);
+    const [hall, setHall] = useState(null);
     const location = useLocation();
-    // La píldora de monedas del menú trae aquí con #monedas.
-    // Y #inventario, a lo desbloqueado de la tienda.
-    const tabFromHash = (hash) => (hash === '#monedas' ? 'coins' : hash === '#inventario' ? 'inventory' : null);
-    const [activeTab, setActiveTab]   = useState(tabFromHash(location.hash) || 'profile'); // 'profile' | 'inventory' | 'security' | 'coins'
-    const [form] = Form.useForm();
     const nav = useNavigate();
+    const [activeTab, setActiveTab] = useState(tabFromHash(location.hash) || 'resumen');
+    const [form] = Form.useForm();
     const { getAvatarSrc } = useAppTheme();
     const wallet = useCoins();
+    const equipped = useEquipped(user?.id);
 
-    // Ya en el perfil, pinchar otra vez la píldora solo cambia el hash.
+    // Pinchar la píldora de monedas (o «Mi perfil») estando ya aquí solo cambia el hash.
     useEffect(() => {
-        const tab = tabFromHash(location.hash);
-        if (tab) setActiveTab(tab);
+        setActiveTab(tabFromHash(location.hash) || 'resumen');
     }, [location.hash]);
 
-    // Al abrir la pestaña, el historial al día (sin repetir avisos).
     useEffect(() => {
-        if (activeTab === 'coins') refreshCoins({ quiet: true });
+        if (activeTab === 'monedas') refreshCoins({ quiet: true });
     }, [activeTab]);
 
     useEffect(() => {
-        const fetchUserData = async () => {
+        (async () => {
             try {
                 setLoading(true);
                 const userData = await API.getUserByToken();
                 setUser(userData);
-                setPreviewImage(userData.logo_url || '');
-                form.setFieldsValue({
-                    username: userData.username,
-                    email: userData.email,
-                });
+                form.setFieldsValue({ email: userData.email });
             } catch (error) {
                 showAlert('error', error.message);
             } finally {
                 setLoading(false);
             }
-        };
-        fetchUserData();
+        })();
+        // Las cifras de la cabecera. Si fallan, la cabecera sale sin ellas.
+        API.get('/leagueParticipations/get/').then(lp => setLeagues(Array.isArray(lp) ? new Set(lp.map(p => p.league_id)).size : null)).catch(() => setLeagues(null));
+        API.get('/hall/get').then(h => setHall(h?.players || [])).catch(() => setHall([]));
+        if (wallet.status === 'idle') refreshCoins({ quiet: true });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [form]);
 
+    const me = useMemo(() => (hall && user ? hall.find(p => p.id === user.id) : null), [hall, user]);
+    const titles = me?.wins ?? (hall ? 0 : null);
+
+    const goTab = (key) => {
+        setActiveTab(key);
+        nav({ hash: key === 'resumen' ? '' : `#${key}` }, { replace: true });
+    };
+
+    /**
+     * Guarda unos campos del usuario y avisa al resto de la web (el menú lateral
+     * enseña tu nombre y tu foto) para que se actualice sin recargar.
+     */
+    const saveUser = async (fields) => {
+        const updated = await API.put('/users/update/' + user.id, fields);
+        setUser(updated);
+        window.dispatchEvent(new CustomEvent('pachanga:user-updated', { detail: updated }));
+        return updated;
+    };
+
+    // El email, desde Ajustes.
     const handleProfileUpdate = async (values) => {
         try {
-            setLoading(true);
-            if (image) {
-                const formData = new FormData();
-                formData.append('file', image);
-                const response = await API.post('/upload/', formData);
-                values.logo_url = response.url;
-            }
-            const updatedUser = await API.put('/users/update/' + user.id, values);
-            setUser(updatedUser);
-            if (values.logo_url) setPreviewImage(values.logo_url);
-            showAlert('success', 'Perfil actualizado correctamente');
+            setSaving(true);
+            await saveUser({ email: values.email });
+            showAlert('success', 'Email actualizado');
         } catch (error) {
-            showAlert('error', error.message);
+            showAlert('error', error?.response?.data?.error || error.message);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
-    const handleImageChange = (info) => {
-        const imageUrl = URL.createObjectURL(info.file.originFileObj);
-        setPreviewImage(imageUrl);
-        setImage(info.file.originFileObj);
+    // La foto, desde la cabecera: se sube y se guarda en cuanto la eliges.
+    const handlePhoto = async (file) => {
+        if (!file.type.startsWith('image/')) {
+            showAlert('error', 'Solo puedes subir imágenes');
+            return false;
+        }
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await API.post('/upload/', formData);
+            await saveUser({ logo_url: response.url });
+            showAlert('success', 'Foto cambiada');
+        } catch (error) {
+            showAlert('error', error?.response?.data?.error || 'No se pudo cambiar la foto');
+        } finally {
+            setUploading(false);
+        }
+        return false; // la subida la hacemos nosotros, no Antd
+    };
+
+    // El nombre, desde la cabecera.
+    const startEditName = () => { setNameDraft(user?.username || ''); setEditingName(true); };
+    const saveName = async () => {
+        const name = nameDraft.trim();
+        if (!name) { showAlert('error', 'El nombre no puede ir vacío'); return; }
+        if (name === user.username) { setEditingName(false); return; }
+        setSavingName(true);
+        try {
+            await saveUser({ username: name });
+            setEditingName(false);
+            showAlert('success', 'Nombre cambiado');
+        } catch (error) {
+            showAlert('error', error?.response?.data?.error || 'No se pudo cambiar el nombre');
+        } finally {
+            setSavingName(false);
+        }
     };
 
     const handlePasswordChange = async (values) => {
         try {
-            setLoading(true);
+            setSaving(true);
             await API.put('/users/changePassword/' + user.id, values);
             showAlert('success', 'Contraseña cambiada correctamente');
             try {
                 await API.post('/users/logout');
             } catch (err) {
-                console.error("Logout error", err);
+                console.error('Logout error', err);
             }
             localStorage.removeItem('admin');
             nav('/login');
         } catch (error) {
             showAlert('error', error.message);
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
@@ -114,190 +181,134 @@ export default function User() {
         );
     }
 
-    return (
-        <Flex vertical style={{ padding: '16px 12px 40px', maxWidth: 580, margin: '0 auto' }}>
-            <Title level={3} style={{ marginBottom: 20 }}>Ajustes de Cuenta</Title>
+    const isAdmin = localStorage.getItem('admin') === 'true';
+    const lastMove = (wallet.movements || []).find(m => m.amount !== 0);
+    const wearsSomething = Boolean(equipped.frame || equipped.color || equipped.title);
 
-            {/* ── Tab switcher ── */}
-            <Flex gap={8} wrap="wrap" style={{ marginBottom: 20 }}>
-                {[
-                    { key: 'profile', label: 'Información Personal', icon: <IdcardOutlined /> },
-                    { key: 'inventory', label: 'Inventario', icon: <InboxOutlined /> },
-                    { key: 'security', label: 'Seguridad', icon: <LockOutlined /> },
-                    { key: 'coins', label: 'Monedas', icon: <CoinIcon size={13} /> },
-                ].map(tab => (
+    return (
+        <div className="profile-page">
+            {/* ── Cabecera de jugador ── */}
+            <div className="profile-hero">
+                <div className="profile-cover">
+                    {(leagues != null || titles != null) && (
+                        <span className="profile-cover-tag">
+                            {[leagues != null && `${leagues} ${leagues === 1 ? 'liga' : 'ligas'}`, titles != null && `${titles} ${titles === 1 ? 'título' : 'títulos'}`].filter(Boolean).join(' · ')}
+                        </span>
+                    )}
+                </div>
+                <div className="profile-head">
+                    <div className="profile-avatar">
+                        <CosmeticFrame userId={user?.id}>
+                            <Avatar src={getAvatarSrc(user?.logo_url)} icon={<UserOutlined />} size={96} />
+                        </CosmeticFrame>
+                        <Upload showUploadList={false} beforeUpload={handlePhoto} accept="image/*" disabled={uploading}>
+                            <button type="button" className="profile-photo-btn" aria-label="Cambiar foto" title="Cambiar foto (JPG, PNG o GIF)">
+                                {uploading ? <LoadingOutlined /> : <CameraOutlined />}
+                            </button>
+                        </Upload>
+                    </div>
+                    <div className="profile-who">
+                        {editingName ? (
+                            <div className="profile-name-edit">
+                                <Input
+                                    autoFocus
+                                    size="large"
+                                    value={nameDraft}
+                                    maxLength={30}
+                                    onChange={e => setNameDraft(e.target.value)}
+                                    onPressEnter={saveName}
+                                    onKeyDown={e => { if (e.key === 'Escape') setEditingName(false); }}
+                                    aria-label="Nombre de usuario"
+                                    disabled={savingName}
+                                />
+                                <Button type="primary" icon={<CheckOutlined />} onClick={saveName} loading={savingName} aria-label="Guardar nombre" />
+                                <Button icon={<CloseOutlined />} onClick={() => setEditingName(false)} disabled={savingName} aria-label="Cancelar" />
+                            </div>
+                        ) : (
+                            <div className="profile-name-row">
+                                <h1 className="profile-name"><CosmeticName userId={user?.id}>{user?.username}</CosmeticName></h1>
+                                <button type="button" className="profile-edit-btn" onClick={startEditName} aria-label="Cambiar nombre" title="Cambiar nombre">
+                                    <EditOutlined />
+                                </button>
+                            </div>
+                        )}
+                        <div className="profile-sub">
+                            <CosmeticTitle userId={user?.id} style={{ fontSize: 12 }} />
+                            {!equipped.title && <span>{isAdmin ? 'Administrador' : 'Jugador'}</span>}
+                        </div>
+                    </div>
+                    <div className="profile-chips">
+                        {wallet.balance != null && <button type="button" onClick={() => goTab('monedas')}><CoinIcon size={13} /> {wallet.balance} {wallet.balance === 1 ? 'moneda' : 'monedas'}</button>}
+                        {leagues != null && <span>{leagues} {leagues === 1 ? 'liga' : 'ligas'}</span>}
+                        {titles != null && <span><TrophyOutlined /> {titles} {titles === 1 ? 'título' : 'títulos'}</span>}
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Pestañas ── */}
+            <div className="profile-tabs" role="tablist">
+                {TABS.map(t => (
                     <button
-                        key={tab.key}
+                        key={t.key}
                         type="button"
-                        aria-pressed={activeTab === tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        style={{
-                            flex: '1 1 120px',
-                            padding: '10px 8px',
-                            borderRadius: 8,
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: 13,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6,
-                            background: activeTab === tab.key
-                                ? 'rgba(var(--accent-rgb),0.15)'
-                                : 'rgba(var(--tint),0.04)',
-                            color: activeTab === tab.key ? 'var(--accent)' : 'inherit',
-                            borderBottom: activeTab === tab.key
-                                ? '2px solid var(--accent)'
-                                : '2px solid transparent',
-                            transition: 'all 0.2s',
-                        }}
+                        role="tab"
+                        aria-selected={activeTab === t.key}
+                        className={activeTab === t.key ? 'on' : ''}
+                        onClick={() => goTab(t.key)}
                     >
-                        {tab.icon} {tab.label}
+                        {t.label}
                     </button>
                 ))}
-            </Flex>
+            </div>
 
-            {/* ── Profile tab ── */}
-            {activeTab === 'profile' && (
-                <Card>
-                    {/* Avatar centered */}
-                    <Flex vertical align="center" style={{ marginBottom: 28 }}>
-                        <Flex style={{ position: 'relative', display: 'inline-block' }}>
-                            {hasFrame ? (
-                                <CosmeticFrame userId={user?.id}>
-                                    <Avatar src={getAvatarSrc(previewImage)} icon={<UserOutlined />} size={88} />
-                                </CosmeticFrame>
-                            ) : (
-                                <Avatar
-                                    src={getAvatarSrc(previewImage)}
-                                    icon={<UserOutlined />}
-                                    size={88}
-                                    style={{ border: '3px solid rgba(var(--accent-rgb),0.4)' }}
-                                />
-                            )}
-                            <Upload
-                                name="logo_url"
-                                showUploadList={false}
-                                beforeUpload={(file) => {
-                                    const isImage = file.type.startsWith('image/');
-                                    if (!isImage) showAlert('error', 'Solo puedes subir imágenes!');
-                                    return isImage || Upload.LIST_IGNORE;
-                                }}
-                                onChange={handleImageChange}
-                                accept="image/*"
-                            >
-                                <button
-                                    style={{
-                                        position: 'absolute',
-                                        bottom: 0,
-                                        right: 0,
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: '50%',
-                                        border: 'none',
-                                        background: 'var(--accent)',
-                                        color: 'var(--on-accent)',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: 13,
-                                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-                                    }}
-                                >
-                                    <CameraOutlined />
-                                </button>
-                            </Upload>
-                        </Flex>
-                        <Text type="secondary" style={{ fontSize: 11, marginTop: 8 }}>
-                            JPG, PNG o GIF · Toca el icono de cámara para cambiar
+            {/* ── Resumen ── */}
+            {activeTab === 'resumen' && (
+                <div className="profile-overview">
+                    <Card className="profile-card" onClick={() => goTab('monedas')} hoverable>
+                        <div className="profile-label">Monedas</div>
+                        <div className="profile-big">{wallet.balance ?? '—'}<small> / {wallet.cap}</small></div>
+                        <Text type="secondary" style={{ fontSize: 12.5 }}>
+                            {lastMove ? `${lastMove.amount > 0 ? '+' : '−'}${Math.abs(lastMove.amount)} · ${lastMove.label}` : 'Aún no has movido monedas'}
                         </Text>
-                        {/* Lo que llevas puesto de la tienda */}
-                        <Flex vertical align="center" gap={2} style={{ marginTop: 12 }}>
-                            <Text strong style={{ fontSize: 16 }}>
-                                <CosmeticName userId={user?.id}>{user?.username}</CosmeticName>
-                            </Text>
-                            <CosmeticTitle userId={user?.id} style={{ fontSize: 12 }} />
-                            <Button type="link" size="small" onClick={() => setActiveTab('inventory')} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
-                                Cambiar marco, color o título
-                            </Button>
-                        </Flex>
-                    </Flex>
-
-                    <Form form={form} layout="vertical" onFinish={handleProfileUpdate}>
-                        <Form.Item
-                            name="username"
-                            label="Nombre de Usuario"
-                            rules={[{ required: true, message: 'El nombre es obligatorio' }]}
-                        >
-                            <Input size="large" prefix={<UserOutlined style={{ color: 'var(--text-dim)' }} />} />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="email"
-                            label="Email"
-                            rules={[{ required: true, type: 'email', message: 'Ingresa un email válido' }]}
-                        >
-                            <Input size="large" prefix={<UserOutlined style={{ color: 'var(--text-dim)' }} />} />
-                        </Form.Item>
-
-                        <Button type="primary" size="large" htmlType="submit" loading={loading} block>
-                            Actualizar Perfil
-                        </Button>
-                    </Form>
-                </Card>
+                    </Card>
+                    <Card className="profile-card" onClick={() => goTab('inventario')} hoverable>
+                        <div className="profile-label">Lo que llevas puesto</div>
+                        <div className="profile-wear">
+                            <CosmeticFrame userId={user?.id}>
+                                <Avatar src={getAvatarSrc(user?.logo_url)} icon={<UserOutlined />} size={40} />
+                            </CosmeticFrame>
+                            <div style={{ minWidth: 0 }}>
+                                <div className="profile-wear-name"><CosmeticName userId={user?.id}>{user?.username}</CosmeticName></div>
+                                {equipped.title
+                                    ? <CosmeticTitle userId={user?.id} />
+                                    : <Text type="secondary" style={{ fontSize: 12 }}>{wearsSomething ? 'Sin título' : 'Sin marco, color ni título'}</Text>}
+                            </div>
+                        </div>
+                        <Text type="secondary" style={{ fontSize: 12.5 }}>Cámbialo en tu inventario</Text>
+                    </Card>
+                    <Card className="profile-card" onClick={() => nav('/hall-of-flame')} hoverable>
+                        <div className="profile-label">Palmarés</div>
+                        <div className="profile-big">{titles ?? '—'}</div>
+                        <Text type="secondary" style={{ fontSize: 12.5 }}>
+                            {titles
+                                ? `${titles === 1 ? 'título' : 'títulos'}${leagues != null ? ` en ${leagues} ${leagues === 1 ? 'liga' : 'ligas'}` : ''}`
+                                : `Aún sin títulos${leagues != null ? ` en ${leagues} ${leagues === 1 ? 'liga' : 'ligas'}` : ''}`}
+                        </Text>
+                        {me?.trophies?.length > 0 && (
+                            <ul className="profile-trophies">
+                                {me.trophies.slice(0, 3).map(t => <li key={t.id}><TrophyOutlined /> {t.competition_name}</li>)}
+                                {me.trophies.length > 3 && <li className="more">y {me.trophies.length - 3} más</li>}
+                            </ul>
+                        )}
+                    </Card>
+                </div>
             )}
 
-            {/* ── Security tab ── */}
-            {activeTab === 'security' && (
-                <Card>
-                    <Form layout="vertical" onFinish={handlePasswordChange}>
-                        <Form.Item
-                            name="currentPassword"
-                            label="Contraseña Actual"
-                            rules={[{ required: true, message: 'Ingresa tu contraseña actual' }]}
-                        >
-                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="newPassword"
-                            label="Nueva Contraseña"
-                            rules={[{ required: true, min: 6, message: 'Mínimo 6 caracteres' }]}
-                        >
-                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
-                        </Form.Item>
-
-                        <Form.Item
-                            name="confirmPassword"
-                            label="Confirmar Nueva Contraseña"
-                            dependencies={['newPassword']}
-                            rules={[
-                                { required: true, message: 'Confirma tu nueva contraseña' },
-                                ({ getFieldValue }) => ({
-                                    validator(_, value) {
-                                        if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
-                                        return Promise.reject('Las contraseñas no coinciden');
-                                    },
-                                }),
-                            ]}
-                        >
-                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
-                        </Form.Item>
-
-                        <Button type="primary" size="large" htmlType="submit" loading={loading} block danger>
-                            Cambiar Contraseña
-                        </Button>
-                    </Form>
-                </Card>
-            )}
-
-            {/* ── Inventario: lo desbloqueado de la tienda ── */}
-            {activeTab === 'inventory' && <Inventory user={user} />}
+            {/* ── Inventario ── */}
+            {activeTab === 'inventario' && <Inventory user={user} preview={false} />}
 
             {/* ── Monedas ── */}
-            {activeTab === 'coins' && (
+            {activeTab === 'monedas' && (
                 <Card id="monedas">
                     <CoinHistory
                         balance={wallet.balance}
@@ -308,6 +319,63 @@ export default function User() {
                     />
                 </Card>
             )}
-        </Flex>
+
+            {/* ── Ajustes: tus datos y la contraseña ── */}
+            {activeTab === 'ajustes' && (
+                <Card className="profile-settings">
+                    <h2 className="profile-section-title">Email</h2>
+                    <Text type="secondary" style={{ display: 'block', fontSize: 12.5, margin: '-6px 0 14px' }}>
+                        El nombre y la foto se cambian arriba, en tu cabecera.
+                    </Text>
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        onFinish={handleProfileUpdate}
+                        initialValues={{ email: user?.email }}
+                    >
+                        <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Pon un email válido' }]}>
+                            <Input size="large" prefix={<MailOutlined style={{ color: 'var(--text-dim)' }} />} />
+                        </Form.Item>
+                        <Button type="primary" size="large" htmlType="submit" loading={saving} block>
+                            Guardar email
+                        </Button>
+                    </Form>
+
+                    <div className="profile-divider" />
+
+                    <h2 className="profile-section-title">Contraseña</h2>
+                    <Form layout="vertical" onFinish={handlePasswordChange}>
+                        <Form.Item name="currentPassword" label="Contraseña actual" rules={[{ required: true, message: 'Pon tu contraseña actual' }]}>
+                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
+                        </Form.Item>
+                        <Form.Item name="newPassword" label="Contraseña nueva" rules={[{ required: true, min: 6, message: 'Mínimo 6 caracteres' }]}>
+                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
+                        </Form.Item>
+                        <Form.Item
+                            name="confirmPassword"
+                            label="Repite la contraseña nueva"
+                            dependencies={['newPassword']}
+                            rules={[
+                                { required: true, message: 'Repite la contraseña nueva' },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                                        return Promise.reject(new Error('Las contraseñas no coinciden'));
+                                    },
+                                }),
+                            ]}
+                        >
+                            <Input.Password size="large" prefix={<LockOutlined style={{ color: 'var(--text-dim)' }} />} />
+                        </Form.Item>
+                        <Button type="primary" size="large" htmlType="submit" loading={saving} block danger>
+                            Cambiar contraseña
+                        </Button>
+                        <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 8 }}>
+                            Al cambiarla se cierra la sesión y tendrás que volver a entrar.
+                        </Text>
+                    </Form>
+                </Card>
+            )}
+        </div>
     );
 }

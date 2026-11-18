@@ -123,6 +123,14 @@ const UserMenu = ({ children }) => {
         return () => { cancelled = true; };
     }, [optionsOpen, changelog.length]);
 
+    // El perfil avisa cuando cambias el nombre o la foto: así el menú se actualiza
+    // sin recargar.
+    useEffect(() => {
+        const onUpdated = (e) => { if (e.detail) setUser(prev => ({ ...prev, ...e.detail })); };
+        window.addEventListener('pachanga:user-updated', onUpdated);
+        return () => window.removeEventListener('pachanga:user-updated', onUpdated);
+    }, []);
+
     useEffect(() => {
         API.getUserByToken()
             .then(data => {
