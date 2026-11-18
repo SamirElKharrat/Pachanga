@@ -16,11 +16,14 @@ const CardPlay = require('../models/cardPlay');
  *
  * Reglas, tal como salieron de la fase 0 (server/scripts/simulateCards.js):
  *
- *   - Una carta de EFECTO por jornada. El Chivato no cuenta: no da puntos.
- *   - Cada jornada completa da una carta gratis al azar: Escudo, Gafe o Doble. La
- *     Doble no se vende nunca: si solo se consiguiera gastando, quien gasta ganaría
- *     la liga el 61 % de las veces en vez del 33 %.
- *   - Mano de 3 por liga. Lo que no cabe se paga en monedas.
+ *   - Hasta 2 cartas de EFECTO por jornada, y nunca la misma dos veces (la Doble y
+ *     la Doble Dorada cuentan como la misma: las dos doblan). El Chivato va aparte,
+ *     uno por jornada: no da puntos.
+ *   - Cada jornada completa da una carta gratis al azar: Escudo, Gafe o Doble. Solo
+ *     vale en esa jornada: si no se juega, caduca. La Doble no se vende nunca: si
+ *     solo se consiguiera gastando, quien gasta ganaría la liga el 61 % de las veces
+ *     en vez del 33 %.
+ *   - La mano no tiene límite: lo que se compra o sale en los cofres se guarda.
  *   - Una carta se juega o se retira hasta que empieza su partido; el Escudo, hasta
  *     que empieza el primero de la jornada. Las jornadas no tienen cierre: manda la
  *     hora del partido.
@@ -41,6 +44,7 @@ const CARDS = Object.freeze({
         aim: 'round',
         rarity: 'raro',
         description: 'Tu primer partido no perfecto de la jornada no suma, pero tampoco rompe el pleno.',
+        short: 'Un fallo no rompe tu pleno.',
     },
     gafe: {
         label: 'Gafe',
@@ -48,6 +52,7 @@ const CARDS = Object.freeze({
         aim: 'rival',
         rarity: 'raro',
         description: 'Eliges rival y partido: si falla el ganador (o no lo votó), pierde 2 puntos.',
+        short: 'Si tu rival falla, pierde 2.',
     },
     doble: {
         label: 'Doble',
@@ -55,6 +60,7 @@ const CARDS = Object.freeze({
         aim: 'match',
         rarity: 'epico',
         description: 'Los puntos base y de marcador de un partido se suman dos veces, hasta +5. No dobla el pleno ni el favorito.',
+        short: 'Dobla un partido (hasta +5).',
     },
     dorada: {
         label: 'Doble Dorada',
@@ -62,23 +68,27 @@ const CARDS = Object.freeze({
         aim: 'match',
         rarity: 'leg',
         description: 'Como la Doble, sin tope y doblando también el pleno.',
+        short: 'Dobla un partido y el pleno.',
     },
     chivato: {
         label: 'Chivato',
         limited: false,
         aim: 'match',
         rarity: 'poco',
-        description: 'Ves el % de votos de un partido antes de votarlo. No da puntos ni cuenta para el límite.',
+        description: 'Ves el % de votos de un partido antes de votarlo. No da puntos ni cuenta para las 2 de la jornada.',
+        short: 'Ves el % de votos de un partido.',
     },
 });
 
 /** De qué sale la carta gratis. */
 const FREE_POOL = Object.freeze(['escudo', 'gafe', 'doble']);
-/** Cartas por liga en la mano. */
-const HAND_LIMIT = 3;
+/** Cartas de efecto que se pueden jugar por jornada. */
+const EFFECTS_PER_ROUND = 2;
+/** «La misma carta»: la Doble y la Doble Dorada cuentan como una (las dos doblan). */
+const familyOf = (card) => (card === 'dorada' ? 'doble' : card);
 const DOBLE_CAP = 5;
 const GAFE_POINTS = 2;
-/** Lo que se paga en monedas por una carta que no cabe en la mano. */
+/** Lo que vale cada carta en monedas (cuando una no se puede dar, p. ej. la liga ya acabó). */
 const REFUND = Object.freeze({ chivato: 4, escudo: 7, gafe: 7, doble: 12, dorada: 20 });
 
 const EXACT = Object.freeze({ BO1: 0, BO3: 3, BO5: 5 });
@@ -133,10 +143,10 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
     };
     const byId = Object.fromEntries(matches.map(m => [m.id, m]));
 
-    // Una carta de efecto por jugador y un castigo por objetivo: si se cuela más de
-    // una (no debería), cuenta la primera.
+    // Hasta 2 cartas de efecto por jugador, sin repetir, y un castigo por objetivo: si
+    // se cuela alguna de más (no debería), cuentan las primeras.
     const ordered = [...plays].sort((a, b) => a.id - b.id);
-    const seenEffect = new Set();
+    const effectsOf = {}; // userId → Set de familias ya jugadas
     const seenTarget = new Set();
 
     const deltas = {};
@@ -148,8 +158,9 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
         const info = CARDS[play.card];
         if (!info) { effects[play.id] = 0; continue; }
         if (!info.limited) { effects[play.id] = 0; continue; }
-        if (seenEffect.has(play.user_id)) { effects[play.id] = 0; continue; }
-        seenEffect.add(play.user_id);
+        const used = effectsOf[play.user_id] || (effectsOf[play.user_id] = new Set());
+        if (used.size >= EFFECTS_PER_ROUND || used.has(familyOf(play.card))) { effects[play.id] = 0; continue; }
+        used.add(familyOf(play.card));
 
         const u = play.user_id;
         if (play.card === 'escudo') {
@@ -241,6 +252,27 @@ const lockHand = (userId, transaction) => sequelize.query('SELECT pg_advisory_xa
     replacements: { ns: LOCK_HAND, uid: Number(userId) }, transaction,
 });
 
+/**
+ * La carta gratis solo vale en su jornada. Caduca cuando ya no se puede jugar: el
+ * Escudo, en cuanto empieza el primer partido; las demás, cuando ya no queda ningún
+ * partido de la jornada sin empezar. Idempotente.
+ */
+async function expireFreeCards(userId, leagueId, transaction) {
+    const free = await UserCard.findAll({ where: { user_id: userId, league_id: leagueId, status: 'in_hand', source: 'free' }, transaction });
+    if (!free.length) return;
+    const roundIds = [...new Set(free.map(c => Number(c.source_ref)).filter(Boolean))];
+    const matches = await Match.findAll({ where: { round_id: roundIds }, transaction });
+    const resolved = new Set((await Result.findAll({ where: { match_id: matches.map(m => m.id) }, attributes: ['match_id'], transaction })).map(r => r.match_id));
+    const expired = [];
+    for (const c of free) {
+        const ms = matches.filter(m => m.round_id === Number(c.source_ref));
+        const started = ms.map(m => hasStarted(m, resolved));
+        const gone = c.card === 'escudo' ? started.some(Boolean) || !ms.length : started.every(Boolean);
+        if (gone) expired.push(c.id);
+    }
+    if (expired.length) await UserCard.update({ status: 'expired' }, { where: { id: expired }, transaction });
+}
+
 /** Las cartas que caducan cuando una liga termina. Idempotente. */
 async function expireIfFinished(league) {
     if (league.status !== 'finished') return;
@@ -248,42 +280,28 @@ async function expireIfFinished(league) {
 }
 
 /**
- * Da una carta a alguien en una liga, si cabe en la mano. Si no cabe, la apunta como
- * pagada en monedas (`status: 'refunded'`) y devuelve cuántas.
+ * Da una carta a alguien en una liga. La mano no tiene límite.
  *
  * Con `source` y `sourceRef`, no da dos veces lo mismo (la carta gratis de una
  * jornada).
  *
- * @returns {Promise<{card: Object|null, refund: number, duplicate: boolean}>}
+ * @returns {Promise<{card: Object|null, duplicate: boolean}>}
  */
 async function giveCard({ userId, leagueId, card, source, sourceRef = null }) {
     if (!CARDS[card]) throw new CardError(400, `Carta desconocida: "${card}"`);
-    const out = await sequelize.transaction(async (transaction) => {
+    return sequelize.transaction(async (transaction) => {
         await lockHand(userId, transaction);
         if (sourceRef !== null) {
             const dup = await UserCard.findOne({ where: { user_id: userId, league_id: leagueId, source, source_ref: String(sourceRef) }, transaction });
-            if (dup) return { card: null, refund: 0, duplicate: true };
+            if (dup) return { card: null, duplicate: true };
         }
-        const inHand = await UserCard.count({ where: { user_id: userId, league_id: leagueId, status: 'in_hand' }, transaction });
-        const fits = inHand < HAND_LIMIT;
         const row = await UserCard.create({
             user_id: userId, league_id: leagueId, card, source,
             source_ref: sourceRef === null ? null : String(sourceRef),
-            status: fits ? 'in_hand' : 'refunded',
+            status: 'in_hand',
         }, { transaction });
-        return { card: row, refund: fits ? 0 : REFUND[card], duplicate: false };
+        return { card: row, duplicate: false };
     });
-
-    // Las monedas, FUERA del candado de la mano: tienen el suyo, y cogerlo aquí dentro
-    // dejaría la transacción esperándose a sí misma.
-    if (out.refund > 0) {
-        const coins = require('./coins');
-        await coins.grantOnce({
-            userId, reason: 'card_refund', refType: 'card', refId: out.card.id, amount: out.refund,
-            leagueId, note: `${CARDS[card].label}: no cabía en la mano`,
-        });
-    }
-    return out;
 }
 
 /** Una carta al azar de las gratis, con un azar de verdad. */
@@ -316,8 +334,11 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
     return sequelize.transaction(async (transaction) => {
         await lockHand(userId, transaction);
 
-        const userCard = await UserCard.findOne({ where: { id: userCardId, user_id: userId }, transaction });
-        if (!userCard) throw new CardError(404, 'Esa carta no es tuya');
+        const owned = await UserCard.findOne({ where: { id: userCardId, user_id: userId }, transaction });
+        if (!owned) throw new CardError(404, 'Esa carta no es tuya');
+        await expireFreeCards(userId, owned.league_id, transaction);
+        const userCard = await UserCard.findByPk(owned.id, { transaction });
+        if (userCard.status === 'expired' && userCard.source === 'free') throw new CardError(409, 'Esa carta gratis ha caducado: solo valía en su jornada');
         if (userCard.status !== 'in_hand') throw new CardError(409, 'Esa carta ya no está en tu mano');
         const info = CARDS[userCard.card];
         if (!info) throw new CardError(400, 'Carta desconocida');
@@ -345,13 +366,18 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
             round = await Round.findByPk(match.round_id, { transaction });
         }
 
-        // Una carta de efecto por jornada.
-        if (info.limited) {
-            const already = await CardPlay.findOne({
-                where: { user_id: userId, round_id: round.id, status: 'active', card: Object.keys(CARDS).filter(k => CARDS[k].limited) },
-                transaction,
-            });
-            if (already) throw new CardError(409, `Ya has jugado una carta esta jornada (${CARDS[already.card].label})`);
+        // La carta gratis, solo en su jornada.
+        if (userCard.source === 'free' && Number(userCard.source_ref) !== round.id) {
+            const own = await Round.findByPk(Number(userCard.source_ref), { transaction });
+            throw new CardError(409, `Esa carta gratis solo vale en su jornada${own ? ` (${own.name || 'J' + own.order})` : ''}`);
+        }
+
+        // Hasta 2 de efecto por jornada y nunca la misma dos veces (el Chivato, uno).
+        const mine = await CardPlay.findAll({ where: { user_id: userId, round_id: round.id, status: 'active' }, transaction });
+        const same = mine.find(p => familyOf(p.card) === familyOf(userCard.card));
+        if (same) throw new CardError(409, `Ya has jugado ${CARDS[same.card].label} esta jornada: cada carta, una vez por jornada`);
+        if (info.limited && mine.filter(p => CARDS[p.card]?.limited).length >= EFFECTS_PER_ROUND) {
+            throw new CardError(409, `Ya has jugado ${EFFECTS_PER_ROUND} cartas esta jornada`);
         }
 
         // El Gafe: un rival de la liga que aún no tenga castigo esta jornada.
@@ -426,6 +452,7 @@ async function handOf(userId, leagueId) {
     const league = await League.findByPk(leagueId, { attributes: ['id', 'name', 'status', 'cards_enabled'] });
     if (!league) throw new CardError(404, 'Liga no encontrada');
     await expireIfFinished(league);
+    await expireFreeCards(userId, leagueId);
 
     const [hand, plays] = await Promise.all([
         UserCard.findAll({ where: { user_id: userId, league_id: leagueId, status: 'in_hand' }, order: [['id', 'ASC']] }),
@@ -440,18 +467,26 @@ async function handOf(userId, leagueId) {
     return {
         league: { id: league.id, status: league.status },
         enabled: league.cards_enabled,
-        handLimit: HAND_LIMIT,
+        effectsPerRound: EFFECTS_PER_ROUND,
         catalog: Object.keys(CARDS).map(cardInfo),
-        hand: hand.map(c => ({ id: c.id, source: c.source, created_at: c.created_at, ...cardInfo(c.card) })),
+        hand: await Promise.all(hand.map(async c => {
+            const base = { id: c.id, source: c.source, created_at: c.created_at, ...cardInfo(c.card), family: familyOf(c.card) };
+            if (c.source !== 'free') return base;
+            // La gratis dice de qué jornada es: solo vale ahí.
+            const r = await Round.findByPk(Number(c.source_ref), { attributes: ['id', 'order', 'name'] });
+            return { ...base, round: r ? { id: r.id, order: r.order, name: r.name } : null };
+        })),
         plays: await Promise.all(plays.map(async p => ({
             id: p.id,
             round_id: p.round_id,
+            round_order: rounds[p.round_id]?.order ?? null,
             match_id: p.match_id,
             status: p.status,
             target: targets.find(t => t.id === p.target_user_id) || null,
             effect: effectsByRound[p.round_id]?.[p.id] ?? null,
             locked: (await lockOf(p)).started,
             key: p.card,
+            family: familyOf(p.card),
             card: cardInfo(p.card),
         }))),
     };
@@ -608,7 +643,9 @@ module.exports = {
     markNoticeSeen,
     CARDS,
     FREE_POOL,
-    HAND_LIMIT,
+    EFFECTS_PER_ROUND,
+    familyOf,
+    expireFreeCards,
     DOBLE_CAP,
     GAFE_POINTS,
     REFUND,

@@ -61,11 +61,9 @@ export default function CardsAdmin() {
     const grant = async () => {
         setSaving(true);
         try {
-            const r = await API.post('/cards/grant', { user_id: userId, league_id: leagueId, card });
+            await API.post('/cards/grant', { user_id: userId, league_id: leagueId, card });
             const label = catalog.find(c => c.key === card)?.label || card;
-            showAlert(r.refund ? 'warning' : 'success', r.refund
-                ? `La mano estaba llena: ${label} se ha pagado en monedas (+${r.refund})`
-                : `${label} dada`);
+            showAlert('success', `${label} dada`);
             setCard(null);
         } catch (error) {
             showAlert('error', error?.response?.data?.error || 'No se pudo dar la carta');
@@ -153,7 +151,7 @@ export default function CardsAdmin() {
                                 style={{ width: '100%' }}
                             />
                             <Button type="primary" disabled={!userId || !card} loading={saving} onClick={grant}>Dar carta</Button>
-                            <Text type="secondary" style={{ fontSize: 12 }}>Respeta la mano de 3: si no cabe, se paga en monedas.</Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>La mano no tiene límite.</Text>
                         </Space>
                     </Card>
                 </Col>

@@ -15,6 +15,7 @@ import { defaultRound } from '../../utils/rounds';
 import { showAlert } from '../atoms/AlertInfo';
 import { STATUS_COLORS, RANK_STYLES, QUESTION_POINTS } from '../../constants/pachanga';
 import RoundCards from '../atoms/cards/RoundCards';
+import MyRoundCards from '../atoms/cards/MyRoundCards';
 
 const { Text } = Typography;
 
@@ -644,6 +645,13 @@ function Home() {
             <LeagueInfoPanel
                 league={leagues.find(l => l.id === selectedLeague)}
                 onShowRules={() => setRulesModalVisible(true)}
+            />
+
+            {/* ── Tus cartas de esta jornada, en corto (solo si la liga juega cartas) ── */}
+            <MyRoundCards
+                league={leagues.find(l => l.id === selectedLeague)}
+                round={selectedRound}
+                matches={matches}
             />
 
             {/* ── Main content ── */}

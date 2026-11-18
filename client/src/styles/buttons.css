@@ -1,0 +1,100 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   BOTONES · estilo «Píldora»
+   ═══════════════════════════════════════════════════════════════════════════
+
+   El botón estándar de toda la web, sobre los de Antd (el radio, el peso y las
+   sombras van también en styles/theme.js, en los tres temas):
+
+   - Principal: del todo redondo, color sólido del acento; al pasar, más claro.
+   - Normal (secundario) y fantasma: solo el contorno del acento, con el texto
+     del acento; al pasar, un fondo tenue del acento.
+   - Texto y enlace: solo el texto; al pasar, un fondo tenue.
+   - Peligro: rojo tenue de fondo con el texto en rojo.
+   - Desactivado: transparente con un contorno gris; se lee bien sin parecer activo.
+
+   Al final, los botones hechos a mano de la web que son acciones (añadir puntos,
+   leer la normativa…) también pasan a píldora. Las pestañas, los puntos de los
+   carruseles y las tarjetas que se pulsan no son botones de acción y no cambian.
+
+   `--btn-tint` es el color de los fondos tenues neutros: blanco en los temas
+   oscuros y pizarra en el claro (el claro se marca en <html data-color-mode>). */
+
+:root { --btn-tint: var(--tint); --btn-accent-text: var(--accent-light); }
+[data-color-mode="light"] { --btn-tint: 15, 23, 42; --btn-accent-text: var(--accent-deep); }
+
+.ant-btn {
+  border-radius: 999px !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: none !important;
+  padding-inline: 18px;
+}
+.ant-btn.ant-btn-sm { padding-inline: 14px; }
+.ant-btn.ant-btn-lg { padding-inline: 26px; }
+/* Los que solo llevan icono, redondos y sin relleno lateral */
+.ant-btn.ant-btn-icon-only { padding-inline: 0; }
+
+/* Principal: al pasar, más claro */
+.ant-btn.ant-btn-primary:not(.ant-btn-background-ghost):not(.ant-btn-dangerous):not(:disabled):not(.ant-btn-disabled):hover {
+  background: var(--accent-light);
+}
+
+/* Normal y fantasma: el contorno del acento */
+.ant-btn.ant-btn-default:not(.ant-btn-dangerous),
+.ant-btn.ant-btn-primary.ant-btn-background-ghost:not(.ant-btn-dangerous) {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--btn-accent-text);
+}
+.ant-btn.ant-btn-default:not(.ant-btn-dangerous):not(:disabled):not(.ant-btn-disabled):hover,
+.ant-btn.ant-btn-primary.ant-btn-background-ghost:not(.ant-btn-dangerous):not(:disabled):not(.ant-btn-disabled):hover {
+  background: rgba(var(--accent-rgb), 0.12);
+  border-color: var(--accent);
+  color: var(--btn-accent-text);
+}
+
+/* Texto y enlace: sin contorno; al pasar, fondo tenue */
+.ant-btn.ant-btn-text:not(:disabled):hover,
+.ant-btn.ant-btn-link:not(:disabled):hover { background: rgba(var(--btn-tint), 0.07); }
+
+/* Peligro (principal o normal): rojo tenue */
+.ant-btn.ant-btn-dangerous:not(.ant-btn-text):not(.ant-btn-link) {
+  background: rgba(var(--danger-rgb), 0.12);
+  border: 1.5px solid transparent;
+  color: var(--danger);
+}
+.ant-btn.ant-btn-dangerous:not(.ant-btn-text):not(.ant-btn-link):not(:disabled):not(.ant-btn-disabled):hover {
+  background: rgba(var(--danger-rgb), 0.2);
+  border-color: transparent;
+  color: var(--danger);
+}
+
+/* Desactivado: transparente con contorno gris */
+.ant-btn:not(.ant-btn-link):not(.ant-btn-text):disabled,
+.ant-btn:not(.ant-btn-link):not(.ant-btn-text).ant-btn-disabled {
+  background: transparent !important;
+  border: 1.5px solid rgba(var(--btn-tint), 0.18) !important;
+  color: rgba(var(--btn-tint), 0.45) !important;
+}
+
+/* Foco con teclado, visible */
+.ant-btn:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 2px; }
+
+/* ── Los de Estadísticas: mismo estilo, con sus colores ── */
+.pstats .ant-btn-default { border-radius: 999px !important; }
+
+/* ── Botones hechos a mano que son acciones ── */
+.hof-header-admin-btn,
+.hof-modal-add-trophy-btn,
+.pachanga-admin-btn,
+.pachanga-admin-btn-secondary,
+.pachanga-read-more-btn,
+.gn-ok,
+.profile-chips > button {
+  border-radius: 999px !important;
+  font-weight: 700;
+}
+/* Los de solo icono, redondos */
+.profile-edit-btn,
+.hof-conquest-delete-btn,
+.pachanga-chip-delete { border-radius: 50% !important; }

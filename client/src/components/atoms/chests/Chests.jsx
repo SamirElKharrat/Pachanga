@@ -167,7 +167,7 @@ export default function Chests({ me, balance, onOpened }) {
                             ))}
                             <p className="chest-odds-rules">
                                 {data.price} monedas, {data.dailyLimit} al día. Tras 10 seguidas sin nada raro, la siguiente es rara o mejor.
-                                Las cartas son de la liga del cofre; con la mano llena se pagan en monedas. Un cosmético repetido, a mitad de precio.
+                                Las cartas van a tu mano de la liga del cofre. Un cosmético repetido, a mitad de precio.
                                 El dado lo tira el servidor y cada apertura queda guardada.
                             </p>
                         </div>

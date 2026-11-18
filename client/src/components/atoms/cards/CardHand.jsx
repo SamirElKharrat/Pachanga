@@ -79,19 +79,41 @@ export default function CardHand({ league, round }) {
     useEffect(() => { setSelected(null); setMatchId(null); setTargetId(null); setShare(null); }, [round?.roundId]);
 
     const roundPlays = useMemo(() => (hand?.plays || []).filter(p => p.round_id === round?.roundId), [hand, round]);
-    const usedEffect = roundPlays.some(p => p.status === 'active' && p.card.limited);
+    const active = roundPlays.filter(p => p.status === 'active');
+    const perRound = hand?.effectsPerRound ?? 2;
+    const effectsUsed = active.filter(p => p.card.limited).length;
+    const familiesUsed = new Set(active.map(p => p.family || p.key));
     const openMatches = matches.filter(m => !matchStarted(m));
     const roundStarted = matches.length === 0 || matches.some(m => matchStarted(m));
-    const card = hand?.hand.find(c => c.id === selected) || null;
+
+    // La mano, agrupada: las iguales juntas («Gafe ×3») y cada carta gratis aparte,
+    // porque solo vale en su jornada. Al jugar un grupo se usa la más antigua.
+    const slots = useMemo(() => {
+        const out = [];
+        const byKey = {};
+        for (const c of hand?.hand || []) {
+            if (c.source === 'free') { out.push({ id: `free:${c.id}`, cards: [c], info: c, free: true }); continue; }
+            if (!byKey[c.key]) { byKey[c.key] = { id: `type:${c.key}`, cards: [], info: c, free: false }; out.push(byKey[c.key]); }
+            byKey[c.key].cards.push(c);
+        }
+        return out;
+    }, [hand]);
+    const slot = slots.find(s => s.id === selected) || null;
+    const card = slot ? slot.cards[0] : null;
 
     if (!league?.cards_enabled) return null;
 
-    const canPlay = (c) => {
-        if (c.limited && usedEffect) return 'Ya has jugado tu carta de esta jornada';
+    const canPlay = (s) => {
+        const c = s.info;
+        if (familiesUsed.has(c.family || c.key)) return `Ya has jugado ${c.label} esta jornada`;
+        if (c.limited && effectsUsed >= perRound) return `Ya has jugado ${perRound} cartas esta jornada`;
+        if (s.free && c.round && c.round.id !== round?.roundId) return `Solo vale en la ${c.round.name || `jornada ${c.round.order}`}`;
         if (c.aim === 'round' && roundStarted) return 'La jornada ya ha empezado';
         if (c.aim !== 'round' && openMatches.length === 0) return 'No quedan partidos sin empezar';
         return null;
     };
+    const freeHere = slots.find(s => s.free && s.info.round?.id === round?.roundId);
+    const left = Math.max(0, perRound - effectsUsed);
 
     const submit = async () => {
         setBusy(true);
@@ -123,7 +145,7 @@ export default function CardHand({ league, round }) {
     };
 
     const ready = card && (card.aim === 'round' || (matchId && (card.aim !== 'rival' || targetId)));
-    const limit = hand?.handLimit ?? 3;
+    const total = hand?.hand.length ?? 0;
 
     return (
         <Card
@@ -134,42 +156,45 @@ export default function CardHand({ league, round }) {
                     <span>Tus cartas</span>
                 </Space>
             }
-            extra={hand && <Text type="secondary" style={{ fontSize: 12 }}>{hand.hand.length} de {limit} en la mano</Text>}
+            extra={hand && <Text type="secondary" style={{ fontSize: 12 }}>{total} {total === 1 ? 'carta' : 'cartas'} en la mano</Text>}
         >
             <Skeleton loading={loading && !hand} active paragraph={{ rows: 3 }}>
                 {!hand ? (
                     <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No se pudieron cargar tus cartas" />
                 ) : (
                     <>
-                        <p className="cards-note" style={{ margin: '0 0 10px' }}>
-                            Una carta por jornada (el Chivato aparte). Se juega hasta que empieza su partido y nadie la ve hasta entonces.
-                            Cada jornada completa te da una gratis.
-                        </p>
+                        {/* Lo que te queda esta jornada, una sola vez y no en cada carta */}
+                        <div className={`cards-status${left === 0 ? ' done' : ''}`}>
+                            {left === 0
+                                ? `Ya has jugado tus ${perRound} cartas de esta jornada.`
+                                : `Te ${left === 1 ? 'queda 1 carta' : `quedan ${left} cartas`} por jugar esta jornada (el Chivato aparte). Cada carta, una vez por jornada.`}
+                            {freeHere && <span className="cards-status-free"> Tu carta gratis caduca si no la juegas en esta jornada.</span>}
+                        </div>
 
                         <div className="cards-hand" role="group" aria-label="Tu mano">
-                            {hand.hand.length === 0 && (
+                            {slots.length === 0 && (
                                 <div className="card-tile empty">Sin cartas. Envía la jornada completa para ganar una.</div>
                             )}
-                            {hand.hand.map(c => {
-                                const why = canPlay(c);
+                            {slots.map(s => {
+                                const c = s.info;
+                                const why = canPlay(s);
                                 return (
                                     <button
-                                        key={c.id}
+                                        key={s.id}
                                         type="button"
-                                        className={`card-tile rar-${c.rarity}${selected === c.id ? ' on' : ''}`}
-                                        aria-pressed={selected === c.id}
+                                        className={`card-tile rar-${c.rarity}${selected === s.id ? ' on' : ''}`}
+                                        aria-pressed={selected === s.id}
                                         disabled={Boolean(why) || busy}
                                         title={why || c.description}
-                                        onClick={() => { setSelected(selected === c.id ? null : c.id); setMatchId(null); setTargetId(null); }}
+                                        onClick={() => { setSelected(selected === s.id ? null : s.id); setMatchId(null); setTargetId(null); }}
                                     >
                                         <span className="card-rar">
-                                            <span>{RARITY_LABEL[c.rarity] || ''}</span>
-                                            {c.source === 'free' ? <span className="card-tag">gratis</span> : <span className="card-gem" />}
+                                            <span>{s.free ? `Gratis · J${c.round?.order ?? '?'}` : RARITY_LABEL[c.rarity] || ''}</span>
+                                            {s.cards.length > 1 ? <span className="card-count">×{s.cards.length}</span> : <span className="card-gem" />}
                                         </span>
                                         <CardEmblem cardKey={c.key} />
                                         <b>{c.label}</b>
-                                        <p>{c.description}</p>
-                                        {why && <p className="card-why">{why}</p>}
+                                        <p>{c.short || c.description}</p>
                                     </button>
                                 );
                             })}

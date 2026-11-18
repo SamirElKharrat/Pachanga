@@ -20,9 +20,8 @@ const shop = require('./shop');
  *
  * - 20 monedas, 3 aperturas al día como mucho (entre todos los cofres).
  * - Garantía: tras 10 seguidas sin nada raro en un cofre, la siguiente es rara o mejor.
- * - Las cartas que tocan son de la liga del cofre. Con la mano llena, se pagan en
- *   monedas (lo mismo que la carta gratis). Un cosmético repetido, a la mitad de su
- *   precio.
+ * - Las cartas que tocan van a la mano de la liga del cofre (la mano no tiene
+ *   límite). Un cosmético repetido se paga a la mitad de su precio.
  * - De media un cofre devuelve menos de lo que cuesta: es el sumidero de monedas.
  *
  * Abrir coge el candado de las monedas y, si toca carta, el de la mano: el mismo
@@ -215,14 +214,9 @@ async function openChest({ userId, leagueId, rand = randInt }) {
         if (prize.kind === 'coins') {
             owed = prize.amount;
         } else if (prize.kind === 'card') {
+            // La mano no tiene límite: la carta va siempre a la mano de la liga del cofre.
             await cards.lockHand(userId, transaction);
-            const inHand = await UserCard.count({ where: { user_id: userId, league_id: league.id, status: 'in_hand' }, transaction });
-            if (inHand < cards.HAND_LIMIT) {
-                await UserCard.create({ user_id: userId, league_id: league.id, card: prize.card, source: 'chest', source_ref: String(open.id), status: 'in_hand' }, { transaction });
-            } else {
-                owed = cards.REFUND[prize.card];
-                converted = 'hand_full';
-            }
+            await UserCard.create({ user_id: userId, league_id: league.id, card: prize.card, source: 'chest', source_ref: String(open.id), status: 'in_hand' }, { transaction });
         } else {
             const has = await UserCosmetic.findOne({ where: { user_id: userId, item_id: prize.id }, transaction });
             if (has) {
@@ -238,7 +232,7 @@ async function openChest({ userId, leagueId, rand = randInt }) {
         if (owed > 0) {
             await CoinTransaction.create({
                 user_id: userId, amount: paid, reason: 'chest_prize', ref_type: 'chest', ref_id: String(open.id),
-                league_id: league.id, note: converted === 'hand_full' ? 'Carta que no cabía en la mano' : converted === 'duplicate' ? 'Cosmético repetido' : null,
+                league_id: league.id, note: converted === 'duplicate' ? 'Cosmético repetido' : null,
             }, { transaction });
             balance += paid;
         }

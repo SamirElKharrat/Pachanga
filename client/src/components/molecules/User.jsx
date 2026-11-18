@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
 import Inventory from '../atoms/cosmetics/Inventory';
+import ProfileCards from '../atoms/cards/ProfileCards';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import CoinHistory from '../atoms/CoinHistory';
 import { CoinIcon } from '../atoms/CoinBalance';
@@ -20,6 +21,7 @@ const { Text } = Typography;
 const TABS = [
     { key: 'resumen', label: 'Resumen' },
     { key: 'inventario', label: 'Inventario' },
+    { key: 'cartas', label: 'Cartas' },
     { key: 'monedas', label: 'Monedas' },
     { key: 'ajustes', label: 'Ajustes' },
 ];
@@ -309,6 +311,9 @@ export default function User() {
 
             {/* ── Inventario ── */}
             {activeTab === 'inventario' && <Inventory user={user} preview={false} />}
+
+            {/* ── Cartas: las que tienes en cada liga y lo que has jugado ── */}
+            {activeTab === 'cartas' && <ProfileCards />}
 
             {/* ── Monedas ── */}
             {activeTab === 'monedas' && (

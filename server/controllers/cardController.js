@@ -116,7 +116,7 @@ exports.grant = async (req, res) => {
         const member = await LeagueParticipation.count({ where: { user_id: userId, league_id: leagueId } });
         if (!member) return res.status(400).json({ error: 'Ese jugador no está en la liga' });
         const out = await cards.giveCard({ userId, leagueId, card: req.body.card, source: 'admin' });
-        res.status(201).json({ card: out.card, refund: out.refund });
+        res.status(201).json({ card: out.card });
     } catch (error) {
         fail(res, error);
     }

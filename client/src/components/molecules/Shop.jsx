@@ -26,7 +26,7 @@ const Price = ({ value }) => (
  * La tienda (fase 3 de cartas y cofres): cartas para una liga y cosméticos para
  * siempre (marcos, colores de nombre y títulos), con monedas.
  *
- * Las reglas las pone el servidor (server/utils/shop.js): saldo, mano llena, que no
+ * Las reglas las pone el servidor (server/utils/shop.js): saldo, que no
  * se compre dos veces. Aquí se enseña qué hay, cómo te queda y lo que diga si algo
  * no vale.
  */
@@ -85,7 +85,6 @@ export default function Shop() {
     }
 
     const league = shop.cardLeagues.find(l => l.id === leagueId);
-    const handFull = league && league.inHand >= league.handLimit;
     const byKind = (kind) => shop.items.filter(i => i.kind === kind);
 
     // Lo que se ve en «Así te ven»: lo puesto, o lo que estés mirando.
@@ -200,7 +199,7 @@ export default function Shop() {
                 ) : (
                     <>
                         <p className="shop-note">
-                            Van a tu mano de <b>{league?.name}</b> ({league?.inHand} de {league?.handLimit}) y caducan cuando acaba la liga.
+                            Van a tu mano de <b>{league?.name}</b> (tienes {league?.inHand}) y caducan cuando acaba la liga. Puedes jugar 2 por jornada, cada una una vez.
                             La Doble no se vende: sale en la carta gratis y en los cofres.
                         </p>
                         <div className="shop-cards">
@@ -222,10 +221,10 @@ export default function Shop() {
                                                 okText="Comprar"
                                                 cancelText="Cancelar"
                                                 onConfirm={() => buy(item)}
-                                                disabled={short || handFull}
+                                                disabled={short}
                                             >
-                                                <Button size="small" type="primary" disabled={short || handFull} loading={busy === item.id}
-                                                    title={handFull ? 'Tienes la mano llena' : short ? `Te faltan ${item.price - shop.balance}` : undefined}>
+                                                <Button size="small" type="primary" disabled={short} loading={busy === item.id}
+                                                    title={short ? `Te faltan ${item.price - shop.balance}` : undefined}>
                                                     Comprar
                                                 </Button>
                                             </Popconfirm>
@@ -234,7 +233,6 @@ export default function Shop() {
                                 );
                             })}
                         </div>
-                        {handFull && <p className="shop-note warn">Tienes la mano llena en esta liga: juega una carta antes de comprar otra.</p>}
                     </>
                 )}
             </Card>

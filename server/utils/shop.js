@@ -122,7 +122,7 @@ async function shopFor(userId) {
         slots: SLOTS,
         items: ITEMS.map(itemInfo),
         owned: owned.map(o => ({ item_id: o.item_id, equipped: o.equipped, acquired_at: o.acquired_at })),
-        cardLeagues: leagues.map((l, i) => ({ id: l.id, name: l.name, inHand: hands[i], handLimit: cards.HAND_LIMIT })),
+        cardLeagues: leagues.map((l, i) => ({ id: l.id, name: l.name, inHand: hands[i] })),
     };
 }
 
@@ -152,9 +152,8 @@ async function buy({ userId, itemId, leagueId }) {
             const member = await LeagueParticipation.count({ where: { user_id: userId, league_id: league.id }, transaction });
             if (!member) throw new ShopError(403, 'No estás apuntado a esa liga');
 
+            // La mano no tiene límite: la carta va siempre a la mano de esa liga.
             await cards.lockHand(userId, transaction);
-            const inHand = await UserCard.count({ where: { user_id: userId, league_id: league.id, status: 'in_hand' }, transaction });
-            if (inHand >= cards.HAND_LIMIT) throw new ShopError(409, `Tienes la mano llena en ${league.name} (${cards.HAND_LIMIT} cartas): juega una antes de comprar`);
 
             card = await UserCard.create({
                 user_id: userId, league_id: league.id, card: item.card, source: 'shop', source_ref: null, status: 'in_hand',

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Avatar, Button, Card, Empty, Progress, Skeleton, Typography } from 'antd';
+import { Avatar, Button, Card, Progress, Skeleton, Typography } from 'antd';
 import { UserOutlined, LockOutlined, CheckOutlined, ShopOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../../services/api';
@@ -8,10 +8,7 @@ import { CoinIcon } from '../CoinBalance';
 import { refreshCosmetics } from '../../../hooks/useCosmetics';
 import { useTheme } from '../../../context/ThemeContext';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from './Cosmetic';
-import { CardEmblem } from '../cards/CardArt';
 import { Banner } from './Banner';
-import { RARITY_LABEL } from '../../../utils/cards';
-import '../css/cards.css';
 import '../css/shop.css';
 
 const { Text } = Typography;
@@ -27,7 +24,7 @@ const KINDS = [
 /**
  * El inventario del perfil: todo lo que has desbloqueado (marcos, colores de nombre
  * y títulos) para ponértelo o quitártelo, lo que te falta (apagado, con su precio en
- * la tienda) y las cartas que tienes en la mano de cada liga.
+ * la tienda). Las cartas tienen su propia pestaña en el perfil (ProfileCards).
  *
  * Los datos son los de la tienda (GET /shop): no hay un sitio aparte que pueda
  * contradecirla.
@@ -41,15 +38,11 @@ export default function Inventory({ user, preview = true }) {
     const { getAvatarSrc } = useTheme();
     const nav = useNavigate();
     const [shop, setShop] = useState(null);
-    const [hands, setHands] = useState([]);
     const [busy, setBusy] = useState(null);
 
     const load = useCallback(async () => {
         try {
-            const s = await API.get('/shop');
-            setShop(s);
-            const hs = await Promise.all(s.cardLeagues.map(l => API.get(`/cards/hand/${l.id}`).then(h => ({ league: l, hand: h.hand || [] })).catch(() => null)));
-            setHands(hs.filter(Boolean));
+            setShop(await API.get('/shop'));
         } catch {
             showAlert('error', 'No se pudo cargar tu inventario');
         }
@@ -138,36 +131,6 @@ export default function Inventory({ user, preview = true }) {
                     </Card>
                 );
             })}
-
-            <Card className="shop-section" title="Cartas en la mano">
-                {hands.length === 0 ? (
-                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Ahora mismo no juegas ninguna liga con cartas." />
-                ) : (
-                    <div className="inv-hands">
-                        {hands.map(({ league, hand }) => (
-                            <div key={league.id} className="inv-hand">
-                                <div className="inv-hand-head">
-                                    <b>{league.name}</b>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>{hand.length} de {league.handLimit}</Text>
-                                </div>
-                                {hand.length === 0 ? (
-                                    <Text type="secondary" style={{ fontSize: 12 }}>Sin cartas: envía una jornada completa o cómpralas en la tienda.</Text>
-                                ) : (
-                                    <div className="inv-cards">
-                                        {hand.map(c => (
-                                            <div key={c.id} className={`inv-card rar-${c.rarity}`} title={c.description}>
-                                                <CardEmblem cardKey={c.key} />
-                                                <span className="inv-card-name">{c.label}</span>
-                                                <span className="inv-card-rar">{RARITY_LABEL[c.rarity] || ''}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </Card>
         </div>
     );
 }

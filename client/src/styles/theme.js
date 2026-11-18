@@ -30,8 +30,14 @@ export const pachangaTheme = {
       colorItemTextSelected: '#3b82f6',
     },
     Button: {
-      borderRadius: 6,
-      fontWeight: 600,
+      // Estilo «Píldora» (styles/buttons.css): del todo redondos, en negrita y sin sombras.
+      borderRadius: 999,
+      borderRadiusSM: 999,
+      borderRadiusLG: 999,
+      fontWeight: 700,
+      primaryShadow: 'none',
+      defaultShadow: 'none',
+      dangerShadow: 'none',
     },
     Input: {
       colorBgContainer: '#334155',
@@ -83,8 +89,14 @@ export const pachangaLightTheme = {
       colorItemTextHover: '#0f172a',
     },
     Button: {
-      borderRadius: 6,
-      fontWeight: 600,
+      // Estilo «Píldora» (styles/buttons.css): del todo redondos, en negrita y sin sombras.
+      borderRadius: 999,
+      borderRadiusSM: 999,
+      borderRadiusLG: 999,
+      fontWeight: 700,
+      primaryShadow: 'none',
+      defaultShadow: 'none',
+      dangerShadow: 'none',
     },
     Input: {
       colorBgContainer: '#ffffff',
@@ -167,8 +179,14 @@ export const pachangaWorldsTheme = {
       itemSelectedColor: '#C8AA6E',
     },
     Button: {
-      borderRadius: 8,
-      fontWeight: 600,
+      // Estilo «Píldora» (styles/buttons.css): del todo redondos, en negrita y sin sombras.
+      borderRadius: 999,
+      borderRadiusSM: 999,
+      borderRadiusLG: 999,
+      fontWeight: 700,
+      primaryShadow: 'none',
+      defaultShadow: 'none',
+      dangerShadow: 'none',
     },
     Input: {
       colorBgContainer: '#0C0D12',

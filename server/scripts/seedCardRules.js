@@ -18,7 +18,7 @@ const Rule = require('../models/rule');
 const Changelog = require('../models/changelog');
 const { COIN_CAP } = require('../utils/coins');
 const { REWARDS } = require('../utils/coinRewards');
-const { HAND_LIMIT, DOBLE_CAP, GAFE_POINTS, CARDS } = require('../utils/cards');
+const { EFFECTS_PER_ROUND, DOBLE_CAP, GAFE_POINTS, CARDS } = require('../utils/cards');
 const shop = require('../utils/shop');
 const chests = require('../utils/chests');
 
@@ -59,15 +59,15 @@ Valen en todas las ligas y puedes tener hasta ${COIN_CAP}: lo que ganes con el t
     },
     {
         title: 'Cartas y carta gratis',
-        content: `Cada carta es de una liga y caduca cuando la liga acaba. Puedes tener hasta ${HAND_LIMIT} por liga; si te toca una que no cabe, se te paga en monedas.
+        content: `Cada carta es de una liga y caduca cuando la liga acaba. No hay límite de cartas: puedes guardar todas las que compres o te salgan en los cofres.
 
-Cada vez que envías una jornada completa recibes una carta gratis al azar: Escudo, Gafe o Doble. La puedes usar en esa misma jornada.
+Cada vez que envías una jornada completa recibes una carta gratis al azar: Escudo, Gafe o Doble. Solo vale en esa jornada: si no la juegas, caduca.
 
 También se consiguen en la tienda y en los cofres.`,
     },
     {
         title: 'Jugar una carta',
-        content: `Puedes jugar una carta de efecto por jornada; el Chivato va aparte y no cuenta.
+        content: `Puedes jugar hasta ${EFFECTS_PER_ROUND} cartas por jornada, y cada carta una sola vez por jornada (la Doble y la Doble Dorada cuentan como la misma). El Chivato va aparte: uno por jornada.
 
 - Se juega y se retira hasta que empieza su partido. El Escudo, que vale para toda la jornada, hasta que empieza el primero.
 - Nadie ve tu carta hasta que empieza su partido.
@@ -99,7 +99,7 @@ Los cosméticos son para siempre y se ven en el menú, la clasificación, el Hal
 
 ${odds}
 
-Si llevas ${chests.GUARANTEE_AFTER} aperturas seguidas sin nada raro, la siguiente es rara o mejor. Las cartas que tocan son de la liga del cofre; con la mano llena se pagan en monedas. Un cosmético repetido se devuelve en monedas, a la mitad de su precio.
+Si llevas ${chests.GUARANTEE_AFTER} aperturas seguidas sin nada raro, la siguiente es rara o mejor. Las cartas que tocan van a tu mano de la liga del cofre. Un cosmético repetido se devuelve en monedas, a la mitad de su precio.
 
 El dado lo tira el servidor y cada apertura queda guardada. Las probabilidades se pueden consultar en el propio cofre.`,
     },
@@ -113,7 +113,7 @@ Los precios, lo que se gana y las cartas solo se cambian entre ligas, nunca a mi
 
 /** Las novedades de la versión 1.5. */
 const CHANGES = [
-    'Cartas: en las ligas que lo tengan activado, cartas que suman o quitan puntos, con carta gratis por cada jornada completa.',
+    'Cartas: en las ligas que lo tengan activado, cartas que suman o quitan puntos. Hasta 2 por jornada, y una carta gratis por cada jornada completa.',
     'Monedas: se ganan jugando y se ven en el menú y en tu perfil.',
     'Tienda: cartas, marcos de avatar, colores de nombre, títulos y banners animados.',
     'Cofres de competición, con las probabilidades a la vista y garantía de premio raro.',
