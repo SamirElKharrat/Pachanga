@@ -16,6 +16,7 @@ import { showAlert } from '../atoms/AlertInfo';
 import { STATUS_COLORS, RANK_STYLES, QUESTION_POINTS } from '../../constants/pachanga';
 import RoundCards from '../atoms/cards/RoundCards';
 import MyRoundCards from '../atoms/cards/MyRoundCards';
+import RoundDuel from '../atoms/duels/RoundDuel';
 
 const { Text } = Typography;
 
@@ -652,6 +653,12 @@ function Home() {
                 league={leagues.find(l => l.id === selectedLeague)}
                 round={selectedRound}
                 matches={matches}
+            />
+
+            {/* ── Tu duelo de la jornada (mismas ligas que las cartas) ── */}
+            <RoundDuel
+                league={leagues.find(l => l.id === selectedLeague)}
+                round={selectedRound}
             />
 
             {/* ── Main content ── */}

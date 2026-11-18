@@ -13,6 +13,27 @@ export function effectText(effect) {
     return { text: `${effect > 0 ? '+' : '−'}${Math.abs(effect)}`, cls: effect > 0 ? 'up' : 'down' };
 }
 
+/**
+ * Lo que ha valido una jugada, teniendo en cuenta el Espejo: un castigo que rebotó se
+ * dice «Rebotó», y el Espejo dice cuánto devolvió.
+ */
+export function playEffectText(p) {
+    if (p.key === 'espejo') {
+        if (p.effect === null || p.effect === undefined) return { text: 'Pendiente', cls: 'pending' };
+        return p.effect > 0 ? { text: `Devolvió ${p.effect}`, cls: 'up' } : { text: 'Sin rebote', cls: 'zero' };
+    }
+    if (p.rebounded) {
+        if (p.effect === null || p.effect === undefined) return { text: 'Rebotó', cls: 'pending' };
+        return { text: p.effect ? `Rebotó · −${Math.abs(p.effect)}` : 'Rebotó · 0', cls: p.effect ? 'down' : 'zero' };
+    }
+    return effectText(p.effect);
+}
+
+/** Si una carta se juega sobre toda la jornada (y se bloquea al empezar el primer partido). */
+export const isRoundAim = (aim) => aim === 'round' || aim === 'rival_round';
+/** Si una carta pide elegir rival. */
+export const needsTarget = (aim) => aim === 'rival' || aim === 'rival_round';
+
 /** «G2 vs FNC», a partir de un partido con sus Teams. */
 export const matchName = (match) => (match?.Teams?.length === 2
     ? `${match.Teams[0].acronym || match.Teams[0].name} vs ${match.Teams[1].acronym || match.Teams[1].name}`

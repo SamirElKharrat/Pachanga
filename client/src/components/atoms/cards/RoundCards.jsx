@@ -3,13 +3,15 @@ import { Avatar, Card, Space } from 'antd';
 import { ThunderboltOutlined, UserOutlined } from '@ant-design/icons';
 import { API } from '../../../services/api';
 import { useTheme as useAppTheme } from '../../../context/ThemeContext';
-import { effectText, matchName } from '../../../utils/cards';
+import { isRoundAim, matchName, playEffectText } from '../../../utils/cards';
 import '../css/cards.css';
 
 /** «Guille le echa el Gafe a Samir», «Samir juega la Doble»… */
 function sentence(p) {
     const who = p.mine ? 'Juegas' : `${p.user?.username || 'Alguien'} juega`;
     if (p.key === 'gafe') return `${p.mine ? 'Le echas' : `${p.user?.username || 'Alguien'} le echa`} el Gafe a ${p.target?.username || '¿?'}`;
+    if (p.key === 'robo') return `${p.mine ? 'Le juegas' : `${p.user?.username || 'Alguien'} le juega`} el Robo a ${p.target?.username || '¿?'}`;
+    if (p.key === 'espejo') return `${who} el Espejo`;
     return `${who} ${p.key === 'escudo' ? 'el Escudo' : p.key === 'chivato' ? 'el Chivato' : `la ${p.card.label}`}`;
 }
 
@@ -51,7 +53,7 @@ export default function RoundCards({ league, round, matches = [] }) {
         >
             <div className="plays">
                 {plays.map(p => {
-                    const e = effectText(p.effect);
+                    const e = playEffectText(p);
                     const m = matches.find(x => x.id === p.match_id);
                     return (
                         <div key={p.id} className={`play-row rar-${p.card.rarity}`}>
@@ -61,7 +63,7 @@ export default function RoundCards({ league, round, matches = [] }) {
                                     {sentence(p)}
                                 </b>
                                 <small>
-                                    {p.card.aim === 'round' ? 'Toda la jornada' : matchName(m)}
+                                    {isRoundAim(p.card.aim) ? 'Toda la jornada' : matchName(m)}
                                     {!p.revealed && ' · solo la ves tú hasta que empiece'}
                                 </small>
                             </div>

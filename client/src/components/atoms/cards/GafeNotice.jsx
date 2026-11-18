@@ -18,6 +18,9 @@ function texts(n) {
                 : <>Fallaste {match}, pero no tenías puntos que perder</>,
         };
     }
+    if (n.state === 'miss' && n.rebounded) {
+        return { title: 'Tu Espejo ha devuelto el Gafe', sub: <>{who} te lo echó en {match} y le ha rebotado a él</> };
+    }
     if (n.state === 'miss') {
         return { title: 'Te has librado del Gafe', sub: <>{who} te lo echó en {match} y acertaste</> };
     }

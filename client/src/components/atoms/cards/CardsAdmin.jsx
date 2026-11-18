@@ -2,14 +2,15 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Col, Empty, Popconfirm, Row, Select, Space, Table, Tag, Typography } from 'antd';
 import { API } from '../../../services/api';
 import { showAlert } from '../AlertInfo';
-import { effectText } from '../../../utils/cards';
+import { playEffectText } from '../../../utils/cards';
 import '../css/cards.css';
 
 const { Text } = Typography;
 
 /**
  * Cartas en el panel de admin: en una liga, dar cartas a mano y ver (y anular) todo
- * lo jugado. Activar las cartas en una liga se hace en la pestaña Ligas.
+ * lo jugado, cartas y duelos. Activar las cartas en una liga se hace en la pestaña
+ * Ligas (los duelos van con ellas).
  *
  * Anular una jugada la deja sin efecto (la carta no vuelve) y vuelve a puntuar su
  * jornada: la clasificación se mueve sola.
@@ -20,6 +21,7 @@ export default function CardsAdmin() {
     const [catalog, setCatalog] = useState([]);
     const [players, setPlayers] = useState([]);
     const [plays, setPlays] = useState([]);
+    const [duels, setDuels] = useState([]);
     const [loading, setLoading] = useState(false);
     const [userId, setUserId] = useState(null);
     const [card, setCard] = useState(null);
@@ -41,11 +43,13 @@ export default function CardsAdmin() {
         if (!id) return;
         setLoading(true);
         try {
-            const [ps, parts] = await Promise.all([
+            const [ps, parts, ds] = await Promise.all([
                 API.get(`/cards/league/${id}`),
                 API.get(`/leagueParticipations/get/participants/${id}`).catch(() => []),
+                API.get(`/duels/admin/${id}`).catch(() => []),
             ]);
             setPlays(Array.isArray(ps) ? ps : []);
+            setDuels(Array.isArray(ds) ? ds : []);
             setPlayers(parts.filter(p => p.User).map(p => ({ value: p.user_id, label: p.User.username })));
         } catch (error) {
             showAlert('error', error?.response?.data?.error || 'No se pudieron cargar las jugadas');
@@ -96,7 +100,7 @@ export default function CardsAdmin() {
             title: 'Vale',
             render: (_, p) => {
                 if (p.key === 'chivato') return <Text type="secondary">—</Text>;
-                const e = effectText(p.effect);
+                const e = playEffectText(p);
                 return <span className={`play-effect ${e.cls}`}>{e.text}</span>;
             },
         },
@@ -112,6 +116,48 @@ export default function CardsAdmin() {
                         okText="Anular"
                         cancelText="Cancelar"
                         onConfirm={() => annul(p)}
+                    >
+                        <Button size="small" danger>Anular</Button>
+                    </Popconfirm>
+                )),
+        },
+    ];
+
+    const annulDuel = async (d) => {
+        try {
+            await API.post(`/duels/${d.id}/annul`);
+            showAlert('success', 'Duelo anulado: se devuelve lo apostado y la jornada se vuelve a puntuar');
+            await load(leagueId);
+        } catch (error) {
+            showAlert('error', error?.response?.data?.error || 'No se pudo anular');
+        }
+    };
+
+    const DUEL_STATUS = { pending: 'Esperando', accepted: 'Aceptado', resolved: 'Resuelto', declined: 'Rechazado', expired: 'Caducado', cancelled: 'Retirado', annulled: 'Anulado' };
+    const duelColumns = [
+        { title: 'Jornada', render: (_, d) => d.round?.name || `J${d.round?.order ?? '?'}` },
+        { title: 'Duelo', render: (_, d) => <span><b>{d.challenger?.username}</b> reta a <b>{d.rival?.username}</b></span> },
+        { title: 'Apuesta', render: (_, d) => `${d.stake} ${d.stake_kind === 'points' ? 'pts' : 'pachanguitas'}` },
+        { title: 'Marcador', render: (_, d) => (d.score ? `${d.score.challenger} · ${d.score.rival}` : '—') },
+        {
+            title: 'Estado',
+            render: (_, d) => {
+                const winner = d.winner_id ? [d.challenger, d.rival].find(u => u?.id === d.winner_id)?.username : null;
+                return <span>{DUEL_STATUS[d.status] || d.status}{d.status === 'resolved' ? (winner ? ` · gana ${winner}` : ' · empate') : ''}</span>;
+            },
+        },
+        {
+            title: '',
+            width: 110,
+            render: (_, d) => (['annulled', 'declined', 'expired', 'cancelled'].includes(d.status)
+                ? null
+                : (
+                    <Popconfirm
+                        title="¿Anular este duelo?"
+                        description="Deja de contar: cada uno recupera lo que apostó y la jornada se vuelve a puntuar."
+                        okText="Anular"
+                        cancelText="Cancelar"
+                        onConfirm={() => annulDuel(d)}
                     >
                         <Button size="small" danger>Anular</Button>
                     </Popconfirm>
@@ -173,6 +219,21 @@ export default function CardsAdmin() {
                     </Card>
                 </Col>
             </Row>
+            <Card size="small" title="Duelos">
+                {duels.length === 0 && !loading ? (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Aún no hay duelos en esta liga" />
+                ) : (
+                    <Table
+                        rowKey="id"
+                        size="small"
+                        loading={loading}
+                        dataSource={duels}
+                        columns={duelColumns}
+                        pagination={{ pageSize: 10, size: 'small' }}
+                        scroll={{ x: 'max-content' }}
+                    />
+                )}
+            </Card>
         </Space>
     );
 }

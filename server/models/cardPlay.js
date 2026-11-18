@@ -5,11 +5,10 @@ const sequelize = require('../config/configdb');
  * Una carta jugada en una jornada: cuál, sobre qué partido y contra quién.
  *
  * El agregador lee las jugadas de cada jornada al puntuarla (utils/cards.js,
- * cardPoints), así que una jugada nueva, retirada o anulada se recalcula sola, por
+ * cardPoints), así que una jugada nueva o anulada se recalcula sola, por
  * diferencia, como cualquier otro punto.
  *
- * Retirar una carta (antes de que empiece su partido) borra la fila y la carta vuelve
- * a la mano. Anularla (el admin) la deja con `status: 'annulled'`: no cuenta, pero
+ * Una carta jugada no se retira: la decisión cuenta. Anularla (el admin) la deja con `status: 'annulled'`: no cuenta, pero
  * consta.
  */
 const CardPlay = sequelize.define('CardPlay', {

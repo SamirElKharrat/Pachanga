@@ -21,6 +21,7 @@ const cardRoute = require("./card");
 const shopRoute = require("./shop");
 const chestRoute = require("./chest");
 const economyRoute = require("./economy");
+const duelRoute = require("./duel");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -44,5 +45,6 @@ router.use("/cards", cardRoute);
 router.use("/shop", shopRoute);
 router.use("/chests", chestRoute);
 router.use("/economy", economyRoute);
+router.use("/duels", duelRoute);
 
 module.exports = router;

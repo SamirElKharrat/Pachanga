@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Select, Skeleton, Space, Typography } from 'antd';
+import { Button, Card, Empty, Popconfirm, Select, Skeleton, Space, Typography } from 'antd';
 import { ThunderboltOutlined } from '@ant-design/icons';
 import { API } from '../../../services/api';
 import { showAlert } from '../AlertInfo';
-import { effectText, matchName, matchStarted, RARITY_LABEL } from '../../../utils/cards';
+import { isRoundAim, matchName, matchStarted, needsTarget, playEffectText, RARITY_LABEL } from '../../../utils/cards';
 import { CardEmblem } from './CardArt';
 import '../css/cards.css';
 
@@ -86,13 +86,15 @@ export default function CardHand({ league, round }) {
     const openMatches = matches.filter(m => !matchStarted(m));
     const roundStarted = matches.length === 0 || matches.some(m => matchStarted(m));
 
-    // La mano, agrupada: las iguales juntas («Gafe ×3») y cada carta gratis aparte,
-    // porque solo vale en su jornada. Al jugar un grupo se usa la más antigua.
+    // La mano, agrupada: las iguales juntas («Gafe ×3») y cada carta gratis o del
+    // partido aparte, porque solo vale en su jornada o en su partido. Al jugar un grupo
+    // se usa la más antigua.
     const slots = useMemo(() => {
         const out = [];
         const byKey = {};
         for (const c of hand?.hand || []) {
             if (c.source === 'free') { out.push({ id: `free:${c.id}`, cards: [c], info: c, free: true }); continue; }
+            if (c.source === 'match') { out.push({ id: `match:${c.id}`, cards: [c], info: c, free: false, matchCard: true }); continue; }
             if (!byKey[c.key]) { byKey[c.key] = { id: `type:${c.key}`, cards: [], info: c, free: false }; out.push(byKey[c.key]); }
             byKey[c.key].cards.push(c);
         }
@@ -108,8 +110,12 @@ export default function CardHand({ league, round }) {
         if (familiesUsed.has(c.family || c.key)) return `Ya has jugado ${c.label} esta jornada`;
         if (c.limited && effectsUsed >= perRound) return `Ya has jugado ${perRound} cartas esta jornada`;
         if (s.free && c.round && c.round.id !== round?.roundId) return `Solo vale en la ${c.round.name || `jornada ${c.round.order}`}`;
-        if (c.aim === 'round' && roundStarted) return 'La jornada ya ha empezado';
-        if (c.aim !== 'round' && openMatches.length === 0) return 'No quedan partidos sin empezar';
+        if (s.matchCard) {
+            if (!c.match || c.match.round_id !== round?.roundId) return `Solo vale en ${matchName(c.match)}`;
+            if (!openMatches.some(m => m.id === c.match.id)) return 'Su partido ya ha empezado';
+        }
+        if (isRoundAim(c.aim) && roundStarted) return 'La jornada ya ha empezado';
+        if (!isRoundAim(c.aim) && openMatches.length === 0) return 'No quedan partidos sin empezar';
         return null;
     };
     const freeHere = slots.find(s => s.free && s.info.round?.id === round?.roundId);
@@ -119,11 +125,11 @@ export default function CardHand({ league, round }) {
         setBusy(true);
         try {
             const body = { user_card_id: card.id };
-            if (card.aim === 'round') body.round_id = round.roundId;
+            if (isRoundAim(card.aim)) body.round_id = round.roundId;
             else body.match_id = matchId;
-            if (card.aim === 'rival') body.target_user_id = targetId;
+            if (needsTarget(card.aim)) body.target_user_id = targetId;
             const r = await API.post('/cards/play', body);
-            showAlert('success', `${card.label} jugada. Nadie la verá hasta que empiece su partido.`);
+            showAlert('success', `${card.label} jugada. Nadie la verá hasta que empiece ${isRoundAim(card.aim) ? 'la jornada' : 'su partido'}.`);
             if (r.share) setShare({ ...r.share, matchId });
             setSelected(null); setMatchId(null); setTargetId(null);
             await load();
@@ -134,17 +140,9 @@ export default function CardHand({ league, round }) {
         }
     };
 
-    const withdraw = async (play) => {
-        try {
-            await API.delete(`/cards/play/${play.id}`);
-            showAlert('success', `${play.card.label} vuelve a tu mano`);
-            await load();
-        } catch (error) {
-            showAlert('error', error?.response?.data?.error || 'No se pudo retirar la carta');
-        }
-    };
-
-    const ready = card && (card.aim === 'round' || (matchId && (card.aim !== 'rival' || targetId)));
+    const ready = card && (isRoundAim(card.aim)
+        ? (!needsTarget(card.aim) || targetId)
+        : (matchId && (!needsTarget(card.aim) || targetId)));
     const total = hand?.hand.length ?? 0;
 
     return (
@@ -167,7 +165,7 @@ export default function CardHand({ league, round }) {
                         <div className={`cards-status${left === 0 ? ' done' : ''}`}>
                             {left === 0
                                 ? `Ya has jugado tus ${perRound} cartas de esta jornada.`
-                                : `Te ${left === 1 ? 'queda 1 carta' : `quedan ${left} cartas`} por jugar esta jornada (el Chivato aparte). Cada carta, una vez por jornada.`}
+                                : `Te ${left === 1 ? 'queda 1 carta' : `quedan ${left} cartas`} por jugar esta jornada (el Chivato y el Espejo aparte). Cada carta, una vez por jornada.`}
                             {freeHere && <span className="cards-status-free"> Tu carta gratis caduca si no la juegas en esta jornada.</span>}
                         </div>
 
@@ -186,15 +184,15 @@ export default function CardHand({ league, round }) {
                                         aria-pressed={selected === s.id}
                                         disabled={Boolean(why) || busy}
                                         title={why || c.description}
-                                        onClick={() => { setSelected(selected === s.id ? null : s.id); setMatchId(null); setTargetId(null); }}
+                                        onClick={() => { setSelected(selected === s.id ? null : s.id); setMatchId(s.matchCard ? c.match?.id ?? null : null); setTargetId(null); }}
                                     >
                                         <span className="card-rar">
-                                            <span>{s.free ? `Gratis · J${c.round?.order ?? '?'}` : RARITY_LABEL[c.rarity] || ''}</span>
+                                            <span>{s.free ? `Gratis · J${c.round?.order ?? '?'}` : s.matchCard ? 'Del partido' : RARITY_LABEL[c.rarity] || ''}</span>
                                             {s.cards.length > 1 ? <span className="card-count">×{s.cards.length}</span> : <span className="card-gem" />}
                                         </span>
                                         <CardEmblem cardKey={c.key} />
                                         <b>{c.label}</b>
-                                        <p>{c.short || c.description}</p>
+                                        <p>{s.matchCard ? `Solo en ${matchName(c.match)}` : c.short || c.description}</p>
                                     </button>
                                 );
                             })}
@@ -203,15 +201,18 @@ export default function CardHand({ league, round }) {
                         {card && (
                             <div className="card-play-form">
                                 <span className="cards-note"><b style={{ color: 'var(--text)' }}>{card.label}:</b> {card.description}</span>
-                                {card.aim !== 'round' && (
+                                {!isRoundAim(card.aim) && (
                                     <Select
                                         placeholder="¿En qué partido?"
                                         value={matchId}
                                         onChange={setMatchId}
-                                        options={openMatches.map(m => ({ value: m.id, label: `${matchName(m)} · ${m.format}` }))}
+                                        disabled={card.source === 'match'}
+                                        options={openMatches
+                                            .filter(m => card.source !== 'match' || m.id === card.match?.id)
+                                            .map(m => ({ value: m.id, label: `${matchName(m)} · ${m.format}` }))}
                                     />
                                 )}
-                                {card.aim === 'rival' && (
+                                {needsTarget(card.aim) && (
                                     <Select
                                         placeholder="¿A quién?"
                                         value={targetId}
@@ -221,11 +222,20 @@ export default function CardHand({ league, round }) {
                                         options={rivals}
                                     />
                                 )}
-                                {card.aim === 'round' && (
+                                {isRoundAim(card.aim) && (
                                     <Text type="secondary" style={{ fontSize: 12 }}>Se aplica a toda la {round.name}.</Text>
                                 )}
                                 <Space>
-                                    <Button type="primary" disabled={!ready} loading={busy} onClick={submit}>Jugar {card.label}</Button>
+                                    <Popconfirm
+                                        title={`¿Jugar ${card.label}?`}
+                                        description="Una carta jugada no se puede retirar."
+                                        okText="Jugar"
+                                        cancelText="Pensarlo"
+                                        onConfirm={submit}
+                                        disabled={!ready || busy}
+                                    >
+                                        <Button type="primary" disabled={!ready} loading={busy}>Jugar {card.label}</Button>
+                                    </Popconfirm>
                                     <Button onClick={() => setSelected(null)}>Cancelar</Button>
                                 </Space>
                             </div>
@@ -244,22 +254,19 @@ export default function CardHand({ league, round }) {
                         ) : (
                             <div className="plays">
                                 {roundPlays.map(p => {
-                                    const e = effectText(p.effect);
+                                    const e = playEffectText(p);
                                     const m = matches.find(x => x.id === p.match_id);
                                     return (
                                         <div key={p.id} className={`play-row rar-${p.card.rarity}${p.status === 'annulled' ? ' annulled' : ''}`}>
                                             <div className="play-row-what">
                                                 <b>{p.card.label}{p.status === 'annulled' ? ' · anulada' : ''}</b>
                                                 <small>
-                                                    {p.card.aim === 'round' ? 'Toda la jornada' : matchName(m)}
+                                                    {isRoundAim(p.card.aim) ? 'Toda la jornada' : matchName(m)}
                                                     {p.target ? ` · a ${p.target.username}` : ''}
                                                 </small>
                                             </div>
                                             <div className="play-row-side">
                                                 {p.key !== 'chivato' && <span className={`play-effect ${e.cls}`}>{e.text}</span>}
-                                                {!p.locked && p.key !== 'chivato' && p.status === 'active' && (
-                                                    <Button size="small" onClick={() => withdraw(p)}>Retirar</Button>
-                                                )}
                                             </div>
                                         </div>
                                     );

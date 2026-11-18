@@ -134,6 +134,13 @@ const PlayerWeekStat = sequelize.define('PlayerWeekStat', {
         allowNull: false,
         defaultValue: 0
     },
+    // Los duelos de puntos: lo que se ganó o perdió apostando puntos (suma cero en la
+    // liga). Cuenta para `points` como las cartas. Con signo.
+    points_duel: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
     computed_at: {
         type: DataTypes.DATE,
         allowNull: false,

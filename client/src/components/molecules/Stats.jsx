@@ -532,7 +532,8 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, t
         // El `key` es lo que da el campo (`points` + Question), así que esta lista y
         // la del detalle de jugador tienen que decir lo mismo.
         { key: 'question', name: 'Preguntas', color: chart.series[4] },
-        { key: 'card', name: 'Cartas', color: chart.series[5] },
+        // Cartas y duelos de puntos, juntos: los dos son la capa de juego de la liga.
+        { key: 'card', name: 'Cartas y duelos', color: chart.series[5] },
     ];
 
     return (
@@ -619,7 +620,9 @@ function TabResumen({ overview, players, allIds, colorOf, getAvatarSrc, chart, t
                             label={<><Face user={p.user} getAvatarSrc={getAvatarSrc} size={22} /><span>{p.user.username}</span></>}
                             parts={origins.map(o => ({
                                 key: o.key, name: o.name, color: o.color,
-                                value: p[`points${o.key[0].toUpperCase()}${o.key.slice(1)}`] || 0,
+                                value: o.key === 'card'
+                                    ? (p.pointsCard || 0) + (p.pointsDuel || 0)
+                                    : p[`points${o.key[0].toUpperCase()}${o.key.slice(1)}`] || 0,
                             }))}
                             total={num(p.points)}
                         />
@@ -817,7 +820,7 @@ function TabJugador({ detail, detailFailed, players, focusId, scope, colorOf, ge
         // pero sí sale del agregador, así que es una porción más de la barra y no la
         // línea suelta de abajo.
         { key: 'question', name: 'Preguntas', color: chart.series[4], value: breakdown.question ?? 0 },
-        { key: 'card', name: 'Cartas', color: chart.series[5], value: breakdown.card ?? 0 },
+        { key: 'card', name: 'Cartas y duelos', color: chart.series[5], value: (breakdown.card ?? 0) + (breakdown.duel ?? 0) },
     ];
     const bestLeaguePoints = Math.max(1, ...byLeague.map(b => b.pointsOfficial));
 

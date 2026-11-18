@@ -1,0 +1,131 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                      DUELO DE LA JORNADA (Inicio, fase 6)                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* La misma caja que «Tus cartas» (cards.css, .my-round-cards), justo debajo. */
+
+.round-duel { margin: 0 0 16px; padding: 12px 16px; border-radius: 14px; background: var(--bg-surface); border: 1px solid rgba(var(--tint), 0.08); display: flex; flex-direction: column; gap: 10px; }
+.rd-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 12px; }
+.rd-title { font-size: 13px; font-weight: 700; color: var(--text-strong); display: inline-flex; align-items: center; gap: 6px; }
+.duel-ico { width: 15px; height: 15px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rd-stake { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: rgba(var(--accent-rgb), 0.12); color: var(--accent-light); }
+.rd-stake.coins { background: rgba(var(--medal-gold-deep-rgb), 0.14); color: var(--medal-gold); }
+
+.rd-incoming { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 8px 10px; border-radius: 12px; background: rgba(var(--accent-rgb), 0.07); border: 1px solid rgba(var(--accent-rgb), 0.25); }
+.rd-incoming-text { flex: 1 1 200px; min-width: 0; font-size: 13px; color: var(--text-muted); }
+.rd-incoming-text b { color: var(--text-strong); }
+.rd-actions { display: inline-flex; gap: 6px; }
+
+.rd-pending, .rd-empty { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; font-size: 12.5px; color: var(--text-dim); }
+.rd-pending b { color: var(--text-strong); }
+.rd-pending > span, .rd-empty > span { flex: 1 1 240px; min-width: 0; }
+
+/* El marcador: tú a la izquierda, tu rival a la derecha */
+.rd-score { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.rd-side { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.rd-side b { font-size: 14px; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-side.right { justify-content: flex-end; }
+.rd-nums { display: inline-flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.rd-nums b { font-size: 24px; font-weight: 800; line-height: 1; color: var(--text-strong); }
+.rd-nums i { font-style: normal; color: var(--text-dim); }
+.rd-status { font-size: 12.5px; color: var(--text-dim); text-align: center; }
+.rd-status.won { color: var(--success); font-weight: 600; }
+.rd-status.lost { color: var(--danger); font-weight: 600; }
+
+.rd-form { display: flex; flex-direction: column; gap: 14px; }
+.rd-form label { display: flex; flex-direction: column; gap: 6px; }
+.rd-form label > span { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+
+[data-color-mode="light"] .rd-stake { color: var(--accent-deep); }
+[data-color-mode="light"] .rd-stake.coins { color: var(--medal-gold-deep); }
+
+/* ── «Retar a alguien»: el botón con más carácter de la web ──
+   La diagonal del aviso de duelo hecha botón (acento contra rojo), un brillo que la
+   cruza de vez en cuando y las espadas que se cruzan al pasar el ratón.
+   Solo transform y opacity en las animaciones. */
+.rd-cta {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 20px 9px 12px; border: 0; border-radius: 999px; cursor: pointer;
+  font: inherit; font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-size: 15px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1;
+  color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(115deg, var(--accent) 0 46%, var(--danger) 58% 100%);
+  box-shadow: 0 8px 20px -10px rgba(var(--danger-rgb), 0.8), 0 6px 16px -10px rgba(var(--accent-rgb), 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.18s cubic-bezier(0.2, 1.4, 0.5, 1), box-shadow 0.18s ease;
+}
+/* En Worlds el acento es oro: más oscuro, para que el texto blanco se lea */
+[data-theme="worlds"] .rd-cta { background: linear-gradient(115deg, #a8780a 0 46%, #b4232a 58% 100%); }
+/* El brillo que la cruza */
+.rd-cta::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; z-index: 1; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: translateX(-120%) skewX(-20deg);
+  animation: rd-shine 3.6s 1s ease-in-out infinite;
+}
+.rd-cta-ico {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(2, 6, 23, 0.35); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.5);
+}
+.rd-cta-ico .duel-ico { width: 15px; height: 15px; stroke: #fff; transition: transform 0.25s cubic-bezier(0.2, 1.6, 0.5, 1); }
+.rd-cta:hover:not(:disabled) { transform: translateY(-2px) scale(1.03); box-shadow: 0 12px 24px -10px rgba(var(--danger-rgb), 0.9), 0 10px 22px -12px rgba(var(--accent-rgb), 1), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+.rd-cta:hover:not(:disabled) .duel-ico { transform: rotate(-20deg) scale(1.15); animation: rd-clash 0.5s 0.15s ease-in-out; }
+.rd-cta:active:not(:disabled) { transform: translateY(0) scale(0.97); }
+.rd-cta:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 3px; }
+.rd-cta:disabled { cursor: default; opacity: 0.45; box-shadow: none; }
+.rd-cta:disabled::after { animation: none; }
+
+@keyframes rd-shine {
+  0% { transform: translateX(-120%) skewX(-20deg); }
+  35%, 100% { transform: translateX(260%) skewX(-20deg); }
+}
+@keyframes rd-clash {
+  0%, 100% { transform: rotate(-20deg) scale(1.15); }
+  30% { transform: rotate(8deg) scale(1.25); }
+  60% { transform: rotate(-26deg) scale(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd-cta, .rd-cta-ico .duel-ico { transition: none; }
+  .rd-cta::after, .rd-cta:hover .duel-ico { animation: none; }
+}
+
+/* Tamaños del botón con carácter: pequeño (Inicio) y grande (aviso a pantalla completa) */
+.rd-cta.sm { padding: 6px 16px 6px 8px; font-size: 14px; gap: 7px; }
+.rd-cta.sm .rd-cta-ico { width: 22px; height: 22px; }
+.rd-cta.sm .rd-cta-ico .duel-ico { width: 13px; height: 13px; }
+.rd-cta.lg { padding: 11px 26px 11px 12px; font-size: 18px; gap: 10px; }
+.rd-cta.lg .rd-cta-ico { width: 30px; height: 30px; }
+.rd-cta.lg .rd-cta-ico .duel-ico { width: 17px; height: 17px; }
+
+/* ── «Rechazar»: el de cagón ──
+   Apagado, con la bandera blanca y un borde a rayas, como pidiendo perdón. Al pasar
+   el ratón tiembla de miedo y la bandera se agita. */
+.rd-coward {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px 5px 10px; border-radius: 999px; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em;
+  color: var(--text-dim); background: transparent;
+  border: 1.5px dashed rgba(var(--tint), 0.22);
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.flag-ico { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform-origin: 20% 90%; }
+.flag-ico path:last-child { fill: rgba(var(--tint), 0.75); stroke: rgba(var(--tint), 0.75); }
+.rd-coward:hover:not(:disabled) { color: var(--text-muted); border-color: rgba(var(--tint), 0.35); background: rgba(var(--tint), 0.04); animation: rd-tremble 0.28s linear infinite; }
+.rd-coward:hover:not(:disabled) .flag-ico { animation: rd-wave 0.5s ease-in-out infinite alternate; }
+.rd-coward:focus-visible { outline: 2px solid var(--accent-light); outline-offset: 2px; }
+.rd-coward:disabled { opacity: 0.45; cursor: default; }
+/* En el aviso a pantalla completa va sobre fotos oscuras: colores fijos */
+.rd-coward.on-dark { color: rgba(255, 255, 255, 0.6); border-color: rgba(255, 255, 255, 0.28); font-size: 14px; padding: 8px 16px 8px 13px; }
+.rd-coward.on-dark .flag-ico path:last-child { fill: #fff; stroke: #fff; }
+.rd-coward.on-dark:hover:not(:disabled) { color: rgba(255, 255, 255, 0.85); border-color: rgba(255, 255, 255, 0.45); background: rgba(255, 255, 255, 0.06); }
+.dn-btns { align-items: center; }
+
+@keyframes rd-tremble {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(-1px, 0.5px) rotate(-0.8deg); }
+  50% { transform: translate(1px, -0.5px) rotate(0.6deg); }
+  75% { transform: translate(-0.5px, 0) rotate(-0.4deg); }
+}
+@keyframes rd-wave { from { transform: rotate(-6deg); } to { transform: rotate(8deg) scaleX(0.92); } }
+@media (prefers-reduced-motion: reduce) {
+  .rd-coward:hover, .rd-coward:hover .flag-ico { animation: none !important; }
+}

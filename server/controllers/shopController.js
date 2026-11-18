@@ -40,6 +40,22 @@ exports.buy = async (req, res) => {
 };
 
 /**
+ * Comprar la carta de un partido de hoy. Body: { match_id }.
+ *
+ * POST /shop/match-card
+ */
+exports.buyMatchCard = async (req, res) => {
+    try {
+        const user = await sessionUser(req);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const out = await shop.buyMatchCard({ userId: user.id, matchId: Number(req.body?.match_id) });
+        res.status(201).json(out);
+    } catch (error) {
+        fail(res, error);
+    }
+};
+
+/**
  * Ponerse un cosmético ({ item_id }) o quitarse el de un tipo ({ slot }).
  *
  * POST /shop/equip

@@ -24,9 +24,9 @@ const CardPlay = require('../models/cardPlay');
  *     solo se consiguiera gastando, quien gasta ganaría la liga el 61 % de las veces
  *     en vez del 33 %.
  *   - La mano no tiene límite: lo que se compra o sale en los cofres se guarda.
- *   - Una carta se juega o se retira hasta que empieza su partido; el Escudo, hasta
- *     que empieza el primero de la jornada. Las jornadas no tienen cierre: manda la
- *     hora del partido.
+ *   - Una carta se juega hasta que empieza su partido; el Escudo, hasta que empieza
+ *     el primero de la jornada. Jugada, no se retira: la decisión cuenta. Las jornadas no
+ *     tienen cierre: manda la hora del partido.
  *   - Nadie ve tu carta hasta que empieza su partido.
  *   - Cada jugador recibe como mucho un castigo por jornada, y los castigos no
  *     pueden dejar su jornada por debajo de 0.
@@ -70,6 +70,22 @@ const CARDS = Object.freeze({
         description: 'Como la Doble, sin tope y doblando también el pleno.',
         short: 'Dobla un partido y el pleno.',
     },
+    robo: {
+        label: 'Robo',
+        limited: true,
+        aim: 'rival_round',
+        rarity: 'raro',
+        description: 'Eliges rival: si haces más puntos que él en la jornada (sin contar cartas), le quitas 1 y te lo quedas.',
+        short: 'Si le ganas la jornada, le quitas 1.',
+    },
+    espejo: {
+        label: 'Espejo',
+        limited: false,
+        aim: 'round',
+        rarity: 'epico',
+        description: 'Si te echan un Gafe o un Robo esta jornada, rebota a quien te lo echó. Se juega a ciegas y no cuenta para las 2 de la jornada.',
+        short: 'Te echan un castigo: rebota.',
+    },
     chivato: {
         label: 'Chivato',
         limited: false,
@@ -89,7 +105,13 @@ const familyOf = (card) => (card === 'dorada' ? 'doble' : card);
 const DOBLE_CAP = 5;
 const GAFE_POINTS = 2;
 /** Lo que vale cada carta en monedas (cuando una no se puede dar, p. ej. la liga ya acabó). */
-const REFUND = Object.freeze({ chivato: 4, escudo: 7, gafe: 7, doble: 12, dorada: 20 });
+const REFUND = Object.freeze({ chivato: 4, escudo: 7, gafe: 7, robo: 7, espejo: 10, doble: 12, dorada: 20 });
+/** Robo: lo que se lleva si gana la jornada. */
+const ROBO_POINTS = 1;
+/** Cartas que se juegan sobre toda la jornada (se bloquean al empezar el primer partido). */
+const ROUND_AIMS = Object.freeze(['round', 'rival_round']);
+const isRoundAim = (aim) => ROUND_AIMS.includes(aim);
+const needsTarget = (aim) => aim === 'rival' || aim === 'rival_round';
 
 const EXACT = Object.freeze({ BO1: 0, BO3: 3, BO5: 5 });
 const plenoBonus = (n) => (n >= 6 ? 3 : n === 5 ? 2 : n >= 3 ? 1 : 0);
@@ -118,8 +140,15 @@ class CardError extends Error {
  * @param {Function} p.pick - (userId, matchId) → { winner, description } | null.
  * @param {Object} p.weekPoints - userId → puntos de la jornada SIN cartas (partidos y preguntas).
  * @param {Array<Object>} p.plays - Las jugadas activas de la jornada.
- * @returns {{deltas: Object, effects: Object}} deltas: userId → puntos de cartas;
- *   effects: playId → lo que ha valido esa jugada (null si su partido aún no tiene resultado).
+ * @returns {{deltas: Object, effects: Object, rebounds: Object}} deltas: userId → puntos
+ *   de cartas; effects: playId → lo que ha valido esa jugada (null si aún no se sabe);
+ *   rebounds: playId → true para los castigos que rebotaron en un Espejo.
+ *
+ * Qué vale cada jugada en `effects`:
+ *   Escudo, Doble, Doble Dorada: lo que suma a quien la juega.
+ *   Gafe: lo que le quita a su víctima (negativo). Si rebota, la víctima es quien lo echó.
+ *   Robo: lo que se lleva quien lo juega (positivo); si rebota, lo que pierde (negativo).
+ *   Espejo: los puntos que ha rebotado (0 si nadie le castigó).
  */
 function cardPoints({ matches, pick, weekPoints, plays }) {
     const outcome = (u, m) => {
@@ -142,6 +171,7 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
         return run;
     };
     const byId = Object.fromEntries(matches.map(m => [m.id, m]));
+    const allResolved = matches.length > 0 && matches.every(m => m.result);
 
     // Hasta 2 cartas de efecto por jugador, sin repetir, y un castigo por objetivo: si
     // se cuela alguna de más (no debería), cuentan las primeras.
@@ -151,12 +181,18 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
 
     const deltas = {};
     const effects = {};
+    const rebounds = {};
     const add = (u, n) => { deltas[u] = (deltas[u] || 0) + n; };
     const castigos = []; // [{ play, target }]
+    const mirrorOf = {}; // userId → su jugada de Espejo (la primera)
 
     for (const play of ordered) {
         const info = CARDS[play.card];
         if (!info) { effects[play.id] = 0; continue; }
+        if (play.card === 'espejo') {
+            if (!mirrorOf[play.user_id]) { mirrorOf[play.user_id] = play; effects[play.id] = 0; } else effects[play.id] = 0;
+            continue;
+        }
         if (!info.limited) { effects[play.id] = 0; continue; }
         const used = effectsOf[play.user_id] || (effectsOf[play.user_id] = new Set());
         if (used.size >= EFFECTS_PER_ROUND || used.has(familyOf(play.card))) { effects[play.id] = 0; continue; }
@@ -170,6 +206,14 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
             add(u, v);
             continue;
         }
+        if (play.card === 'robo') {
+            // Se decide con la jornada entera: hasta que no hay todos los resultados, nada.
+            if (!allResolved) { effects[play.id] = null; continue; }
+            if (seenTarget.has(play.target_user_id)) { effects[play.id] = 0; continue; }
+            seenTarget.add(play.target_user_id);
+            castigos.push({ play, target: play.target_user_id });
+            continue;
+        }
         const m = byId[play.match_id];
         if (!m || !m.result) { effects[play.id] = null; continue; }
         if (play.card === 'doble' || play.card === 'dorada') {
@@ -181,19 +225,52 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
         } else if (play.card === 'gafe') {
             if (seenTarget.has(play.target_user_id)) { effects[play.id] = 0; continue; }
             seenTarget.add(play.target_user_id);
-            if (outcome(play.target_user_id, m).right) effects[play.id] = 0;
-            else castigos.push({ play, target: play.target_user_id });
+            castigos.push({ play, target: play.target_user_id });
         }
     }
 
     // Los castigos, al final: nunca dejan la jornada de nadie por debajo de 0.
+    //
+    // Si su objetivo tiene un Espejo, rebota: el castigo se evalúa al revés, sobre quien
+    // lo echó. El rebote también cuenta como castigo recibido: si quien lo echó ya
+    // tenía uno, el rebote se pierde.
+    const room = (u) => Math.max(0, (weekPoints[u] || 0) + (deltas[u] || 0));
     for (const { play, target } of castigos) {
-        const before = (weekPoints[target] || 0) + (deltas[target] || 0);
-        const hit = Math.min(GAFE_POINTS, Math.max(0, before));
-        effects[play.id] = -hit;
-        add(target, -hit);
+        const mirror = mirrorOf[target];
+        const rebound = Boolean(mirror);
+        const caster = play.user_id;
+        const victim = rebound ? caster : target;
+        const other = rebound ? target : caster; // quien se beneficia (el Robo)
+        if (rebound) {
+            rebounds[play.id] = true;
+            if (seenTarget.has(caster)) { effects[play.id] = 0; continue; }
+            seenTarget.add(caster);
+        }
+
+        if (play.card === 'gafe') {
+            const m = byId[play.match_id];
+            if (!m || !m.result) { effects[play.id] = null; if (mirror) effects[mirror.id] = null; continue; }
+            if (outcome(victim, m).right) { effects[play.id] = 0; continue; }
+            const hit = Math.min(GAFE_POINTS, room(victim));
+            effects[play.id] = -hit;
+            add(victim, -hit);
+            if (mirror) effects[mirror.id] = (effects[mirror.id] || 0) + hit;
+        } else if (play.card === 'robo') {
+            // El que hace más puntos (sin cartas) se lleva 1 del otro.
+            if ((weekPoints[other] || 0) <= (weekPoints[victim] || 0)) { effects[play.id] = 0; continue; }
+            const take = Math.min(ROBO_POINTS, room(victim));
+            add(victim, -take);
+            add(other, take);
+            effects[play.id] = rebound ? -take : take;
+            if (mirror) effects[mirror.id] = (effects[mirror.id] || 0) + take;
+        }
     }
-    return { deltas, effects };
+    // Un Espejo cuyo castigo aún no se sabe, sigue pendiente.
+    for (const p of Object.values(mirrorOf)) {
+        const pending = ordered.some(q => ['gafe', 'robo'].includes(q.card) && q.target_user_id === p.user_id && effects[q.id] === null);
+        if (pending) effects[p.id] = null;
+    }
+    return { deltas, effects, rebounds };
 }
 
 /**
@@ -202,7 +279,7 @@ function cardPoints({ matches, pick, weekPoints, plays }) {
  */
 async function roundEffects(round) {
     const plays = await CardPlay.findAll({ where: { round_id: round.id, status: 'active' }, order: [['id', 'ASC']] });
-    if (!plays.length) return { plays, effects: {} };
+    if (!plays.length) return { plays, effects: {}, rebounds: {} };
     const matches = await Match.findAll({ where: { round_id: round.id }, order: [['date', 'ASC']] });
     const ids = matches.map(m => m.id);
     const [results, preds, weeks] = await Promise.all([
@@ -214,14 +291,15 @@ async function roundEffects(round) {
     const newest = {};
     preds.forEach(p => { const k = `${p.user_id}:${p.match_id}`; if (!newest[k] || p.id > newest[k].id) newest[k] = p; });
     const weekPoints = {};
-    weeks.forEach(w => { weekPoints[w.user_id] = w.points - (w.points_card || 0); });
-    const { effects } = cardPoints({
+    // Sin cartas ni duelos: lo mismo que ve el agregador al aplicar las cartas.
+    weeks.forEach(w => { weekPoints[w.user_id] = w.points - (w.points_card || 0) - (w.points_duel || 0); });
+    const { effects, rebounds } = cardPoints({
         matches: matches.map(m => ({ id: m.id, format: m.format, result: resultOf[m.id] || null })),
         pick: (u, mid) => newest[`${u}:${mid}`] || null,
         weekPoints,
         plays,
     });
-    return { plays, effects };
+    return { plays, effects, rebounds };
 }
 
 // ── Cuándo se bloquea ───────────────────────────────────────────────────────────
@@ -231,11 +309,11 @@ const hasStarted = (match, resolvedIds, now = new Date()) =>
     match.status !== 'scheduled' || new Date(match.date) <= now || resolvedIds.has(match.id);
 
 /**
- * El partido (o la jornada, para el Escudo) que bloquea una jugada, y si ya ha
- * empezado. Es lo mismo que decide cuándo se revela.
+ * El partido (o la jornada, para el Escudo, el Robo y el Espejo) que bloquea una
+ * jugada, y si ya ha empezado. Es lo mismo que decide cuándo se revela.
  */
 async function lockOf(play) {
-    if (play.card === 'escudo') {
+    if (isRoundAim(CARDS[play.card]?.aim)) {
         const matches = await Match.findAll({ where: { round_id: play.round_id } });
         const resolved = new Set((await Result.findAll({ where: { match_id: matches.map(m => m.id) }, attributes: ['match_id'] })).map(r => r.match_id));
         return { started: matches.length === 0 || matches.some(m => hasStarted(m, resolved)) };
@@ -255,9 +333,11 @@ const lockHand = (userId, transaction) => sequelize.query('SELECT pg_advisory_xa
 /**
  * La carta gratis solo vale en su jornada. Caduca cuando ya no se puede jugar: el
  * Escudo, en cuanto empieza el primer partido; las demás, cuando ya no queda ningún
- * partido de la jornada sin empezar. Idempotente.
+ * partido de la jornada sin empezar. La carta del partido (de la tienda), cuando
+ * empieza su partido. Idempotente.
  */
 async function expireFreeCards(userId, leagueId, transaction) {
+    await expireMatchCards(userId, leagueId, transaction);
     const free = await UserCard.findAll({ where: { user_id: userId, league_id: leagueId, status: 'in_hand', source: 'free' }, transaction });
     if (!free.length) return;
     const roundIds = [...new Set(free.map(c => Number(c.source_ref)).filter(Boolean))];
@@ -271,6 +351,19 @@ async function expireFreeCards(userId, leagueId, transaction) {
         if (gone) expired.push(c.id);
     }
     if (expired.length) await UserCard.update({ status: 'expired' }, { where: { id: expired }, transaction });
+}
+
+/** Las cartas del partido (source 'match', source_ref = Match.id) caducan al empezar su partido. */
+async function expireMatchCards(userId, leagueId, transaction) {
+    const cards = await UserCard.findAll({ where: { user_id: userId, league_id: leagueId, status: 'in_hand', source: 'match' }, transaction });
+    if (!cards.length) return;
+    const matches = await Match.findAll({ where: { id: cards.map(c => Number(c.source_ref)) }, transaction });
+    const resolved = new Set((await Result.findAll({ where: { match_id: matches.map(m => m.id) }, attributes: ['match_id'], transaction })).map(r => r.match_id));
+    const gone = cards.filter(c => {
+        const m = matches.find(x => x.id === Number(c.source_ref));
+        return !m || hasStarted(m, resolved);
+    }).map(c => c.id);
+    if (gone.length) await UserCard.update({ status: 'expired' }, { where: { id: gone }, transaction });
 }
 
 /** Las cartas que caducan cuando una liga termina. Idempotente. */
@@ -316,7 +409,7 @@ async function grantFreeCard({ userId, league, round }) {
     return giveCard({ userId, leagueId: league.id, card: randomFreeCard(), source: 'free', sourceRef: round.id });
 }
 
-// ── Jugar y retirar ─────────────────────────────────────────────────────────────
+// ── Jugar ───────────────────────────────────────────────────────────────────
 
 /**
  * Juega una carta.
@@ -339,6 +432,7 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
         await expireFreeCards(userId, owned.league_id, transaction);
         const userCard = await UserCard.findByPk(owned.id, { transaction });
         if (userCard.status === 'expired' && userCard.source === 'free') throw new CardError(409, 'Esa carta gratis ha caducado: solo valía en su jornada');
+        if (userCard.status === 'expired' && userCard.source === 'match') throw new CardError(409, 'Esa carta del partido ha caducado: su partido ya ha empezado');
         if (userCard.status !== 'in_hand') throw new CardError(409, 'Esa carta ya no está en tu mano');
         const info = CARDS[userCard.card];
         if (!info) throw new CardError(400, 'Carta desconocida');
@@ -350,13 +444,13 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
         // Dónde se juega y si aún se puede.
         let round;
         let match = null;
-        if (info.aim === 'round') {
+        if (isRoundAim(info.aim)) {
             round = await Round.findOne({ where: { id: roundId, league_id: league.id }, transaction });
             if (!round) throw new CardError(400, 'Elige una jornada de esta liga');
             const matches = await Match.findAll({ where: { round_id: round.id }, transaction });
             if (!matches.length) throw new CardError(409, 'Esa jornada no tiene partidos');
             const resolved = new Set((await Result.findAll({ where: { match_id: matches.map(m => m.id) }, attributes: ['match_id'], transaction })).map(r => r.match_id));
-            if (matches.some(m => hasStarted(m, resolved))) throw new CardError(409, 'La jornada ya ha empezado: el Escudo se juega antes del primer partido');
+            if (matches.some(m => hasStarted(m, resolved))) throw new CardError(409, `La jornada ya ha empezado: el ${info.label} se juega antes del primer partido`);
         } else {
             match = await Match.findOne({ where: { id: matchId, league_id: league.id }, transaction });
             if (!match) throw new CardError(400, 'Elige un partido de esta liga');
@@ -372,6 +466,11 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
             throw new CardError(409, `Esa carta gratis solo vale en su jornada${own ? ` (${own.name || 'J' + own.order})` : ''}`);
         }
 
+        // La carta del partido, solo en su partido.
+        if (userCard.source === 'match' && (!match || Number(userCard.source_ref) !== match.id)) {
+            throw new CardError(409, 'Esa carta solo vale para su partido');
+        }
+
         // Hasta 2 de efecto por jornada y nunca la misma dos veces (el Chivato, uno).
         const mine = await CardPlay.findAll({ where: { user_id: userId, round_id: round.id, status: 'active' }, transaction });
         const same = mine.find(p => familyOf(p.card) === familyOf(userCard.card));
@@ -380,11 +479,11 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
             throw new CardError(409, `Ya has jugado ${EFFECTS_PER_ROUND} cartas esta jornada`);
         }
 
-        // El Gafe: un rival de la liga que aún no tenga castigo esta jornada.
-        if (info.aim === 'rival') {
+        // El Gafe y el Robo: un rival de la liga que aún no tenga castigo esta jornada.
+        if (needsTarget(info.aim)) {
             const target = Number(targetUserId);
-            if (!target) throw new CardError(400, 'Elige a quién echarle el Gafe');
-            if (target === Number(userId)) throw new CardError(400, 'No puedes echarte el Gafe a ti mismo');
+            if (!target) throw new CardError(400, `Elige a quién echarle el ${info.label}`);
+            if (target === Number(userId)) throw new CardError(400, `No puedes echarte el ${info.label} a ti mismo`);
             const member = await LeagueParticipation.count({ where: { user_id: target, league_id: league.id }, transaction });
             if (!member) throw new CardError(400, 'Ese jugador no está en la liga');
             await sequelize.query('SELECT pg_advisory_xact_lock(:ns, :uid)', { replacements: { ns: LOCK_PUNISHED, uid: target }, transaction });
@@ -399,30 +498,13 @@ async function playCard({ userId, userCardId, matchId, roundId, targetUserId }) 
             round_id: round.id,
             card: userCard.card,
             match_id: match ? match.id : null,
-            target_user_id: info.aim === 'rival' ? Number(targetUserId) : null,
+            target_user_id: needsTarget(info.aim) ? Number(targetUserId) : null,
         }, { transaction });
         await userCard.update({ status: 'played' }, { transaction });
 
         const out = { play };
         if (userCard.card === 'chivato') out.share = await voteShare(match.id, transaction);
         return out;
-    });
-}
-
-/**
- * Retira una carta jugada: vuelve a la mano. Solo antes de que empiece su partido (o
- * la jornada, el Escudo). El Chivato no se retira: lo que enseñó ya se ha visto.
- */
-async function withdrawPlay({ userId, playId }) {
-    return sequelize.transaction(async (transaction) => {
-        await lockHand(userId, transaction);
-        const play = await CardPlay.findOne({ where: { id: playId, user_id: userId, status: 'active' }, transaction });
-        if (!play) throw new CardError(404, 'No tienes esa jugada');
-        if (play.card === 'chivato') throw new CardError(409, 'El Chivato no se puede retirar: ya has visto lo que enseña');
-        if ((await lockOf(play)).started) throw new CardError(409, 'Su partido ya ha empezado: la carta ya no se puede retirar');
-        await UserCard.update({ status: 'in_hand' }, { where: { id: play.user_card_id }, transaction });
-        await play.destroy({ transaction });
-        return { ok: true };
     });
 }
 
@@ -461,7 +543,13 @@ async function handOf(userId, leagueId) {
     const rounds = {};
     for (const p of plays) if (!rounds[p.round_id]) rounds[p.round_id] = await Round.findByPk(p.round_id);
     const effectsByRound = {};
-    for (const r of Object.values(rounds)) if (r) effectsByRound[r.id] = (await roundEffects(r)).effects;
+    const reboundsByRound = {};
+    for (const r of Object.values(rounds)) {
+        if (!r) continue;
+        const re = await roundEffects(r);
+        effectsByRound[r.id] = re.effects;
+        reboundsByRound[r.id] = re.rebounds;
+    }
     const targets = await User.findAll({ where: { id: plays.map(p => p.target_user_id).filter(Boolean) }, attributes: PUBLIC_USER });
 
     return {
@@ -471,6 +559,12 @@ async function handOf(userId, leagueId) {
         catalog: Object.keys(CARDS).map(cardInfo),
         hand: await Promise.all(hand.map(async c => {
             const base = { id: c.id, source: c.source, created_at: c.created_at, ...cardInfo(c.card), family: familyOf(c.card) };
+            if (c.source === 'match') {
+                // La del partido dice de qué partido es: solo vale ahí.
+                const Team = require('../models/team');
+                const m = await Match.findByPk(Number(c.source_ref), { include: [{ model: Team, attributes: ['id', 'name', 'acronym'], through: { attributes: [] } }] });
+                return { ...base, match: m ? { id: m.id, round_id: m.round_id, date: m.date, Teams: m.Teams } : null };
+            }
             if (c.source !== 'free') return base;
             // La gratis dice de qué jornada es: solo vale ahí.
             const r = await Round.findByPk(Number(c.source_ref), { attributes: ['id', 'order', 'name'] });
@@ -484,6 +578,7 @@ async function handOf(userId, leagueId) {
             status: p.status,
             target: targets.find(t => t.id === p.target_user_id) || null,
             effect: effectsByRound[p.round_id]?.[p.id] ?? null,
+            rebounded: Boolean(reboundsByRound[p.round_id]?.[p.id]),
             locked: (await lockOf(p)).started,
             key: p.card,
             family: familyOf(p.card),
@@ -500,7 +595,7 @@ async function handOf(userId, leagueId) {
 async function roundPlaysFor({ viewerId, isAdmin, roundId }) {
     const round = await Round.findByPk(roundId);
     if (!round) throw new CardError(404, 'Jornada no encontrada');
-    const { plays, effects } = await roundEffects(round);
+    const { plays, effects, rebounds } = await roundEffects(round);
     const visible = [];
     for (const p of plays) {
         const revealed = (await lockOf(p)).started;
@@ -519,6 +614,7 @@ async function roundPlaysFor({ viewerId, isAdmin, roundId }) {
         target: userOf(play.target_user_id),
         match_id: play.match_id,
         effect: effects[play.id] ?? null,
+        rebounded: Boolean(rebounds[play.id]),
         key: play.card,
         card: cardInfo(play.card),
     }));
@@ -548,7 +644,12 @@ async function leaguePlays(leagueId) {
     const plays = await CardPlay.findAll({ where: { league_id: leagueId }, order: [['id', 'DESC']] });
     const rounds = await Round.findAll({ where: { id: [...new Set(plays.map(p => p.round_id))] } });
     const effectsByRound = {};
-    for (const r of rounds) effectsByRound[r.id] = (await roundEffects(r)).effects;
+    const reboundsByRound = {};
+    for (const r of rounds) {
+        const re = await roundEffects(r);
+        effectsByRound[r.id] = re.effects;
+        reboundsByRound[r.id] = re.rebounds;
+    }
     const users = await User.findAll({
         where: { id: [...new Set(plays.flatMap(p => [p.user_id, p.target_user_id]).filter(Boolean))] },
         attributes: PUBLIC_USER,
@@ -563,6 +664,7 @@ async function leaguePlays(leagueId) {
         user: userOf(p.user_id),
         target: userOf(p.target_user_id),
         effect: p.status === 'active' ? (effectsByRound[p.round_id]?.[p.id] ?? null) : 0,
+        rebounded: Boolean(reboundsByRound[p.round_id]?.[p.id]),
         created_at: p.created_at,
         key: p.card,
         card: cardInfo(p.card),
@@ -596,8 +698,9 @@ async function gafeNotices(userId) {
     const effectsOf = {};
     for (const play of plays) {
         if (!(await lockOf(play)).started) continue; // aún es secreto
-        if (!effectsOf[play.round_id]) effectsOf[play.round_id] = (await roundEffects(await Round.findByPk(play.round_id))).effects;
-        const effect = effectsOf[play.round_id][play.id];
+        if (!effectsOf[play.round_id]) effectsOf[play.round_id] = await roundEffects(await Round.findByPk(play.round_id));
+        const effect = effectsOf[play.round_id].effects[play.id];
+        const rebounded = Boolean(effectsOf[play.round_id].rebounds[play.id]);
         const result = await Result.findOne({ where: { match_id: play.match_id } });
         const resolved = Boolean(result) && effect !== null && effect !== undefined;
         if (!resolved && play.target_seen === 'pending') continue;
@@ -605,7 +708,8 @@ async function gafeNotices(userId) {
         let state = 'pending';
         if (resolved) {
             const pick = await Prediction.findOne({ where: { user_id: userId, match_id: play.match_id }, order: [['id', 'DESC']] });
-            state = pick && pick.winner === result.winner ? 'miss' : 'hit';
+            // Si rebotó en tu Espejo, te has librado aunque fallaras.
+            state = rebounded || (pick && pick.winner === result.winner) ? 'miss' : 'hit';
         }
         const [from, match, league] = await Promise.all([
             User.findByPk(play.user_id, { attributes: PUBLIC_USER }),
@@ -615,7 +719,8 @@ async function gafeNotices(userId) {
         notices.push({
             id: play.id,
             state,
-            points: resolved ? Math.abs(effect) : null,
+            points: resolved ? (rebounded ? 0 : Math.abs(effect)) : null,
+            rebounded,
             from,
             league,
             match: match && { id: match.id, Teams: match.Teams },
@@ -644,6 +749,9 @@ module.exports = {
     CARDS,
     FREE_POOL,
     EFFECTS_PER_ROUND,
+    ROBO_POINTS,
+    isRoundAim,
+    needsTarget,
     familyOf,
     expireFreeCards,
     DOBLE_CAP,
@@ -655,7 +763,6 @@ module.exports = {
     giveCard,
     grantFreeCard,
     playCard,
-    withdrawPlay,
     voteShare,
     handOf,
     roundPlaysFor,

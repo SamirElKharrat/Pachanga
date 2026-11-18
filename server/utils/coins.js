@@ -29,6 +29,9 @@ const REASONS = Object.freeze({
     shop: 'Compra en la tienda',
     chest: 'Cofre',
     chest_prize: 'Premio de cofre',
+    duel_stake: 'Apuesta de duelo',
+    duel_refund: 'Duelo devuelto',
+    duel_win: 'Duelo ganado',
 });
 
 // Espacio de nombres del candado, para no chocar con otros advisory locks.

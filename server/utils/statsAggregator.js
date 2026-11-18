@@ -14,7 +14,9 @@ const Question = require('../models/question');
 const QuestionAnswer = require('../models/questionAnswer');
 const Round = require('../models/round');
 const CardPlay = require('../models/cardPlay');
+const Duel = require('../models/duel');
 const { cardPoints } = require('./cards');
+const { duelPoints } = require('./duels');
 
 const { startOfWeek } = require('../controllers/weekController');
 const { calculatePredictionBreakdown, QUESTION_POINTS, isSettled, isAnswerCorrect } = require('./pointsCalculator');
@@ -218,6 +220,7 @@ const computeWeek = async (league, week) => {
         points_favorite: 0,
         points_question: 0,
         points_card: 0,
+        points_duel: 0,
         plenos: 0,
         questions_available: settledQuestions.length,
         questions_answered: 0,
@@ -356,6 +359,28 @@ const computeWeek = async (league, week) => {
         }
     }
 
+    // ── Los duelos de puntos de la jornada ───────────────────────────────────
+    //
+    // Lo último, porque se deciden con los puntos de la jornada ya con cartas. Solo
+    // cuando todos los partidos tienen resultado; pasan puntos del que pierde al que
+    // gana (suma cero). Van a `points_duel` y a `points`. Ver utils/duels.js.
+    const duels = round
+        ? await Duel.findAll({ where: { round_id: round.id, status: ['accepted', 'resolved'], stake_kind: 'points' } })
+        : [];
+    if (duels.length) {
+        const allResolved = weekMatches.length > 0 && weekMatches.every(m => resultMap[m.id]);
+        const points = {};
+        Object.values(perUser).forEach(r => { points[r.user_id] = r.points; });
+        const deltas = duelPoints({ duels, points, allResolved });
+        for (const [userId, delta] of Object.entries(deltas)) {
+            if (!delta) continue;
+            const id = Number(userId);
+            if (!perUser[id]) perUser[id] = blank(id);
+            perUser[id].points_duel += delta;
+            perUser[id].points += delta;
+        }
+    }
+
     const weekRows = Object.values(perUser).map(row => ({ ...row, computed_at: new Date() }));
 
     return {
@@ -461,6 +486,8 @@ exports.recomputeLeagueWeek = async (leagueId, week, options = {}) => {
 const syncWeekCoins = async (leagueId, week) => {
     const { safely, syncWeek } = require('./coinRewards');
     await safely('pleno y mitad de abajo', () => syncWeek(leagueId, week));
+    // Los duelos: estado, ganador y el bote de pachanguitas, con los puntos ya escritos.
+    await safely('duelos', () => require('./duels').settleWeek(leagueId, week));
 };
 
 /**
@@ -492,8 +519,9 @@ exports.applyWeekPoints = async (leagueId, week) => {
     // tienen dónde guardar «lo que valían antes». Lo que valían está en la jornada
     // tal como quedó la última vez: se lee ANTES de reescribirla.
     const cardsBefore = {};
-    (await PlayerWeekStat.findAll({ where: { league_id: leagueId, week }, attributes: ['user_id', 'points_card'] }))
-        .forEach(r => { cardsBefore[r.user_id] = r.points_card || 0; });
+    // Los duelos de puntos, igual: tampoco son de ninguna predicción.
+    (await PlayerWeekStat.findAll({ where: { league_id: leagueId, week }, attributes: ['user_id', 'points_card', 'points_duel'] }))
+        .forEach(r => { cardsBefore[r.user_id] = (r.points_card || 0) + (r.points_duel || 0); });
 
     const computed = await computeWeek(league, week);
     await writeWeekStats(leagueId, week, computed);
@@ -510,7 +538,7 @@ exports.applyWeekPoints = async (leagueId, week) => {
 
     // Las cartas, por diferencia como lo demás: lo que valen ahora menos lo que valían.
     const cardsNow = {};
-    computed.weekRows.forEach(r => { cardsNow[r.user_id] = r.points_card || 0; });
+    computed.weekRows.forEach(r => { cardsNow[r.user_id] = (r.points_card || 0) + (r.points_duel || 0); });
     for (const userId of new Set([...Object.keys(cardsBefore), ...Object.keys(cardsNow)])) {
         const delta = (cardsNow[userId] || 0) - (cardsBefore[userId] || 0);
         if (delta) deltaByUser[userId] = (deltaByUser[userId] || 0) + delta;
@@ -619,6 +647,7 @@ exports.rollUpLeague = async (leagueId) => {
             points_favorite: 0,
             points_question: 0,
             points_card: 0,
+            points_duel: 0,
             questions_available: 0,
             questions_answered: 0,
             questions_correct: 0
@@ -638,6 +667,7 @@ exports.rollUpLeague = async (leagueId) => {
         acc.points_favorite += row.points_favorite;
         acc.points_question += row.points_question;
         acc.points_card += row.points_card || 0;
+        acc.points_duel += row.points_duel || 0;
         acc.plenos += row.plenos;
         if (row.best_run > acc.best_run) acc.best_run = row.best_run;
     }

@@ -1,4 +1,9 @@
+const crypto = require('crypto');
+const { Op } = require('sequelize');
 const CoinTransaction = require('../models/coinTransaction');
+const Match = require('../models/match');
+const Result = require('../models/result');
+const Team = require('../models/team');
 const UserCosmetic = require('../models/userCosmetic');
 const UserCard = require('../models/userCard');
 const League = require('../models/league');
@@ -7,8 +12,17 @@ const coins = require('./coins');
 const cards = require('./cards');
 
 /**
- * La tienda (fase 3 de cartas y cofres): un catálogo fijo de cartas y cosméticos que
- * se compran con monedas. La rotación semanal y las rebajas llegan en la fase 6.
+ * La tienda (fases 3 y 6 de cartas y cofres): cartas y cosméticos que se compran con
+ * pachanguitas.
+ *
+ * - Catálogo fijo, siempre a la venta.
+ * - Escaparate semanal (fase 6): 4 huecos que cambian cada lunes (hora de Madrid),
+ *   uno de ellos rebajado un 30 %. Sale de una semilla (la semana), así que no hace
+ *   falta ninguna tarea programada ni tabla: el mismo lunes da el mismo escaparate.
+ *   Los títulos de temporada (`rotating`) solo se venden cuando salen en él.
+ * - Carta del partido (fase 6): cada partido de hoy de tus ligas con cartas trae una
+ *   carta barata que solo vale para ese partido y se compra hasta que empieza. Una
+ *   por partido.
  *
  * - Las cartas son de una liga (la que elijas al comprar) y caducan con ella. La
  *   Doble y la Doble Dorada NO se venden: salen en la carta gratis o en los cofres.
@@ -45,6 +59,8 @@ const ITEMS = Object.freeze([
     { id: 'card_escudo', kind: 'card', card: 'escudo', price: 15 },
     { id: 'card_gafe', kind: 'card', card: 'gafe', price: 15 },
     { id: 'card_chivato', kind: 'card', card: 'chivato', price: 8 },
+    { id: 'card_robo', kind: 'card', card: 'robo', price: 15 },
+    { id: 'card_espejo', kind: 'card', card: 'espejo', price: 18 },
 
     // Marcos de avatar
     { id: 'frame_baron', kind: 'frame', label: 'Barón', price: 20 },
@@ -72,6 +88,16 @@ const ITEMS = Object.freeze([
     { id: 'title_pleno', kind: 'title', label: 'Pleno o nada', price: 30 },
     { id: 'title_underdog', kind: 'title', label: 'Fan del underdog', price: 30 },
 
+    // Títulos de temporada: solo se venden la semana que salen en el escaparate.
+    { id: 'title_remontada', kind: 'title', label: 'Rey de la remontada', price: 35, rotating: true },
+    { id: 'title_robabarones', kind: 'title', label: 'Robabarones', price: 35, rotating: true },
+    { id: 'title_moneda_al_aire', kind: 'title', label: 'Moneda al aire', price: 35, rotating: true },
+    { id: 'title_genio_draft', kind: 'title', label: 'Genio del draft', price: 35, rotating: true },
+    { id: 'title_tilt', kind: 'title', label: 'Tilt controlado', price: 35, rotating: true },
+    { id: 'title_macro', kind: 'title', label: 'Cerebro macro', price: 35, rotating: true },
+    { id: 'title_profeta', kind: 'title', label: 'Profeta del 3-0', price: 35, rotating: true },
+    { id: 'title_casi', kind: 'title', label: 'Casi pleno', price: 35, rotating: true },
+
     // Banners: fondo animado de la cabecera del perfil, de tu tarjeta del menú y de
     // tu fila en la clasificación. Dibujados con CSS (sin imágenes de Riot).
     { id: 'banner_baron', kind: 'banner', label: 'Foso del Barón', price: 30 },
@@ -90,11 +116,78 @@ const ITEMS = Object.freeze([
 
 const itemOf = (id) => ITEMS.find(i => i.id === id) || null;
 
+// ── Escaparate semanal ─────────────────────────────────────────────────────────
+
+const DEAL = 0.3;
+const MATCH_CARD_PRICE = Object.freeze({ gafe: 10, chivato: 5 });
+
+/** La fecha de hoy en Madrid, 'AAAA-MM-DD'. */
+const madridDay = (now = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(now);
+
+/** El lunes de la semana de `now` (Madrid), 'AAAA-MM-DD', y los días que le quedan. */
+function weekOf(now = new Date()) {
+    const day = new Date(`${madridDay(now)}T00:00:00Z`);
+    const dow = (day.getUTCDay() + 6) % 7; // 0 = lunes
+    const monday = new Date(day.getTime() - dow * 86400000);
+    return { key: monday.toISOString().slice(0, 10), daysLeft: 7 - dow };
+}
+
+/** Un generador de azar con semilla (el mismo texto da siempre la misma serie). */
+function seeded(text) {
+    let s = crypto.createHash('sha256').update(text).digest().readUInt32LE(0);
+    return (max) => {
+        s = (s + 0x6D2B79F5) >>> 0;
+        let t = s;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return (((t ^ (t >>> 14)) >>> 0) % max);
+    };
+}
+
+/**
+ * El escaparate de una semana: una carta, un título de temporada y dos cosméticos,
+ * uno de los cuatro con un 30 % de rebaja.
+ *
+ * @returns {{week: string, daysLeft: number, items: Array<{id: string, price: number, basePrice: number, deal: boolean}>}}
+ */
+function showcase(now = new Date()) {
+    const { key, daysLeft } = weekOf(now);
+    const rand = seeded(`escaparate:${key}`);
+    const pickFrom = (list) => list[rand(list.length)];
+    const cardsForSale = ITEMS.filter(i => i.kind === 'card');
+    const seasonal = ITEMS.filter(i => i.rotating);
+    const regular = ITEMS.filter(i => i.kind !== 'card' && !i.rotating);
+    const first = pickFrom(regular);
+    const rest = regular.filter(i => i.id !== first.id && i.kind !== first.kind);
+    const picked = [pickFrom(cardsForSale), pickFrom(seasonal), first, pickFrom(rest.length ? rest : regular)];
+    const dealAt = rand(picked.length);
+    return {
+        week: key,
+        daysLeft,
+        items: picked.map((item, i) => ({
+            id: item.id,
+            basePrice: item.price,
+            price: i === dealAt ? Math.max(1, Math.round(item.price * (1 - DEAL))) : item.price,
+            deal: i === dealAt,
+        })),
+    };
+}
+
+/** Lo que cuesta un artículo ahora (con la rebaja de la semana si le toca). */
+function priceOf(item, now = new Date()) {
+    const slot = showcase(now).items.find(s => s.id === item.id);
+    return slot ? slot.price : item.price;
+}
+
+/** Si se puede comprar ahora: los de temporada, solo la semana que salen. */
+const onSale = (item, now = new Date()) => !item.rotating || showcase(now).items.some(s => s.id === item.id);
+
 /** Un artículo listo para enseñar: las cartas, con su nombre y texto del catálogo de cartas. */
-function itemInfo(item) {
-    if (item.kind !== 'card') return { ...item };
+function itemInfo(item, now = new Date()) {
+    const price = priceOf(item, now);
+    if (item.kind !== 'card') return { ...item, price, basePrice: item.price };
     const card = cards.CARDS[item.card];
-    return { ...item, label: card.label, description: card.description, rarity: card.rarity };
+    return { ...item, price, basePrice: item.price, label: card.label, description: card.description, rarity: card.rarity };
 }
 
 /** Ligas donde puede comprar cartas un usuario: con cartas, sin terminar y apuntado. */
@@ -116,11 +209,16 @@ async function shopFor(userId) {
         cardLeaguesOf(userId),
     ]);
     const hands = await Promise.all(leagues.map(l => UserCard.count({ where: { user_id: userId, league_id: l.id, status: 'in_hand' } })));
+    const now = new Date();
+    const week = showcase(now);
     return {
         balance,
         cap: coins.COIN_CAP,
         slots: SLOTS,
-        items: ITEMS.map(itemInfo),
+        // Los de temporada que no están esta semana no se enseñan.
+        items: ITEMS.filter(i => onSale(i, now)).map(i => itemInfo(i, now)),
+        showcase: { week: week.week, daysLeft: week.daysLeft, items: week.items.map(s => ({ ...itemInfo(itemOf(s.id), now), deal: s.deal })) },
+        matchCards: await matchOffers(userId, leagues, now),
         owned: owned.map(o => ({ item_id: o.item_id, equipped: o.equipped, acquired_at: o.acquired_at })),
         cardLeagues: leagues.map((l, i) => ({ id: l.id, name: l.name, inHand: hands[i] })),
     };
@@ -138,10 +236,13 @@ async function shopFor(userId) {
 async function buy({ userId, itemId, leagueId }) {
     const item = itemOf(itemId);
     if (!item) throw new ShopError(400, 'Ese artículo no está en la tienda');
+    const now = new Date();
+    if (!onSale(item, now)) throw new ShopError(409, 'Ese título solo se vende la semana que sale en el escaparate');
+    const price = priceOf(item, now);
 
     return coins.withUserLock(userId, async (transaction) => {
         const balance = await coins.balanceOf(userId, transaction);
-        if (balance < item.price) throw new ShopError(409, `No te llega: cuesta ${item.price} y tienes ${balance}`);
+        if (balance < price) throw new ShopError(409, `No te llega: cuesta ${price} y tienes ${balance}`);
 
         let card = null;
         let note;
@@ -166,9 +267,10 @@ async function buy({ userId, itemId, leagueId }) {
             note = `${SLOTS[item.kind]}: ${item.label}`;
         }
 
+        if (price !== item.price) note += ' (rebajado)';
         await CoinTransaction.create({
             user_id: userId,
-            amount: -item.price,
+            amount: -price,
             reason: 'shop',
             ref_type: item.kind === 'card' ? 'card' : 'cosmetic',
             ref_id: item.kind === 'card' ? String(card.id) : item.id,
@@ -176,7 +278,80 @@ async function buy({ userId, itemId, leagueId }) {
             note,
         }, { transaction });
 
-        return { item: itemInfo(item), balance: balance - item.price, card };
+        return { item: itemInfo(item, now), balance: balance - price, card };
+    });
+}
+
+// ── Carta del partido ──────────────────────────────────────────────────────────
+
+/** Qué carta trae un partido: siempre la misma para el mismo partido. */
+const matchCardOf = (matchId) => (seeded(`partido:${matchId}`)(2) === 0 ? 'gafe' : 'chivato');
+
+const startedMatch = (m, resolved, now) => m.status !== 'scheduled' || new Date(m.date) <= now || resolved.has(m.id);
+
+/** Las cartas del partido de hoy en las ligas de un usuario. */
+async function matchOffers(userId, leagues, now = new Date()) {
+    if (!leagues.length) return [];
+    const today = madridDay(now);
+    const matches = await Match.findAll({
+        where: {
+            league_id: leagues.map(l => l.id),
+            round_id: { [Op.ne]: null },
+            date: { [Op.between]: [new Date(now.getTime() - 36 * 3600000), new Date(now.getTime() + 36 * 3600000)] },
+        },
+        include: [{ model: Team, attributes: ['id', 'name', 'acronym', 'logo_url'], through: { attributes: [] } }],
+        order: [['date', 'ASC']],
+    });
+    const resolved = new Set((await Result.findAll({ where: { match_id: matches.map(m => m.id) }, attributes: ['match_id'] })).map(r => r.match_id));
+    const todays = matches.filter(m => madridDay(new Date(m.date)) === today && !startedMatch(m, resolved, now));
+    if (!todays.length) return [];
+    const bought = new Set((await UserCard.findAll({
+        where: { user_id: userId, source: 'match', source_ref: todays.map(m => String(m.id)) }, attributes: ['source_ref'],
+    })).map(c => Number(c.source_ref)));
+    return todays.map(m => {
+        const card = matchCardOf(m.id);
+        const info = cards.CARDS[card];
+        return {
+            match: { id: m.id, date: m.date, format: m.format, round_id: m.round_id, Teams: m.Teams },
+            league: leagues.find(l => l.id === m.league_id) ? { id: m.league_id, name: leagues.find(l => l.id === m.league_id).name } : null,
+            card, label: info.label, rarity: info.rarity, description: info.description,
+            price: MATCH_CARD_PRICE[card],
+            basePrice: ITEMS.find(i => i.card === card)?.price ?? null,
+            bought: bought.has(m.id),
+        };
+    });
+}
+
+/** Comprar la carta de un partido de hoy. */
+async function buyMatchCard({ userId, matchId }) {
+    const match = await Match.findByPk(matchId);
+    if (!match || !match.round_id) throw new ShopError(400, 'Ese partido no tiene carta');
+    const now = new Date();
+    if (madridDay(new Date(match.date)) !== madridDay(now)) throw new ShopError(409, 'La carta del partido solo se vende el día del partido');
+    const card = matchCardOf(match.id);
+    const price = MATCH_CARD_PRICE[card];
+
+    return coins.withUserLock(userId, async (transaction) => {
+        const league = await League.findByPk(match.league_id, { transaction });
+        if (!league || !league.cards_enabled || league.status === 'finished') throw new ShopError(409, 'En esa liga no se juegan cartas');
+        const member = await LeagueParticipation.count({ where: { user_id: userId, league_id: league.id }, transaction });
+        if (!member) throw new ShopError(403, 'No estás apuntado a esa liga');
+        const resolved = new Set((await Result.findAll({ where: { match_id: match.id }, attributes: ['match_id'], transaction })).map(r => r.match_id));
+        if (startedMatch(match, resolved, now)) throw new ShopError(409, 'Ese partido ya ha empezado');
+        const balance = await coins.balanceOf(userId, transaction);
+        if (balance < price) throw new ShopError(409, `No te llega: cuesta ${price} y tienes ${balance}`);
+
+        await cards.lockHand(userId, transaction);
+        const dup = await UserCard.findOne({ where: { user_id: userId, source: 'match', source_ref: String(match.id) }, transaction });
+        if (dup) throw new ShopError(409, 'Ya tienes la carta de este partido');
+        const row = await UserCard.create({
+            user_id: userId, league_id: league.id, card, source: 'match', source_ref: String(match.id), status: 'in_hand',
+        }, { transaction });
+        await CoinTransaction.create({
+            user_id: userId, amount: -price, reason: 'shop', ref_type: 'card', ref_id: String(row.id), league_id: league.id,
+            note: `${cards.CARDS[card].label} del partido · ${league.name}`,
+        }, { transaction });
+        return { card: row, balance: balance - price };
     });
 }
 
@@ -233,6 +408,12 @@ async function grantCosmetic({ userId, itemId }) {
 
 module.exports = {
     ShopError,
+    showcase,
+    weekOf,
+    priceOf,
+    matchCardOf,
+    MATCH_CARD_PRICE,
+    buyMatchCard,
     SLOTS,
     ITEMS,
     itemOf,

@@ -1,6 +1,7 @@
 /**
  * Publica el reglamento de cartas, pachanguitas y cofres en Normas (categoría «cartas»)
- * y las novedades de la versión 1.5. Fase 5 de cartas y cofres.
+ * y las novedades de la versión 1.5. Fases 5 y 6 de cartas y cofres (la 6 trae
+ * duelos, Robo, Espejo, el escaparate semanal y la carta del partido).
  *
  * Se puede lanzar varias veces: si una norma (mismo año, categoría y título) o una
  * novedad (misma versión y texto) ya está, la actualiza en vez de duplicarla.
@@ -18,7 +19,8 @@ const Rule = require('../models/rule');
 const Changelog = require('../models/changelog');
 const { COIN_CAP } = require('../utils/coins');
 const { REWARDS } = require('../utils/coinRewards');
-const { EFFECTS_PER_ROUND, DOBLE_CAP, GAFE_POINTS, CARDS } = require('../utils/cards');
+const { EFFECTS_PER_ROUND, DOBLE_CAP, GAFE_POINTS, ROBO_POINTS, CARDS } = require('../utils/cards');
+const { STAKES } = require('../utils/duels');
 const shop = require('../utils/shop');
 const chests = require('../utils/chests');
 
@@ -67,10 +69,11 @@ También se consiguen en la tienda y en los cofres.`,
     },
     {
         title: 'Jugar una carta',
-        content: `Puedes jugar hasta ${EFFECTS_PER_ROUND} cartas por jornada, y cada carta una sola vez por jornada (la Doble y la Doble Dorada cuentan como la misma). El Chivato va aparte: uno por jornada.
+        content: `Puedes jugar hasta ${EFFECTS_PER_ROUND} cartas por jornada, y cada carta una sola vez por jornada (la Doble y la Doble Dorada cuentan como la misma). El Chivato y el Espejo van aparte: uno de cada por jornada.
 
-- Se juega y se retira hasta que empieza su partido. El Escudo, que vale para toda la jornada, hasta que empieza el primero.
-- Nadie ve tu carta hasta que empieza su partido.
+- Se juega hasta que empieza su partido. El Escudo, el Robo y el Espejo, que valen para toda la jornada, hasta que empieza el primero.
+- Una carta jugada no se puede retirar: piénsatelo antes.
+- Nadie ve tu carta hasta que empieza su partido (o la jornada).
 - Los puntos de las cartas se recalculan solos si se corrige un resultado.`,
     },
     {
@@ -79,19 +82,25 @@ También se consiguen en la tienda y en los cofres.`,
 - ${CARDS.gafe.label}: eliges rival y partido; si falla el ganador (o no lo votó), pierde ${GAFE_POINTS} puntos.
 - ${CARDS.doble.label}: los puntos base y de marcador de un partido se suman dos veces, hasta +${DOBLE_CAP}. No dobla el pleno ni el favorito.
 - ${CARDS.dorada.label}: como la Doble, sin tope y doblando también el pleno. Solo sale en los cofres.
+- ${CARDS.robo.label}: eliges rival; si haces más puntos que él en la jornada (sin contar cartas), le quitas ${ROBO_POINTS} y te lo quedas. Se decide cuando la jornada tiene todos sus resultados.
+- ${CARDS.espejo.label}: si te echan un Gafe o un Robo esta jornada, rebota a quien te lo echó: a ti no te hace nada y se le aplica a él (el Gafe, en el mismo partido: pierde ${GAFE_POINTS} si él falló el ganador). No cuenta para las ${EFFECTS_PER_ROUND} de la jornada.
 - ${CARDS.chivato.label}: ves el % de votos de un partido antes de votarlo. No da puntos.
 
-Cada jugador recibe como mucho un castigo (Gafe) por jornada, y un castigo nunca deja su jornada por debajo de 0 puntos. Si te echan el Gafe, te sale un aviso al entrar.`,
+Cada jugador recibe como mucho un castigo (Gafe o Robo, también uno rebotado) por jornada, y un castigo nunca deja su jornada por debajo de 0 puntos. Si te echan el Gafe, te sale un aviso al entrar.`,
     },
     {
         title: 'Tienda',
         content: `Con pachanguitas puedes comprar:
 
-- Cartas para una liga: Escudo (${priceOf('card_escudo')}), Gafe (${priceOf('card_gafe')}) y Chivato (${priceOf('card_chivato')}). La Doble no se vende.
+- Cartas para una liga: Escudo (${priceOf('card_escudo')}), Gafe (${priceOf('card_gafe')}), Robo (${priceOf('card_robo')}), Espejo (${priceOf('card_espejo')}) y Chivato (${priceOf('card_chivato')}). La Doble no se vende.
 - Marcos de avatar y colores de nombre (${priceOf('frame_baron')}; los animados, Arcoíris y Flame, ${priceOf('frame_flame')}).
 - Títulos (${priceOf('title_rey_bo5')}) y banners animados (${priceOf('banner_baron')}).
 
-Los cosméticos son para siempre y se ven en el menú, la clasificación, el Hall of Flame y tu perfil. Se ponen y se quitan desde tu inventario.`,
+Los cosméticos son para siempre y se ven en el menú, la clasificación, el Hall of Flame y tu perfil. Se ponen y se quitan desde tu inventario.
+
+Escaparate de la semana: cada lunes salen 4 artículos (una carta, un título de temporada y dos cosméticos) y uno de ellos está rebajado un 30 %. Los títulos de temporada solo se pueden comprar la semana que salen.
+
+Carta del partido: cada partido de hoy de tus ligas con cartas trae una carta barata (Gafe a ${shop.MATCH_CARD_PRICE.gafe} o Chivato a ${shop.MATCH_CARD_PRICE.chivato}) que solo vale en ese partido. Se compra hasta que empieza, una por partido, y caduca si no la juegas.`,
     },
     {
         title: 'Cofres',
@@ -104,8 +113,17 @@ Si llevas ${chests.GUARANTEE_AFTER} aperturas seguidas sin nada raro, la siguien
 El dado lo tira el servidor y cada apertura queda guardada. Las probabilidades se pueden consultar en el propio cofre.`,
     },
     {
+        title: 'Duelos',
+        content: `En las ligas con cartas puedes retar a alguien para la jornada que toca (la próxima que va a empezar; nunca una ya empezada ni las siguientes). Quien haga más puntos en ella (cartas incluidas) se lleva lo apostado:
+
+- Puntos de liga (${STAKES.points.join(', ')}): pasan del que pierde al que gana, así que el total de la liga no cambia.
+- Pachanguitas (${STAKES.coins.join(', ')}): cada uno pone lo suyo y el ganador se lleva el bote. Con empate, cada uno recupera lo suyo.
+
+Un duelo por persona y jornada. Se reta y se acepta hasta que empieza el primer partido; si empieza sin respuesta, caduca y se devuelve lo apostado. Se resuelve cuando todos los partidos tienen resultado, y si se corrige uno, se vuelve a resolver solo. Si te retan, te sale un aviso al entrar.`,
+    },
+    {
         title: 'Puntos y títulos',
-        content: `Los puntos de las cartas cuentan como cualquier otro: en la clasificación de la liga, en el Hall of Flame y en la Pachanga.
+        content: `Los puntos de las cartas y de los duelos cuentan como cualquier otro: en la clasificación de la liga, en el Hall of Flame y en la Pachanga.
 
 Los precios, lo que se gana y las cartas solo se cambian entre ligas, nunca a mitad de una.`,
     },
@@ -119,6 +137,9 @@ const CHANGES = [
     'Cofres de competición, con las probabilidades a la vista y garantía de premio raro.',
     'Perfil nuevo: cabecera de jugador, inventario y cambio de nombre y foto desde la propia cabecera.',
     'Aviso a pantalla completa cuando alguien te echa el Gafe.',
+    'Duelos: reta a alguien de tu liga para una jornada y apostad puntos o pachanguitas.',
+    'Cartas nuevas: Robo (le quitas 1 a tu rival si le ganas la jornada) y Espejo (te devuelve los castigos).',
+    'Tienda: escaparate semanal con rebaja, títulos de temporada y la carta del partido de cada día.',
     'Reglamento de cartas, pachanguitas y cofres en Normas.',
 ];
 

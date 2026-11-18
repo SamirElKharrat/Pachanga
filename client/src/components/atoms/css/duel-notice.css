@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                       AVISO DE DUELO (pantalla completa)                    */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Pantalla partida en diagonal con la foto de perfil de cada uno de fondo, sin
+   tintes de color. Las dos mitades entran por los lados, cae el «VS» y tiembla.
+   Solo transform y opacity: nada de blur ni filtros. Mismo fondo que el Gafe. */
+
+.dn {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(2, 6, 23, 0.94);
+  animation: dn-fade 0.25s ease-out both;
+  overflow: hidden;
+}
+.dn-stage { position: absolute; inset: 0; animation: dn-shake 0.3s 0.52s; }
+
+.dn-half {
+  position: absolute; top: 0; bottom: 0; width: 62%;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;
+  padding: 0 clamp(18px, 5vw, 56px) clamp(110px, 18vh, 170px);
+  overflow: hidden;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.15) 60%), #111827;
+}
+.dn-half.has-ph { background: linear-gradient(0deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.1) 60%), var(--ph) center / cover no-repeat, #111827; }
+.dn-l { left: 0; clip-path: polygon(0 0, 100% 0, 62% 100%, 0 100%); animation: dn-from-l 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.dn-r {
+  right: 0; align-items: flex-end; text-align: right;
+  clip-path: polygon(38% 0, 100% 0, 100% 100%, 0 100%);
+  animation: dn-from-r 0.45s 0.08s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+.dn-l.has-ph { background-position: 30% center, 30% center; }
+.dn-r.has-ph { background-position: 70% center, 70% center; }
+/* La raya blanca de la diagonal */
+.dn-r::before { content: ""; position: absolute; inset: 0; border-left: 3px solid #fff; transform: skewX(-21deg); transform-origin: top left; pointer-events: none; }
+.dn-half > .dn-lbl, .dn-half > .dn-nm { max-width: 55%; position: relative; }
+
+.dn-lbl { font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255, 255, 255, 0.75); }
+.dn-nm {
+  font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-weight: 800; font-size: clamp(34px, 7vw, 72px); line-height: 0.95; letter-spacing: 0.03em; text-transform: uppercase;
+  color: #fff; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.dn-nm.long { font-size: clamp(26px, 5vw, 54px); }
+.dn-nm.xlong { font-size: clamp(20px, 3.8vw, 40px); }
+/* Sin foto: la inicial enorme, en gris, para que no quede vacío */
+.dn-initial {
+  position: absolute; top: 18%; font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-weight: 800; font-size: clamp(140px, 30vw, 320px); line-height: 1; color: rgba(255, 255, 255, 0.07);
+}
+.dn-l .dn-initial { left: 10%; }
+.dn-r .dn-initial { right: 10%; }
+
+.dn-vs {
+  position: absolute; left: 50%; top: 40%; width: 120px; margin-left: -60px; text-align: center;
+  font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-weight: 800; font-size: clamp(56px, 10vw, 96px); line-height: 1; color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+  animation: dn-slam 0.35s 0.5s cubic-bezier(0.2, 1.5, 0.5, 1) both;
+  z-index: 2;
+}
+
+.dn-msg {
+  position: absolute; left: 0; right: 0; bottom: max(28px, env(safe-area-inset-bottom, 0px));
+  padding: 0 16px; text-align: center; z-index: 3;
+  animation: dn-up 0.45s 0.9s ease-out both;
+}
+.dn-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.dn-btn {
+  font: inherit; font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
+  padding: 10px 24px; border-radius: 999px; cursor: pointer;
+  color: #fff; background: rgba(2, 6, 23, 0.6);
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  transition: background-color 0.15s ease;
+}
+.dn-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.dn-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--text-on-accent, #fff); }
+.dn-btn.primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
+.dn-btn.ghost { border-color: transparent; background: transparent; color: rgba(255, 255, 255, 0.75); }
+.dn-btn.ghost:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.dn-btn:disabled { opacity: 0.5; cursor: default; }
+.dn-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+@keyframes dn-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dn-from-l { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes dn-from-r { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes dn-slam { from { opacity: 0; transform: scale(3); } to { opacity: 1; transform: none; } }
+@keyframes dn-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes dn-shake { 0%, 100% { transform: none; } 20% { transform: translateX(-6px) rotate(-0.6deg); } 40% { transform: translateX(5px) rotate(0.4deg); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+
+@media (max-width: 600px) {
+  .dn-half { width: 70%; padding-bottom: 150px; }
+  .dn-l { clip-path: polygon(0 0, 100% 0, 58% 100%, 0 100%); }
+  .dn-r { clip-path: polygon(42% 0, 100% 0, 100% 100%, 0 100%); }
+  .dn-half > .dn-lbl, .dn-half > .dn-nm { max-width: 56%; }
+  .dn-nm { font-size: 34px; }
+  .dn-nm.long { font-size: 24px; }
+  .dn-nm.xlong { font-size: 19px; }
+  .dn-vs { top: 36%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dn, .dn-stage, .dn-l, .dn-r, .dn-vs, .dn-msg { animation: none !important; }
+}

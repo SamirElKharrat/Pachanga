@@ -4,12 +4,12 @@ import { ThunderboltOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { API } from '../../../services/api';
 import { CardEmblem } from './CardArt';
-import { effectText, matchName } from '../../../utils/cards';
+import { isRoundAim, matchName, playEffectText } from '../../../utils/cards';
 import '../css/cards.css';
 
 /** «Gafe a Bruno · G2 vs KC», «Escudo · toda la jornada»… */
 function detail(p, matches) {
-    if (p.card.aim === 'round') return 'Toda la jornada';
+    if (isRoundAim(p.card.aim)) return p.target ? `a ${p.target.username} · toda la jornada` : 'Toda la jornada';
     const m = matches.find(x => x.id === p.match_id);
     const where = m ? matchName(m) : 'un partido';
     return p.target ? `a ${p.target.username} · ${where}` : where;
@@ -55,7 +55,7 @@ export default function MyRoundCards({ league, round, matches = [] }) {
                 {plays.length === 0 ? (
                     <span className="mrc-empty">Aún no has jugado ninguna carta esta jornada.</span>
                 ) : plays.map(p => {
-                    const e = effectText(p.effect);
+                    const e = playEffectText(p);
                     return (
                         <div key={p.id} className={`mrc-play rar-${p.card.rarity}`}>
                             <CardEmblem cardKey={p.key} />

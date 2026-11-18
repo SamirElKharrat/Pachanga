@@ -48,7 +48,7 @@ const POOLS = {
     colors: pool(i => i.kind === 'color' && i.price <= 20),
     frames: pool(i => i.kind === 'frame' && i.price <= 20),
     banners: pool(i => i.kind === 'banner'),
-    titles: pool(i => i.kind === 'title'),
+    titles: pool(i => i.kind === 'title' && !i.rotating),
     animated: pool(i => (i.kind === 'frame' || i.kind === 'color') && i.price >= 50),
 };
 
@@ -59,8 +59,8 @@ const POOLS = {
 const TABLE = Object.freeze([
     { rarity: 'comun', bp: 6000, prizes: [{ kind: 'coins', amount: 5 }, { kind: 'coins', amount: 8 }] },
     { rarity: 'poco', bp: 2500, prizes: [{ kind: 'card', card: 'chivato' }, { kind: 'coins', amount: 12 }, { kind: 'cosmetic', pool: 'colors', label: 'Un color de nombre' }] },
-    { rarity: 'raro', bp: 1100, prizes: [{ kind: 'card', card: 'escudo' }, { kind: 'card', card: 'gafe' }, { kind: 'cosmetic', pool: 'frames', label: 'Un marco de avatar' }, { kind: 'cosmetic', pool: 'banners', label: 'Un banner' }] },
-    { rarity: 'epico', bp: 350, prizes: [{ kind: 'card', card: 'doble' }, { kind: 'cosmetic', pool: 'titles', label: 'Un título' }] },
+    { rarity: 'raro', bp: 1100, prizes: [{ kind: 'card', card: 'escudo' }, { kind: 'card', card: 'gafe' }, { kind: 'card', card: 'robo' }, { kind: 'cosmetic', pool: 'frames', label: 'Un marco de avatar' }, { kind: 'cosmetic', pool: 'banners', label: 'Un banner' }] },
+    { rarity: 'epico', bp: 350, prizes: [{ kind: 'card', card: 'doble' }, { kind: 'card', card: 'espejo' }, { kind: 'cosmetic', pool: 'titles', label: 'Un título' }] },
     { rarity: 'leg', bp: 50, prizes: [{ kind: 'card', card: 'dorada' }, { kind: 'cosmetic', pool: 'animated', label: 'Un marco o color animado (Arcoíris o Flame)' }] },
 ]);
 

@@ -144,6 +144,7 @@ const foldByPlayer = (rows) => {
             pointsFavorite: 0,
             pointsQuestion: 0,
             pointsCard: 0,
+            pointsDuel: 0,
             pointsManual: 0,
             questionsAvailable: 0,
             questionsAnswered: 0,
@@ -164,6 +165,7 @@ const foldByPlayer = (rows) => {
         acc.pointsFavorite += row.points_favorite;
         acc.pointsQuestion += row.points_question;
         acc.pointsCard += row.points_card || 0;
+        acc.pointsDuel += row.points_duel || 0;
         acc.pointsManual += row.points_manual;
         acc.questionsAvailable += row.questions_available;
         acc.questionsAnswered += row.questions_answered;
@@ -555,6 +557,8 @@ exports.getPlayer = async (req, res) => {
                 // Las cartas. Con signo: un Gafe puede dejarlas en negativo, y
                 // entonces no se pinta como porción de la barra.
                 card: player.pointsCard,
+                // Los duelos de puntos, también con signo.
+                duel: player.pointsDuel,
                 // Aparte de los cinco de arriba: no es una porción más de la barra
                 // apilada, sino una línea suelta. Puede ser negativo.
                 manual: player.pointsManual

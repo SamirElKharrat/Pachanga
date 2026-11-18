@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { API } from '../../services/api';
 import { loginPath } from '../../utils/loginRedirect';
 import GafeNotice from '../atoms/cards/GafeNotice';
+import DuelNotice from '../atoms/duels/DuelNotice';
 
 /**
  * Las rutas que piden sesión.
@@ -62,7 +63,7 @@ const ProtectedRoute = () => {
 
     // El aviso del Gafe va aquí y no en una página: salta al entrar, entres por donde
     // entres, y no se lo lleva por delante que una página cambie de estado al cargar.
-    return access === 'allowed' ? <><Outlet /><GafeNotice /></> : null;
+    return access === 'allowed' ? <><Outlet /><GafeNotice /><DuelNotice /></> : null;
 };
 
 export default ProtectedRoute;

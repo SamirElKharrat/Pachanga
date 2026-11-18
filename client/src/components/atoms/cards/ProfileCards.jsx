@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { API } from '../../../services/api';
 import { showAlert } from '../AlertInfo';
 import { CardEmblem } from './CardArt';
-import { RARITY_LABEL, effectText } from '../../../utils/cards';
+import { RARITY_LABEL, playEffectText } from '../../../utils/cards';
 import '../css/cards.css';
 
 const { Text } = Typography;
@@ -93,7 +93,7 @@ export default function ProfileCards() {
                                 <div className="cards-sub" style={{ marginTop: 16 }}>Lo que has jugado</div>
                                 <div className="plays">
                                     {plays.slice(0, 8).map(p => {
-                                        const e = effectText(p.effect);
+                                        const e = playEffectText(p);
                                         return (
                                             <div key={p.id} className={`play-row rar-${p.card.rarity}${p.status === 'annulled' ? ' annulled' : ''}`}>
                                                 <div className="play-row-what">

@@ -31,6 +31,7 @@ const UserCard = require('./models/userCard'); // eslint-disable-line no-unused-
 const CardPlay = require('./models/cardPlay'); // eslint-disable-line no-unused-vars
 const UserCosmetic = require('./models/userCosmetic'); // eslint-disable-line no-unused-vars
 const ChestOpen = require('./models/chestOpen'); // eslint-disable-line no-unused-vars
+const Duel = require('./models/duel'); // eslint-disable-line no-unused-vars
 
 const app = express();
 const PORT = 3001;
@@ -306,13 +307,15 @@ const ensureCardColumns = async () => {
   const [columns] = await db.query(
     `SELECT table_name, column_name FROM information_schema.columns
       WHERE (table_name = 'League' AND column_name = 'cards_enabled')
-         OR (table_name IN ('PlayerWeekStat', 'PlayerLeagueStat') AND column_name = 'points_card')
+         OR (table_name IN ('PlayerWeekStat', 'PlayerLeagueStat') AND column_name IN ('points_card', 'points_duel'))
          OR (table_name = 'CardPlay' AND column_name = 'target_seen')`
   );
   const wanted = [
     ['League', 'cards_enabled', 'BOOLEAN NOT NULL DEFAULT false'],
     ['PlayerWeekStat', 'points_card', 'INTEGER NOT NULL DEFAULT 0'],
     ['PlayerLeagueStat', 'points_card', 'INTEGER NOT NULL DEFAULT 0'],
+    ['PlayerWeekStat', 'points_duel', 'INTEGER NOT NULL DEFAULT 0'],
+    ['PlayerLeagueStat', 'points_duel', 'INTEGER NOT NULL DEFAULT 0'],
     ['CardPlay', 'target_seen', 'VARCHAR(16)'],
   ];
   for (const [table, column, ddl] of wanted) {

@@ -5,6 +5,7 @@ const { authenticateJwtToken, requireAdmin } = require("../../middlewares/auth")
 router.get('/', authenticateJwtToken, shopController.getShop);
 router.get('/equipped', authenticateJwtToken, shopController.getEquipped);
 router.post('/buy', authenticateJwtToken, shopController.buy);
+router.post('/match-card', authenticateJwtToken, shopController.buyMatchCard);
 router.post('/equip', authenticateJwtToken, shopController.equip);
 
 // Admin

@@ -59,21 +59,6 @@ exports.play = async (req, res) => {
 };
 
 /**
- * Retirar una carta jugada (vuelve a la mano), antes de que empiece su partido.
- *
- * DELETE /cards/play/:id
- */
-exports.withdraw = async (req, res) => {
-    try {
-        const { user } = await sessionUser(req);
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json(await cards.withdrawPlay({ userId: user.id, playId: Number(req.params.id) }));
-    } catch (error) {
-        fail(res, error);
-    }
-};
-
-/**
  * Las cartas jugadas en una jornada que puede ver quien pregunta.
  *
  * GET /cards/round/:roundId

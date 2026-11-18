@@ -32,7 +32,7 @@ const UserCard = sequelize.define('UserCard', {
         allowNull: false
     },
     //   in_hand   en la mano, se puede jugar
-    //   played    jugada en una jornada (ver CardPlay); vuelve a la mano si se retira
+    //   played    jugada en una jornada (ver CardPlay); no vuelve a la mano
     //   expired   la liga acabó sin jugarla
     status: {
         type: DataTypes.STRING(16),
