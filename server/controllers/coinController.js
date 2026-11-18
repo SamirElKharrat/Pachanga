@@ -42,7 +42,7 @@ exports.getUserWallet = async (req, res) => {
 };
 
 /**
- * Dar o quitar monedas a mano. Solo admin, y siempre con motivo: queda en el
+ * Dar o quitar pachanguitas a mano. Solo admin, y siempre con motivo: queda en el
  * historial del jugador.
  *
  * POST /coins/grant { user_id, amount, note } → el movimiento, con lo que se movió de
@@ -56,7 +56,7 @@ exports.grant = async (req, res) => {
             return res.status(400).json({ error: 'La cantidad tiene que ser un número entero distinto de 0' });
         }
         if (Math.abs(amount) > coins.COIN_CAP) {
-            return res.status(400).json({ error: `Como mucho ${coins.COIN_CAP} monedas de una vez` });
+            return res.status(400).json({ error: `Como mucho ${coins.COIN_CAP} pachanguitas de una vez` });
         }
         if (!note) return res.status(400).json({ error: 'Escribe el motivo: lo verá el jugador en su historial' });
         if (note.length > 120) return res.status(400).json({ error: 'El motivo tiene un máximo de 120 caracteres' });

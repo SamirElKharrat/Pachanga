@@ -8,7 +8,7 @@ const when = (date) => new Date(date).toLocaleString('es-ES', {
 });
 
 /**
- * Saldo e historial de monedas. Solo pinta: los datos le llegan de fuera (el perfil
+ * Saldo e historial de pachanguitas. Solo pinta: los datos le llegan de fuera (el perfil
  * usa los suyos; el panel de admin, los del jugador elegido).
  *
  * @param {Object} props
@@ -28,7 +28,7 @@ export default function CoinHistory({ balance, cap, movements, howToEarn = [], l
                 <CoinIcon size={34} />
                 <div className="coin-card-big">
                     <b>{balance ?? 0}</b>
-                    <span>{balance === 1 ? 'moneda' : 'monedas'}</span>
+                    <span>{balance === 1 ? 'pachanguita' : 'pachanguitas'}</span>
                 </div>
                 <div className="coin-card-meter">
                     <Progress

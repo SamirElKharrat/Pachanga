@@ -36,14 +36,14 @@ function PrizeLook({ prize, me }) {
 
 /** Nombre corto del premio, para la carta. */
 function prizeShort(prize) {
-    if (prize.kind === 'coins') return `${prize.coins} monedas`;
+    if (prize.kind === 'coins') return `${prize.coins} pachanguitas`;
     if (prize.kind === 'card') return prize.label.replace(/^Carta /, '');
     return prize.name || prize.label;
 }
 
 /** La línea de debajo del premio. */
 function prizeNote(prize) {
-    if (prize.converted === 'hand_full') return `Tenías la mano llena: te la pagamos en monedas (+${prize.coins})`;
+    if (prize.converted === 'hand_full') return `Tenías la mano llena: te la pagamos en pachanguitas (+${prize.coins})`;
     if (prize.converted === 'duplicate') return `Ya lo tenías: te lo pagamos a mitad de precio (+${prize.coins})`;
     if (prize.kind === 'card') return 'Va a tu mano de esta liga';
     if (prize.kind === 'cosmetic') return 'Ya está en tu inventario';
@@ -166,7 +166,7 @@ export default function Chests({ me, balance, onOpened }) {
                                 </div>
                             ))}
                             <p className="chest-odds-rules">
-                                {data.price} monedas, {data.dailyLimit} al día. Tras 10 seguidas sin nada raro, la siguiente es rara o mejor.
+                                {data.price} pachanguitas, {data.dailyLimit} al día. Tras 10 seguidas sin nada raro, la siguiente es rara o mejor.
                                 Las cartas van a tu mano de la liga del cofre. Un cosmético repetido, a mitad de precio.
                                 El dado lo tira el servidor y cada apertura queda guardada.
                             </p>

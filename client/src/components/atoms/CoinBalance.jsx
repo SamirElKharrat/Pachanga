@@ -9,7 +9,7 @@ export const CoinIcon = ({ size = 16 }) => (
 );
 
 /**
- * El saldo de monedas, en una píldora. Pinchando, lleva al historial del perfil.
+ * El saldo de pachanguitas, en una píldora. Pinchando, lleva al historial del perfil.
  *
  * @param {Object} props
  * @param {boolean} [props.compact] - Solo el número (menú plegado, cabecera del móvil).
@@ -20,7 +20,7 @@ export default function CoinBalance({ compact = false, onClick }) {
     if (status === 'error' || (status !== 'ready' && balance === null)) return null;
 
     const full = balance >= cap;
-    const label = `${balance} ${balance === 1 ? 'moneda' : 'monedas'}${full ? ' (techo lleno)' : ''}`;
+    const label = `${balance} ${balance === 1 ? 'pachanguita' : 'pachanguitas'}${full ? ' (techo lleno)' : ''}`;
     return (
         <Tooltip title={compact ? label : (full ? `Has llegado al máximo de ${cap}: lo que ganes no se suma hasta que gastes` : `Máximo ${cap}`)}>
             <button
@@ -31,7 +31,7 @@ export default function CoinBalance({ compact = false, onClick }) {
             >
                 <CoinIcon size={compact ? 14 : 16} />
                 <span className="coin-balance-num">{balance}</span>
-                {!compact && <span className="coin-balance-unit">{balance === 1 ? 'moneda' : 'monedas'}</span>}
+                {!compact && <span className="coin-balance-unit">{balance === 1 ? 'pachanguita' : 'pachanguitas'}</span>}
             </button>
         </Tooltip>
     );

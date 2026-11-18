@@ -22,7 +22,7 @@ const TABS = [
     { key: 'resumen', label: 'Resumen' },
     { key: 'inventario', label: 'Inventario' },
     { key: 'cartas', label: 'Cartas' },
-    { key: 'monedas', label: 'Monedas' },
+    { key: 'monedas', label: 'Pachanguitas' },
     { key: 'ajustes', label: 'Ajustes' },
 ];
 const tabFromHash = (hash) => {
@@ -243,7 +243,7 @@ export default function User() {
                         </div>
                     </div>
                     <div className="profile-chips">
-                        {wallet.balance != null && <button type="button" onClick={() => goTab('monedas')}><CoinIcon size={13} /> {wallet.balance} {wallet.balance === 1 ? 'moneda' : 'monedas'}</button>}
+                        {wallet.balance != null && <button type="button" onClick={() => goTab('monedas')}><CoinIcon size={13} /> {wallet.balance} {wallet.balance === 1 ? 'pachanguita' : 'pachanguitas'}</button>}
                         {leagues != null && <span>{leagues} {leagues === 1 ? 'liga' : 'ligas'}</span>}
                         {titles != null && <span><TrophyOutlined /> {titles} {titles === 1 ? 'título' : 'títulos'}</span>}
                     </div>
@@ -270,10 +270,10 @@ export default function User() {
             {activeTab === 'resumen' && (
                 <div className="profile-overview">
                     <Card className="profile-card" onClick={() => goTab('monedas')} hoverable>
-                        <div className="profile-label">Monedas</div>
+                        <div className="profile-label">Pachanguitas</div>
                         <div className="profile-big">{wallet.balance ?? '—'}<small> / {wallet.cap}</small></div>
                         <Text type="secondary" style={{ fontSize: 12.5 }}>
-                            {lastMove ? `${lastMove.amount > 0 ? '+' : '−'}${Math.abs(lastMove.amount)} · ${lastMove.label}` : 'Aún no has movido monedas'}
+                            {lastMove ? `${lastMove.amount > 0 ? '+' : '−'}${Math.abs(lastMove.amount)} · ${lastMove.label}` : 'Aún no has movido pachanguitas'}
                         </Text>
                     </Card>
                     <Card className="profile-card" onClick={() => goTab('inventario')} hoverable>

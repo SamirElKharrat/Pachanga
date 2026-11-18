@@ -24,7 +24,7 @@ const Price = ({ value }) => (
 
 /**
  * La tienda (fase 3 de cartas y cofres): cartas para una liga y cosméticos para
- * siempre (marcos, colores de nombre y títulos), con monedas.
+ * siempre (marcos, colores de nombre y títulos), con pachanguitas.
  *
  * Las reglas las pone el servidor (server/utils/shop.js): saldo, que no
  * se compre dos veces. Aquí se enseña qué hay, cómo te queda y lo que diga si algo
@@ -113,7 +113,7 @@ export default function Shop() {
         return (
             <Popconfirm
                 title={`¿Comprar «${item.label}»?`}
-                description={`Cuesta ${item.price} monedas. Te quedarán ${shop.balance - item.price}.`}
+                description={`Cuesta ${item.price} pachanguitas. Te quedarán ${shop.balance - item.price}.`}
                 okText="Comprar"
                 cancelText="Cancelar"
                 onConfirm={() => buy(item)}
@@ -157,7 +157,7 @@ export default function Shop() {
         <div className="shop-page">
             <div className="shop-head">
                 <Title level={3} style={{ margin: 0 }}><ShopOutlined /> Tienda</Title>
-                <span className="shop-wallet"><CoinIcon size={16} /><b>{shop.balance}</b> / {shop.cap} monedas</span>
+                <span className="shop-wallet"><CoinIcon size={16} /><b>{shop.balance}</b> / {shop.cap} pachanguitas</span>
             </div>
 
             <Card className="shop-section shop-me" styles={{ body: { padding: 0 } }}>

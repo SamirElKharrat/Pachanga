@@ -8,8 +8,8 @@ import { refreshCoins } from '../../hooks/useCoins';
 const { Text } = Typography;
 
 /**
- * Monedas en el panel de admin: elegir un jugador, ver su saldo y su historial, y
- * darle o quitarle monedas a mano.
+ * Pachanguitas en el panel de admin: elegir un jugador, ver su saldo y su historial, y
+ * darle o quitarle pachanguitas a mano.
  *
  * Un ajuste siempre lleva motivo, porque el jugador lo ve en su historial. El
  * servidor lo recorta al techo (al dar) o a 0 (al quitar), y aquí se avisa si lo hizo.
@@ -49,7 +49,7 @@ export default function CoinsAdmin() {
             if (r.applied !== r.requested) {
                 showAlert('warning', `Se han movido ${r.applied} de ${r.requested}: ${r.requested > 0 ? 'el jugador llegaba al máximo' : 'no tenía tantas'}`);
             } else {
-                showAlert('success', `${r.applied > 0 ? '+' : ''}${r.applied} monedas. Saldo: ${r.balance}`);
+                showAlert('success', `${r.applied > 0 ? '+' : ''}${r.applied} pachanguitas. Saldo: ${r.balance}`);
             }
             form.resetFields();
             await loadWallet(userId);
@@ -65,7 +65,7 @@ export default function CoinsAdmin() {
     return (
         <Row gutter={[16, 16]}>
             <Col xs={24} lg={10}>
-                <Card size="small" title="Ajustar monedas">
+                <Card size="small" title="Ajustar pachanguitas">
                     <Form form={form} layout="vertical" onFinish={submit} disabled={!userId}>
                         <Form.Item label="Jugador" required>
                             <Select
@@ -105,7 +105,7 @@ export default function CoinsAdmin() {
                 </Card>
             </Col>
             <Col xs={24} lg={14}>
-                <Card size="small" title={wallet?.user ? `Monedas de ${wallet.user.username}` : 'Historial'}>
+                <Card size="small" title={wallet?.user ? `Pachanguitas de ${wallet.user.username}` : 'Historial'}>
                     {userId ? (
                         <CoinHistory
                             balance={wallet?.balance ?? null}

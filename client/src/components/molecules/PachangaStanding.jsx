@@ -12,7 +12,7 @@ const { Title, Text, Paragraph } = Typography;
 
 /** El encabezado de cada bloque de normas que no es la normativa general. */
 const RULE_SECTIONS = {
-    cartas: 'Cartas, monedas y cofres',
+    cartas: 'Cartas, pachanguitas y cofres',
 };
 const { TextArea } = Input;
 

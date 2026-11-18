@@ -11,7 +11,7 @@ const CARD_ORDER = ['escudo', 'gafe', 'doble', 'dorada', 'chivato'];
 const SOURCE_LABEL = { free: 'Carta gratis', shop: 'Tienda', chest: 'Cofre', admin: 'Panel' };
 
 /**
- * El panel de economía (fase 5 de cartas y cofres): monedas, tienda, cofres y
+ * El panel de economía (fase 5 de cartas y cofres): pachanguitas, tienda, cofres y
  * cartas de una liga, para decidir si hay que tocar precios o ingresos.
  *
  * Los precios e ingresos se cambian solo entre ligas, nunca a mitad de una.
@@ -89,15 +89,15 @@ export default function EconomyAdmin() {
                     type="warning"
                     showIcon
                     message={`El ${coins.atCapPct} % de la gente está en el techo de ${data.cap}`}
-                    description="Sobran monedas: para la próxima liga, sube precios o baja lo que se gana. Nunca a mitad de una liga."
+                    description="Sobran pachanguitas: para la próxima liga, sube precios o baja lo que se gana. Nunca a mitad de una liga."
                 />
             )}
 
             <Row gutter={[12, 12]}>
-                <Col xs={12} lg={6}><Card size="small"><Statistic title="Monedas en circulación" value={coins.total} /><Text type="secondary" className="eco-sub">entre {coins.players} jugadores</Text></Card></Col>
+                <Col xs={12} lg={6}><Card size="small"><Statistic title="Pachanguitas en circulación" value={coins.total} /><Text type="secondary" className="eco-sub">entre {coins.players} jugadores</Text></Card></Col>
                 <Col xs={12} lg={6}><Card size="small"><Statistic title="Saldo medio" value={coins.average} precision={1} /><Text type="secondary" className="eco-sub">mediana {coins.median}</Text></Card></Col>
                 <Col xs={12} lg={6}><Card size="small"><Statistic title={`En el techo (${data.cap})`} value={coins.atCapPct} suffix="%" /><Text type="secondary" className="eco-sub">{coins.atCap} de {coins.players}</Text></Card></Col>
-                <Col xs={12} lg={6}><Card size="small"><Statistic title="Cofres abiertos" value={chests.opened} /><Text type="secondary" className="eco-sub">devuelven {chests.coinsBack} de {chests.spent} monedas</Text></Card></Col>
+                <Col xs={12} lg={6}><Card size="small"><Statistic title="Cofres abiertos" value={chests.opened} /><Text type="secondary" className="eco-sub">devuelven {chests.coinsBack} de {chests.spent} pachanguitas</Text></Card></Col>
             </Row>
 
             <Row gutter={[12, 12]}>
@@ -116,7 +116,7 @@ export default function EconomyAdmin() {
                 </Col>
                 <Col xs={24} lg={10}>
                     <Card size="small" title="Saldos más altos">
-                        {coins.top.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nadie tiene monedas todavía" /> : (
+                        {coins.top.length === 0 ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Nadie tiene pachanguitas todavía" /> : (
                             <ol className="eco-top">
                                 {coins.top.map(u => (
                                     <li key={u.id}><span>{u.username}</span><b>{u.balance}</b></li>

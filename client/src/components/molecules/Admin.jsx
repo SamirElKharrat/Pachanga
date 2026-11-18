@@ -172,7 +172,7 @@ const Admin = () => {
         },
         {
             key: '11',
-            label: <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CoinIcon size={13} /> Monedas</span>,
+            label: <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><CoinIcon size={13} /> Pachanguitas</span>,
             children: <CoinsAdmin />
         },
         {

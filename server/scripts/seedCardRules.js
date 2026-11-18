@@ -1,5 +1,5 @@
 /**
- * Publica el reglamento de cartas, monedas y cofres en Normas (categoría «cartas»)
+ * Publica el reglamento de cartas, pachanguitas y cofres en Normas (categoría «cartas»)
  * y las novedades de la versión 1.5. Fase 5 de cartas y cofres.
  *
  * Se puede lanzar varias veces: si una norma (mismo año, categoría y título) o una
@@ -37,15 +37,15 @@ const odds = chests.TABLE.map(r => `- ${{ comun: 'Común', poco: 'Poco común', 
 /** Las normas, en el orden en que se leen. */
 const RULES = [
     {
-        title: 'Cartas, monedas y cofres: qué es esto',
-        content: `En las ligas que lo tengan activado, además de predecir se juega con cartas que suman o quitan puntos, monedas que se ganan jugando y una tienda con cosméticos y cofres.
+        title: 'Cartas, pachanguitas y cofres: qué es esto',
+        content: `En las ligas que lo tengan activado, además de predecir se juega con cartas que suman o quitan puntos, pachanguitas que se ganan jugando y una tienda con cosméticos y cofres.
 
 Lo que hace ganar una liga sigue siendo predecir bien: las cartas tienen topes para que ni el que gasta ni el que ahorra tenga ventaja, y la carta más fuerte (la Doble) no se vende.
 
-Las monedas nunca se compran con dinero real ni se cambian por puntos.`,
+Las pachanguitas nunca se compran con dinero real ni se cambian por puntos.`,
     },
     {
-        title: 'Monedas',
+        title: 'Pachanguitas',
         content: `Se ganan jugando:
 
 - ${REWARDS.login} por cada día que entras a la web.
@@ -85,7 +85,7 @@ Cada jugador recibe como mucho un castigo (Gafe) por jornada, y un castigo nunca
     },
     {
         title: 'Tienda',
-        content: `Con monedas puedes comprar:
+        content: `Con pachanguitas puedes comprar:
 
 - Cartas para una liga: Escudo (${priceOf('card_escudo')}), Gafe (${priceOf('card_gafe')}) y Chivato (${priceOf('card_chivato')}). La Doble no se vende.
 - Marcos de avatar y colores de nombre (${priceOf('frame_baron')}; los animados, Arcoíris y Flame, ${priceOf('frame_flame')}).
@@ -95,11 +95,11 @@ Los cosméticos son para siempre y se ven en el menú, la clasificación, el Hal
     },
     {
         title: 'Cofres',
-        content: `Cada competición con cartas tiene su cofre mientras está en juego. Cuesta ${chests.PRICE} monedas y puedes abrir hasta ${chests.DAILY_LIMIT} al día.
+        content: `Cada competición con cartas tiene su cofre mientras está en juego. Cuesta ${chests.PRICE} pachanguitas y puedes abrir hasta ${chests.DAILY_LIMIT} al día.
 
 ${odds}
 
-Si llevas ${chests.GUARANTEE_AFTER} aperturas seguidas sin nada raro, la siguiente es rara o mejor. Las cartas que tocan van a tu mano de la liga del cofre. Un cosmético repetido se devuelve en monedas, a la mitad de su precio.
+Si llevas ${chests.GUARANTEE_AFTER} aperturas seguidas sin nada raro, la siguiente es rara o mejor. Las cartas que tocan van a tu mano de la liga del cofre. Un cosmético repetido se devuelve en pachanguitas, a la mitad de su precio.
 
 El dado lo tira el servidor y cada apertura queda guardada. Las probabilidades se pueden consultar en el propio cofre.`,
     },
@@ -114,12 +114,12 @@ Los precios, lo que se gana y las cartas solo se cambian entre ligas, nunca a mi
 /** Las novedades de la versión 1.5. */
 const CHANGES = [
     'Cartas: en las ligas que lo tengan activado, cartas que suman o quitan puntos. Hasta 2 por jornada, y una carta gratis por cada jornada completa.',
-    'Monedas: se ganan jugando y se ven en el menú y en tu perfil.',
+    'Pachanguitas: se ganan jugando y se ven en el menú y en tu perfil.',
     'Tienda: cartas, marcos de avatar, colores de nombre, títulos y banners animados.',
     'Cofres de competición, con las probabilidades a la vista y garantía de premio raro.',
     'Perfil nuevo: cabecera de jugador, inventario y cambio de nombre y foto desde la propia cabecera.',
     'Aviso a pantalla completa cuando alguien te echa el Gafe.',
-    'Reglamento de cartas, monedas y cofres en Normas.',
+    'Reglamento de cartas, pachanguitas y cofres en Normas.',
 ];
 
 async function main() {

@@ -3,13 +3,13 @@ import { API } from '../services/api';
 import { showAlert } from '../components/atoms/AlertInfo';
 
 /**
- * Las monedas del usuario, compartidas por toda la web.
+ * Las pachanguitas del usuario, compartidas por toda la web.
  *
  * Un solo almacén para el menú, la cabecera del móvil y el perfil: cuando algo
  * cambia el saldo (enviar la jornada, abrir la web por primera vez en el día), quien
  * lo cambió llama a `refreshCoins()` y todos se actualizan a la vez.
  *
- * `refreshCoins` también avisa de lo nuevo («+3 monedas · Jornada completa»). Para
+ * `refreshCoins` también avisa de lo nuevo («+3 pachanguitas · Jornada completa»). Para
  * no repetir avisos, recuerda en este navegador hasta qué movimiento ha avisado ya.
  * La primera vez en un navegador no avisa de nada: si no, alguien que llega con
  * veinte movimientos recibiría veinte avisos de golpe.
@@ -48,7 +48,7 @@ function announce(wallet) {
     // Los de 0 son recompensas que llegaron con el techo lleno: no hay nada que celebrar.
     const fresh = wallet.movements.filter(m => m.id > seen && m.amount !== 0).reverse();
     fresh.slice(0, MAX_TOASTS).forEach(m => {
-        const text = `${m.amount > 0 ? '+' : '−'}${Math.abs(m.amount)} ${Math.abs(m.amount) === 1 ? 'moneda' : 'monedas'} · ${m.label}`;
+        const text = `${m.amount > 0 ? '+' : '−'}${Math.abs(m.amount)} ${Math.abs(m.amount) === 1 ? 'pachanguita' : 'pachanguitas'} · ${m.label}`;
         showAlert(m.amount > 0 ? 'success' : 'warning', text);
     });
     if (fresh.length > MAX_TOASTS) showAlert('info', `Y ${fresh.length - MAX_TOASTS} movimientos más en tu perfil`);

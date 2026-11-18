@@ -14,17 +14,17 @@ const shop = require('./shop');
 /**
  * Cofres de competición (fase 4 de cartas y cofres).
  *
- * Cada liga en juego con cartas tiene su cofre. Se abre con monedas y el dado lo
+ * Cada liga en juego con cartas tiene su cofre. Se abre con pachanguitas y el dado lo
  * tira el servidor (crypto.randomInt), nunca el navegador; cada tirada queda en
  * ChestOpen.
  *
- * - 20 monedas, 3 aperturas al día como mucho (entre todos los cofres).
+ * - 20 pachanguitas, 3 aperturas al día como mucho (entre todos los cofres).
  * - Garantía: tras 10 seguidas sin nada raro en un cofre, la siguiente es rara o mejor.
  * - Las cartas que tocan van a la mano de la liga del cofre (la mano no tiene
  *   límite). Un cosmético repetido se paga a la mitad de su precio.
- * - De media un cofre devuelve menos de lo que cuesta: es el sumidero de monedas.
+ * - De media un cofre devuelve menos de lo que cuesta: es el sumidero de pachanguitas.
  *
- * Abrir coge el candado de las monedas y, si toca carta, el de la mano: el mismo
+ * Abrir coge el candado de las pachanguitas y, si toca carta, el de la mano: el mismo
  * orden que la tienda, así que no se pueden bloquear entre sí.
  */
 
@@ -99,7 +99,7 @@ function tableView() {
         rarity: r.rarity,
         label: RARITY_LABEL[r.rarity],
         pct: r.bp / 100,
-        prizes: r.prizes.map(p => (p.kind === 'coins' ? `${p.amount} monedas`
+        prizes: r.prizes.map(p => (p.kind === 'coins' ? `${p.amount} pachanguitas`
             : p.kind === 'card' ? `Carta ${cards.CARDS[p.card].label}`
                 : p.label)),
     }));
@@ -108,7 +108,7 @@ function tableView() {
 /** Un premio guardado, listo para enseñar. */
 function prizeView(open) {
     const base = { rarity: open.rarity, rarityLabel: RARITY_LABEL[open.rarity], coins: open.coins, converted: open.converted, guaranteed: open.guaranteed };
-    if (open.prize_kind === 'coins') return { ...base, kind: 'coins', label: `${open.coins} monedas` };
+    if (open.prize_kind === 'coins') return { ...base, kind: 'coins', label: `${open.coins} pachanguitas` };
     if (open.prize_kind === 'card') {
         const c = cards.CARDS[open.prize_id];
         return { ...base, kind: 'card', card: open.prize_id, label: `Carta ${c.label}`, cardRarity: c.rarity };
@@ -208,7 +208,7 @@ async function openChest({ userId, leagueId, rand = randInt }) {
             prize_kind: prize.kind, prize_id: prize.kind === 'card' ? prize.card : prize.kind === 'cosmetic' ? prize.id : null,
         }, { transaction });
 
-        // Dar el premio. Lo que acaba en monedas se calcula aquí y se paga abajo.
+        // Dar el premio. Lo que acaba en pachanguitas se calcula aquí y se paga abajo.
         let owed = 0;
         let converted = null;
         if (prize.kind === 'coins') {
@@ -227,7 +227,7 @@ async function openChest({ userId, leagueId, rand = randInt }) {
             }
         }
 
-        // Las monedas del premio, hasta el techo.
+        // Las pachanguitas del premio, hasta el techo.
         const paid = Math.max(0, Math.min(owed, coins.COIN_CAP - balance));
         if (owed > 0) {
             await CoinTransaction.create({
