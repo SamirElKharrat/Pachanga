@@ -34,6 +34,7 @@ import ChangelogModal from './ChangelogModal';
 import WelcomeTour from './WelcomeTour';
 import CoinBalance from './CoinBalance';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from './cosmetics/Cosmetic';
+import { BannerBackground } from './cosmetics/Banner';
 import { useEquipped } from '../../hooks/useCosmetics';
 import { refreshCoins } from '../../hooks/useCoins';
 import { croakOnce } from '../../utils/croak';
@@ -249,7 +250,7 @@ const UserMenu = ({ children }) => {
             <div style={{ padding: '0 16px', marginBottom: 24, flexShrink: 0 }}>
                 <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
                     <div
-                        className="user-profile-trigger p-2 rounded transition-all"
+                        className="user-profile-trigger p-2 rounded transition-all cos-banner-host"
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -259,6 +260,8 @@ const UserMenu = ({ children }) => {
                             border: `1px solid ${token.colorBorder}`,
                         }}
                     >
+                        {/* Tu banner, de fondo de la tarjeta */}
+                        <BannerBackground userId={user?.id} veil="left" />
                         <CosmeticFrame userId={user?.id}>
                             <Avatar
                                 size={(collapsed && !isMobile) ? 28 : 36}

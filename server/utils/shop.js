@@ -33,6 +33,7 @@ const SLOTS = Object.freeze({
     frame: 'Marco de avatar',
     color: 'Color de nombre',
     title: 'Título',
+    banner: 'Banner',
 });
 
 /**
@@ -46,22 +47,22 @@ const ITEMS = Object.freeze([
     { id: 'card_chivato', kind: 'card', card: 'chivato', price: 8 },
 
     // Marcos de avatar
-    { id: 'frame_baron', kind: 'frame', label: 'Barón', description: 'Aro morado, como el del Nashor.', price: 20 },
-    { id: 'frame_dragon', kind: 'frame', label: 'Dragón', description: 'Aro de fuego, naranja y rojo.', price: 20 },
-    { id: 'frame_hextech', kind: 'frame', label: 'Hextech', description: 'Aro azul con brillo dorado.', price: 20 },
-    { id: 'frame_zaun', kind: 'frame', label: 'Zaun', description: 'Aro verde químico.', price: 20 },
-    { id: 'frame_oro', kind: 'frame', label: 'Oro', description: 'Doble aro dorado.', price: 20 },
-    { id: 'frame_arcoiris', kind: 'frame', label: 'Arcoíris', description: 'Aro de todos los colores que no para de girar.', price: 50 },
-    { id: 'frame_flame', kind: 'frame', label: 'Flame', description: 'Tu avatar, en llamas.', price: 50 },
+    { id: 'frame_baron', kind: 'frame', label: 'Barón', price: 20 },
+    { id: 'frame_dragon', kind: 'frame', label: 'Dragón', price: 20 },
+    { id: 'frame_hextech', kind: 'frame', label: 'Hextech', price: 20 },
+    { id: 'frame_zaun', kind: 'frame', label: 'Zaun', price: 20 },
+    { id: 'frame_oro', kind: 'frame', label: 'Oro', price: 20 },
+    { id: 'frame_arcoiris', kind: 'frame', label: 'Arcoíris', price: 50 },
+    { id: 'frame_flame', kind: 'frame', label: 'Flame', price: 50 },
 
     // Colores de nombre
-    { id: 'color_noxus', kind: 'color', label: 'Rojo Noxus', description: 'Tu nombre en rojo.', price: 20 },
-    { id: 'color_piltover', kind: 'color', label: 'Oro Piltover', description: 'Tu nombre en dorado.', price: 20 },
-    { id: 'color_zaun', kind: 'color', label: 'Verde Zaun', description: 'Tu nombre en verde.', price: 20 },
-    { id: 'color_vacio', kind: 'color', label: 'Morado del Vacío', description: 'Tu nombre en morado.', price: 20 },
-    { id: 'color_freljord', kind: 'color', label: 'Azul Freljord', description: 'Tu nombre en azul hielo.', price: 20 },
-    { id: 'color_arcoiris', kind: 'color', label: 'Arcoíris', description: 'Tu nombre va cambiando de color.', price: 50 },
-    { id: 'color_flame', kind: 'color', label: 'Flame', description: 'Tu nombre arde.', price: 50 },
+    { id: 'color_noxus', kind: 'color', label: 'Rojo Noxus', price: 20 },
+    { id: 'color_piltover', kind: 'color', label: 'Oro Piltover', price: 20 },
+    { id: 'color_zaun', kind: 'color', label: 'Verde Zaun', price: 20 },
+    { id: 'color_vacio', kind: 'color', label: 'Morado del Vacío', price: 20 },
+    { id: 'color_freljord', kind: 'color', label: 'Azul Freljord', price: 20 },
+    { id: 'color_arcoiris', kind: 'color', label: 'Arcoíris', price: 50 },
+    { id: 'color_flame', kind: 'color', label: 'Flame', price: 50 },
 
     // Títulos
     { id: 'title_rey_bo5', kind: 'title', label: 'Rey del BO5', price: 30 },
@@ -70,6 +71,21 @@ const ITEMS = Object.freeze([
     { id: 'title_gafe', kind: 'title', label: 'Gafe profesional', price: 30 },
     { id: 'title_pleno', kind: 'title', label: 'Pleno o nada', price: 30 },
     { id: 'title_underdog', kind: 'title', label: 'Fan del underdog', price: 30 },
+
+    // Banners: fondo animado de la cabecera del perfil, de tu tarjeta del menú y de
+    // tu fila en la clasificación. Dibujados con CSS (sin imágenes de Riot).
+    { id: 'banner_baron', kind: 'banner', label: 'Foso del Barón', price: 30 },
+    { id: 'banner_infernal', kind: 'banner', label: 'Alma infernal', price: 30 },
+    { id: 'banner_hextech', kind: 'banner', label: 'Hextech', price: 30 },
+    { id: 'banner_nexo', kind: 'banner', label: 'El Nexo', price: 30 },
+    { id: 'banner_escenario', kind: 'banner', label: 'Escenario de Worlds', price: 30 },
+    { id: 'banner_confeti', kind: 'banner', label: 'Confeti de campeón', price: 30 },
+    { id: 'banner_freljord', kind: 'banner', label: 'Freljord', price: 30 },
+    { id: 'banner_shurima', kind: 'banner', label: 'Shurima', price: 30 },
+    { id: 'banner_zaun', kind: 'banner', label: 'Zaun', price: 30 },
+    { id: 'banner_piltover', kind: 'banner', label: 'Piltover', price: 30 },
+    { id: 'banner_ionia', kind: 'banner', label: 'Ionia', price: 30 },
+    { id: 'banner_sombra', kind: 'banner', label: 'Islas de la Sombra', price: 30 },
 ]);
 
 const itemOf = (id) => ITEMS.find(i => i.id === id) || null;

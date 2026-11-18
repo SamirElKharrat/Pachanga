@@ -20,11 +20,13 @@
     radial-gradient(90% 120% at 0% 100%, rgba(var(--accent-rgb), 0.35), transparent 60%),
     linear-gradient(135deg, var(--accent-deep), var(--bg-base));
 }
-.profile-cover-tag {
+.profile-cover .profile-cover-tag {
+  z-index: 2;
   position: absolute; right: 18px; top: 14px;
   font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
   font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.55);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); /* que se lea sobre banners claros (Shurima, Freljord) */
 }
 .profile-head { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; padding: 0 22px 18px; }
 .profile-avatar { margin-top: -48px; position: relative; z-index: 1; line-height: 0; }

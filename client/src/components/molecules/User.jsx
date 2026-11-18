@@ -11,6 +11,7 @@ import { CoinIcon } from '../atoms/CoinBalance';
 import useCoins, { refreshCoins } from '../../hooks/useCoins';
 import { useEquipped } from '../../hooks/useCosmetics';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
+import { Banner } from '../atoms/cosmetics/Banner';
 import '../atoms/css/profile.css';
 
 const { Text } = Typography;
@@ -189,7 +190,9 @@ export default function User() {
         <div className="profile-page">
             {/* ── Cabecera de jugador ── */}
             <div className="profile-hero">
-                <div className="profile-cover">
+                <div className="profile-cover cos-banner-host">
+                    {/* Tu banner sustituye a la portada de siempre */}
+                    {equipped.banner && <Banner id={equipped.banner} className="cos-banner-bg" />}
                     {(leagues != null || titles != null) && (
                         <span className="profile-cover-tag">
                             {[leagues != null && `${leagues} ${leagues === 1 ? 'liga' : 'ligas'}`, titles != null && `${titles} ${titles === 1 ? 'título' : 'títulos'}`].filter(Boolean).join(' · ')}

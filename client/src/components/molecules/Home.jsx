@@ -7,6 +7,7 @@ import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import YearFilter from '../atoms/YearFilter';
 import WinnerCelebration from '../atoms/WinnerCelebration';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
+import { BannerBackground } from '../atoms/cosmetics/Banner';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 import SegmentedControl from '../atoms/SegmentedControl';
 import RoundPicker from '../atoms/RoundPicker';
@@ -729,6 +730,7 @@ function Home() {
                                         return (
                                             <List.Item
                                                 key={item.user_id}
+                                                className="cos-banner-host"
                                                 onClick={() => handleParticipantFilter(item)}
                                                 style={{
                                                     padding: '10px 12px',
@@ -742,6 +744,9 @@ function Home() {
                                                     transition: 'all 0.2s',
                                                 }}
                                             >
+                                                {/* Su banner de fondo. Solo se mueve el tuyo; el
+                                                    resto, al pasar el ratón. */}
+                                                <BannerBackground userId={item.User.id} still={!isCurrent} veil="sides" />
                                                 <Flex align="center" gap={8} style={{ width: '100%' }}>
                                                     {/* Rank badge */}
                                                     <Flex

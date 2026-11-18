@@ -29,10 +29,10 @@
 }
 @media (max-width: 768px) {
   .shop-me { top: 64px; }
-  .shop-me .ant-card-body { padding: 10px 14px; }
+
   .shop-me-hint { display: none; }
 }
-.shop-me .ant-card-body { display: flex; flex-direction: column; gap: 10px; }
+.shop-me .ant-card-body { overflow: hidden; border-radius: inherit; }
 .shop-me-row { display: flex; align-items: center; gap: 14px; }
 .shop-me-text { display: flex; flex-direction: column; min-width: 0; }
 .shop-me-name { font-size: 18px; font-weight: 700; color: var(--text-strong); line-height: 1.2; }
@@ -62,7 +62,6 @@
 .shop-item.on { border-color: rgba(var(--success-rgb), 0.6); }
 .shop-item-look { height: 64px; display: grid; place-items: center; margin-bottom: 4px; min-width: 0; }
 .shop-item-name { font-weight: 600; font-size: 14px; color: var(--text-strong); }
-.shop-item-desc { font-size: 12px; color: var(--text-dim); line-height: 1.35; }
 .shop-item-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .shop-price { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--text-strong); }
 .shop-owned { font-size: 12px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
@@ -100,3 +99,8 @@
 .inv-card-rar { font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc); }
 @media (max-width: 576px) { .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .inv-progress.alone { margin-top: 0; }
+
+/* Banners en la tienda y el inventario */
+.shop-banner-thumb { width: 100%; height: 64px; border-radius: 8px; }
+.shop-me-inner { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; border-radius: inherit; }
+@media (max-width: 768px) { .shop-me-inner { padding: 10px 14px; } }

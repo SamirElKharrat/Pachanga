@@ -9,6 +9,7 @@ import { refreshCosmetics } from '../../hooks/useCosmetics';
 import { useTheme } from '../../context/ThemeContext';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
 import { CardEmblem } from '../atoms/cards/CardArt';
+import { Banner, BannerBackground } from '../atoms/cosmetics/Banner';
 import { RARITY_LABEL } from '../../utils/cards';
 import '../atoms/css/cards.css';
 import '../atoms/css/shop.css';
@@ -91,6 +92,7 @@ export default function Shop() {
         frame: preview.frame !== undefined ? preview.frame : equippedOf('frame'),
         color: preview.color !== undefined ? preview.color : equippedOf('color'),
         title: preview.title !== undefined ? preview.title : shop.items.find(i => i.id === equippedOf('title'))?.label ?? null,
+        banner: preview.banner !== undefined ? preview.banner : equippedOf('banner'),
     };
     const avatar = (size, frame) => (
         <CosmeticFrame frame={frame}>
@@ -138,7 +140,6 @@ export default function Shop() {
                         >
                             <div className="shop-item-look">{render(item)}</div>
                             <div className="shop-item-name">{item.label}</div>
-                            {item.description && <div className="shop-item-desc">{item.description}</div>}
                             <div className="shop-item-foot">
                                 {mine
                                     ? <span className={`shop-owned${mine.equipped ? ' on' : ''}`}>{mine.equipped ? <><CheckOutlined /> Puesto</> : 'Tuyo'}</span>
@@ -159,7 +160,9 @@ export default function Shop() {
                 <span className="shop-wallet"><CoinIcon size={16} /><b>{shop.balance}</b> / {shop.cap} monedas</span>
             </div>
 
-            <Card className="shop-section shop-me">
+            <Card className="shop-section shop-me" styles={{ body: { padding: 0 } }}>
+                <div className="shop-me-inner cos-banner-host">
+                <BannerBackground banner={shown.banner || null} veil="left" />
                 <div className="shop-me-row">
                     {avatar(56, shown.frame)}
                     <div className="shop-me-text">
@@ -171,6 +174,7 @@ export default function Shop() {
                 <Text type="secondary" className="shop-me-hint" style={{ fontSize: 12 }}>
                     Pasa por encima de un artículo para ver cómo te queda. Lo que te pones sale en la clasificación, el Hall of Flame y tu perfil.
                 </Text>
+                </div>
             </Card>
 
             <Card
@@ -240,6 +244,9 @@ export default function Shop() {
                     <span className="shop-name-sample small">{me?.username || 'Tu nombre'}</span>
                     <CosmeticTitle title={item.label} style={{ fontSize: 12 }} />
                 </Space>
+            ))}
+            {cosmeticSection('banner', 'Banners', 'Tu perfil, tu tarjeta y tu fila en la clasificación', item => (
+                <Banner id={item.id} className="shop-banner-thumb" />
             ))}
         </div>
     );

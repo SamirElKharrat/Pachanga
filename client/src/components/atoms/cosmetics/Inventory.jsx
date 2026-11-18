@@ -9,6 +9,7 @@ import { refreshCosmetics } from '../../../hooks/useCosmetics';
 import { useTheme } from '../../../context/ThemeContext';
 import { CosmeticFrame, CosmeticName, CosmeticTitle } from './Cosmetic';
 import { CardEmblem } from '../cards/CardArt';
+import { Banner } from './Banner';
 import { RARITY_LABEL } from '../../../utils/cards';
 import '../css/cards.css';
 import '../css/shop.css';
@@ -20,6 +21,7 @@ const KINDS = [
     { kind: 'frame', title: 'Marcos de avatar' },
     { kind: 'color', title: 'Colores de nombre' },
     { kind: 'title', title: 'Títulos' },
+    { kind: 'banner', title: 'Banners' },
 ];
 
 /**
@@ -85,6 +87,7 @@ export default function Inventory({ user, preview = true }) {
             );
         }
         if (item.kind === 'color') return <span className="shop-name-sample"><CosmeticName color={item.id}>{name}</CosmeticName></span>;
+        if (item.kind === 'banner') return <Banner id={item.id} still={!owned[item.id]} className="shop-banner-thumb" />;
         return <CosmeticTitle title={item.label} style={{ fontSize: 12 }} />;
     };
 
