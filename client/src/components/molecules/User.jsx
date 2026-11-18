@@ -2,23 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { Card, Form, Input, Upload, Button, Spin, Avatar, Typography, Space, Divider, Flex } from 'antd';
 import { API } from '../../services/api';
 import { showAlert } from '../atoms/AlertInfo';
-import { LoadingOutlined, UserOutlined, LockOutlined, IdcardOutlined, CameraOutlined } from '@ant-design/icons';
+import { LoadingOutlined, UserOutlined, LockOutlined, IdcardOutlined, CameraOutlined, InboxOutlined } from '@ant-design/icons';
+import Inventory from '../atoms/cosmetics/Inventory';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import CoinHistory from '../atoms/CoinHistory';
 import { CoinIcon } from '../atoms/CoinBalance';
 import useCoins, { refreshCoins } from '../../hooks/useCoins';
+import { useEquipped } from '../../hooks/useCosmetics';
+import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
 
 const { Title, Text } = Typography;
 
 export default function User() {
     const [user, setUser]             = useState(null);
+    const hasFrame = Boolean(useEquipped(user?.id).frame);
     const [loading, setLoading]       = useState(true);
     const [previewImage, setPreviewImage] = useState('');
     const [image, setImage]           = useState('');
     const location = useLocation();
     // La píldora de monedas del menú trae aquí con #monedas.
-    const [activeTab, setActiveTab]   = useState(location.hash === '#monedas' ? 'coins' : 'profile'); // 'profile' | 'security' | 'coins'
+    // Y #inventario, a lo desbloqueado de la tienda.
+    const tabFromHash = (hash) => (hash === '#monedas' ? 'coins' : hash === '#inventario' ? 'inventory' : null);
+    const [activeTab, setActiveTab]   = useState(tabFromHash(location.hash) || 'profile'); // 'profile' | 'inventory' | 'security' | 'coins'
     const [form] = Form.useForm();
     const nav = useNavigate();
     const { getAvatarSrc } = useAppTheme();
@@ -26,7 +32,8 @@ export default function User() {
 
     // Ya en el perfil, pinchar otra vez la píldora solo cambia el hash.
     useEffect(() => {
-        if (location.hash === '#monedas') setActiveTab('coins');
+        const tab = tabFromHash(location.hash);
+        if (tab) setActiveTab(tab);
     }, [location.hash]);
 
     // Al abrir la pestaña, el historial al día (sin repetir avisos).
@@ -112,9 +119,10 @@ export default function User() {
             <Title level={3} style={{ marginBottom: 20 }}>Ajustes de Cuenta</Title>
 
             {/* ── Tab switcher ── */}
-            <Flex gap={8} style={{ marginBottom: 20 }}>
+            <Flex gap={8} wrap="wrap" style={{ marginBottom: 20 }}>
                 {[
                     { key: 'profile', label: 'Información Personal', icon: <IdcardOutlined /> },
+                    { key: 'inventory', label: 'Inventario', icon: <InboxOutlined /> },
                     { key: 'security', label: 'Seguridad', icon: <LockOutlined /> },
                     { key: 'coins', label: 'Monedas', icon: <CoinIcon size={13} /> },
                 ].map(tab => (
@@ -124,7 +132,7 @@ export default function User() {
                         aria-pressed={activeTab === tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         style={{
-                            flex: 1,
+                            flex: '1 1 120px',
                             padding: '10px 8px',
                             borderRadius: 8,
                             border: 'none',
@@ -156,12 +164,18 @@ export default function User() {
                     {/* Avatar centered */}
                     <Flex vertical align="center" style={{ marginBottom: 28 }}>
                         <Flex style={{ position: 'relative', display: 'inline-block' }}>
-                            <Avatar
-                                src={getAvatarSrc(previewImage)}
-                                icon={<UserOutlined />}
-                                size={88}
-                                style={{ border: '3px solid rgba(var(--accent-rgb),0.4)' }}
-                            />
+                            {hasFrame ? (
+                                <CosmeticFrame userId={user?.id}>
+                                    <Avatar src={getAvatarSrc(previewImage)} icon={<UserOutlined />} size={88} />
+                                </CosmeticFrame>
+                            ) : (
+                                <Avatar
+                                    src={getAvatarSrc(previewImage)}
+                                    icon={<UserOutlined />}
+                                    size={88}
+                                    style={{ border: '3px solid rgba(var(--accent-rgb),0.4)' }}
+                                />
+                            )}
                             <Upload
                                 name="logo_url"
                                 showUploadList={false}
@@ -199,6 +213,16 @@ export default function User() {
                         <Text type="secondary" style={{ fontSize: 11, marginTop: 8 }}>
                             JPG, PNG o GIF · Toca el icono de cámara para cambiar
                         </Text>
+                        {/* Lo que llevas puesto de la tienda */}
+                        <Flex vertical align="center" gap={2} style={{ marginTop: 12 }}>
+                            <Text strong style={{ fontSize: 16 }}>
+                                <CosmeticName userId={user?.id}>{user?.username}</CosmeticName>
+                            </Text>
+                            <CosmeticTitle userId={user?.id} style={{ fontSize: 12 }} />
+                            <Button type="link" size="small" onClick={() => setActiveTab('inventory')} style={{ padding: 0, height: 'auto', fontSize: 12 }}>
+                                Cambiar marco, color o título
+                            </Button>
+                        </Flex>
                     </Flex>
 
                     <Form form={form} layout="vertical" onFinish={handleProfileUpdate}>
@@ -268,6 +292,9 @@ export default function User() {
                     </Form>
                 </Card>
             )}
+
+            {/* ── Inventario: lo desbloqueado de la tienda ── */}
+            {activeTab === 'inventory' && <Inventory user={user} />}
 
             {/* ── Monedas ── */}
             {activeTab === 'coins' && (

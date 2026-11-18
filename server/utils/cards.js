@@ -603,6 +603,7 @@ async function markNoticeSeen({ userId, playId, state }) {
 }
 
 module.exports = {
+    lockHand,
     gafeNotices,
     markNoticeSeen,
     CARDS,

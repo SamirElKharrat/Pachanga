@@ -25,6 +25,7 @@ import {
     InfoCircleOutlined,
     QuestionCircleOutlined,
     StopOutlined,
+    ShopOutlined,
 } from "@ant-design/icons";
 import { API } from '../../services/api';
 import { showAlert } from './AlertInfo';
@@ -32,6 +33,8 @@ import BrandMark from './BrandMark';
 import ChangelogModal from './ChangelogModal';
 import WelcomeTour from './WelcomeTour';
 import CoinBalance from './CoinBalance';
+import { CosmeticFrame, CosmeticName, CosmeticTitle } from './cosmetics/Cosmetic';
+import { useEquipped } from '../../hooks/useCosmetics';
 import { refreshCoins } from '../../hooks/useCoins';
 import { croakOnce } from '../../utils/croak';
 import { GUILLE_ID } from '../../constants/pachanga';
@@ -46,6 +49,7 @@ const getMenuItems = (isAdmin, navigate) => {
         { label: 'Clasificación', key: '/clasificacion', 'data-tour': 'menu-standing', icon: <BarChartOutlined />, onClick: () => navigate('/clasificacion') },
         // { label: 'Equipos', key: '/teams', icon: <TeamOutlined />, onClick: () => navigate('/teams') },
         { label: 'Predicciones', key: '/predictions', 'data-tour': 'menu-predictions', icon: <FileTextOutlined />, onClick: () => navigate('/predictions') },
+        { label: 'Tienda', key: '/tienda', icon: <ShopOutlined />, onClick: () => navigate('/tienda') },
         {
             label: (
                 <span className="hof-menu-item-wrapper">
@@ -80,6 +84,7 @@ const UserMenu = ({ children }) => {
     const [collapsed, setCollapsed] = useState(false);
     const [user, setUser] = useState(null);
     const isGuille = user?.id === GUILLE_ID;
+    const equippedTitle = Boolean(useEquipped(user?.id).title);
     const [optionsOpen, setOptionsOpen] = useState(false);
     const [changelogOpen, setChangelogOpen] = useState(false);
     const [changelog, setChangelog] = useState([]);
@@ -246,20 +251,27 @@ const UserMenu = ({ children }) => {
                             border: `1px solid ${token.colorBorder}`,
                         }}
                     >
-                        <Avatar
-                            size={(collapsed && !isMobile) ? 28 : 36}
-                            icon={<UserOutlined />}
-                            src={getAvatarSrc(user?.logo_url)}
-                            style={{ flexShrink: 0 }}
-                        />
+                        <CosmeticFrame userId={user?.id}>
+                            <Avatar
+                                size={(collapsed && !isMobile) ? 28 : 36}
+                                icon={<UserOutlined />}
+                                src={getAvatarSrc(user?.logo_url)}
+                                style={{ flexShrink: 0 }}
+                            />
+                        </CosmeticFrame>
                         {(!(collapsed && !isMobile)) && (
                             <div style={{ marginLeft: 12, overflow: 'hidden' }}>
                                 <Text strong style={{ fontSize: 13, display: 'block' }} ellipsis>
-                                    {user?.username}
+                                    <CosmeticName userId={user?.id}>{user?.username}</CosmeticName>
                                 </Text>
-                                <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-                                    {isAdmin ? 'Administrador' : 'Jugador'}
-                                </Text>
+                                {/* El título, si lleva; si no, el rol de siempre. */}
+                                {equippedTitle
+                                    ? <CosmeticTitle userId={user?.id} style={{ display: 'block' }} />
+                                    : (
+                                        <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
+                                            {isAdmin ? 'Administrador' : 'Jugador'}
+                                        </Text>
+                                    )}
                             </div>
                         )}
                     </div>

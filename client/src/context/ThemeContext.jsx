@@ -138,6 +138,15 @@ export const ThemeProvider = ({ children }) => {
         }
     }, [isWorlds]);
 
+    // El tema claro también se marca en <html>, pero en un atributo aparte: así el CSS
+    // de los paneles nuevos (cartas, monedas, tienda) puede tener su versión clara sin
+    // tocar nada de lo que ya cuelga de data-theme.
+    useEffect(() => {
+        const root = document.documentElement;
+        if (isLightMode) root.setAttribute('data-color-mode', 'light');
+        else root.removeAttribute('data-color-mode');
+    }, [isLightMode]);
+
     // Las fuentes del mundial se piden solo cuando hace falta. Cargarlas siempre
     // sería penalizar a todo el mundo once meses al año por un tema que dura uno.
     // No se retiran al apagar el modo: quitar el <link> no descarga nada y solo

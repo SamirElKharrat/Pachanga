@@ -6,6 +6,7 @@ import { useHomeData } from '../../hooks/useHomeData';
 import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import YearFilter from '../atoms/YearFilter';
 import WinnerCelebration from '../atoms/WinnerCelebration';
+import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
 import LeagueInfoPanel from '../atoms/LeagueInfoPanel';
 import SegmentedControl from '../atoms/SegmentedControl';
 import RoundPicker from '../atoms/RoundPicker';
@@ -762,11 +763,14 @@ function Home() {
                                                     <Flex justify="center" align="center" style={{ width: 14, flexShrink: 0 }}>
                                                         {movementEl}
                                                     </Flex>
-                                                    <Avatar src={getAvatarSrc(item.User.logo_url)} icon={<UserOutlined />} size={32} />
+                                                    <CosmeticFrame userId={item.User.id}>
+                                                        <Avatar src={getAvatarSrc(item.User.logo_url)} icon={<UserOutlined />} size={32} />
+                                                    </CosmeticFrame>
                                                     <Flex vertical style={{ flex: 1, minWidth: 0 }}>
                                                         <Text strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            {item.User.username} {isCurrent && <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 700 }}>(Tú)</span>}
+                                                            <CosmeticName userId={item.User.id}>{item.User.username}</CosmeticName> {isCurrent && <span style={{ color: 'var(--accent)', fontSize: 11, fontWeight: 700 }}>(Tú)</span>}
                                                         </Text>
+                                                        <CosmeticTitle userId={item.User.id} />
                                                         {favTeam && (
                                                             <Tooltip title={favTeam.name}>
                                                                 <Avatar size={14} shape="square" src={favTeam.logo_url} style={{ borderRadius: 2 }} />

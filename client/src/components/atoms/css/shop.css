@@ -1,0 +1,101 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                                    TIENDA                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* La página de la tienda. Las cartas reutilizan el diseño «Naipe» de cards.css y
+   los cosméticos, cosmetics.css. Sin filtros ni animaciones en reposo. */
+
+.shop-page { padding: 12px 12px 40px; display: flex; flex-direction: column; gap: 16px; max-width: 1100px; margin: 0 auto; }
+.shop-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.shop-wallet {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px;
+  font-size: 13px; color: var(--text-muted);
+  background: rgba(var(--tint), 0.05); border: 1px solid rgba(var(--tint), 0.1);
+}
+.shop-wallet b { color: var(--text-strong); font-variant-numeric: tabular-nums; }
+
+.shop-section .ant-card-body { padding: 16px 20px; }
+@media (max-width: 576px) { .shop-section .ant-card-body { padding: 12px 14px; } }
+.shop-note { margin: 0 0 12px; font-size: 12.5px; color: var(--text-dim); }
+.shop-note b { color: var(--text); }
+.shop-note.warn { margin: 12px 0 0; color: var(--warning); }
+
+/* «Así te ven»: se queda pegado arriba al bajar, para ver cómo te queda cada
+   artículo sin volver a subir. En el móvil, debajo de la cabecera fija (56 px). */
+.shop-me {
+  position: sticky; top: 8px; z-index: 5;
+  background: var(--bg-surface) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 768px) {
+  .shop-me { top: 64px; }
+  .shop-me .ant-card-body { padding: 10px 14px; }
+  .shop-me-hint { display: none; }
+}
+.shop-me .ant-card-body { display: flex; flex-direction: column; gap: 10px; }
+.shop-me-row { display: flex; align-items: center; gap: 14px; }
+.shop-me-text { display: flex; flex-direction: column; min-width: 0; }
+.shop-me-name { font-size: 18px; font-weight: 700; color: var(--text-strong); line-height: 1.2; }
+
+/* Cartas */
+.shop-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 160px)); gap: 12px; }
+.shop-card { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.shop-card .card-tile { cursor: default; }
+.shop-card .card-tile:hover { transform: none; }
+@media (max-width: 576px) {
+  .shop-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  /* Tres cartas en fila no dejan sitio para precio y botón uno al lado del otro */
+  .shop-card .shop-item-foot { flex-direction: column; align-items: stretch; gap: 6px; padding-top: 0; }
+  .shop-card .shop-price { justify-content: center; }
+}
+
+/* Cosméticos */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.shop-item {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  padding: 12px; border-radius: 12px;
+  background: rgba(var(--tint), 0.03);
+  border: 1px solid rgba(var(--tint), 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.shop-item:hover { background: rgba(var(--tint), 0.05); }
+.shop-item.on { border-color: rgba(var(--success-rgb), 0.6); }
+.shop-item-look { height: 64px; display: grid; place-items: center; margin-bottom: 4px; min-width: 0; }
+.shop-item-name { font-weight: 600; font-size: 14px; color: var(--text-strong); }
+.shop-item-desc { font-size: 12px; color: var(--text-dim); line-height: 1.35; }
+.shop-item-foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.shop-price { display: inline-flex; align-items: center; gap: 5px; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--text-strong); }
+.shop-owned { font-size: 12px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+.shop-item-foot { flex-wrap: wrap; }
+.shop-owned.on { color: var(--success); }
+.shop-name-sample { font-size: 17px; font-weight: 700; color: var(--text-strong); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shop-name-sample.small { font-size: 14px; }
+@media (max-width: 576px) { .shop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ═══ Inventario del perfil (reutiliza las piezas de la tienda) ═══ */
+.inventory { display: flex; flex-direction: column; gap: 16px; }
+.inv-progress { margin-top: 12px; }
+.inv-progress b { color: var(--text-strong); }
+.inv-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.shop-item.locked .shop-item-look { opacity: 0.35; }
+.shop-item.locked .shop-item-name { color: var(--text-dim); }
+
+.inv-hands { display: flex; flex-direction: column; gap: 14px; }
+.inv-hand-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.inv-hand-head b { color: var(--text-strong); }
+.inv-cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.inv-card {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 96px; padding: 10px 6px 8px;
+  border-radius: 10px;
+  background: rgba(var(--tint), 0.03);
+  border: 1px solid rgba(var(--tint), 0.08);
+  box-shadow: inset 0 2px 0 var(--rc);
+  text-align: center;
+}
+.inv-card .card-emb { width: 40px; height: 40px; margin: 0; }
+.inv-card .card-ico { width: 20px; height: 20px; }
+.inv-card .card-x2 { font-size: 16px; }
+.inv-card-name { font-size: 12.5px; font-weight: 600; color: var(--text-strong); }
+.inv-card-rar { font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rc); }
+@media (max-width: 576px) { .inv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

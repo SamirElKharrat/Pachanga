@@ -13,6 +13,7 @@ import Team from './components/molecules/Team'
 import Prediction from './components/molecules/Prediction'
 import User from './components/molecules/User'
 import HallOfFlame from './components/molecules/HallOfFlame'
+import Shop from './components/molecules/Shop'
 import PachangaStanding from './components/molecules/PachangaStanding'
 import IsGuilleWinning from './components/molecules/IsGuilleWinning'
 import './styles/tokens.css';
@@ -42,6 +43,7 @@ function Root() {
                   {/* <Route path='/teams' element={<Team />} />
                   <Route path='/teams/:id' element={<Team />} /> */}
                   <Route path='/predictions' element={<Prediction />} />
+                  <Route path='/tienda' element={<Shop />} />
                   <Route path='/user' element={<User />} />
                   <Route path='/hall-of-flame' element={<HallOfFlame />} />
                   <Route path='/is-guille-winning' element={<IsGuilleWinning />} />

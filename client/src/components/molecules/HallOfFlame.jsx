@@ -7,6 +7,7 @@ import { useTheme as useAppTheme } from '../../context/ThemeContext';
 import { showAlert } from '../atoms/AlertInfo';
 import dayjs from 'dayjs';
 import './css/HallOfFlame.css';
+import { CosmeticFrame, CosmeticName, CosmeticTitle } from '../atoms/cosmetics/Cosmetic';
 
 const { Title, Text } = Typography;
 
@@ -200,14 +201,13 @@ const HallOfFlame = () => {
                                     >
                                         <div className="hof-avatar-wrap">
                                             <div className="hof-avatar">
-                                                <Avatar
-                                                    src={getAvatarSrc(second.logo_url)}
-                                                    icon={<UserOutlined />}
-                                                    size={76}
-                                                />
+                                                <CosmeticFrame userId={second.id}>
+                                                    <Avatar src={getAvatarSrc(second.logo_url)} icon={<UserOutlined />} size={76} />
+                                                </CosmeticFrame>
                                             </div>
                                         </div>
-                                        <div className="hof-podium-name">{second.username}</div>
+                                        <div className="hof-podium-name"><CosmeticName userId={second.id}>{second.username}</CosmeticName></div>
+                                        <CosmeticTitle userId={second.id} />
                                         <div className="hof-podium-wins">
                                             <span>{second.wins}</span> {second.wins === 1 ? 'victoria' : 'victorias'}
                                         </div>
@@ -224,14 +224,13 @@ const HallOfFlame = () => {
                                         <div className="hof-avatar-wrap">
                                             <span className="hof-crown">👑</span>
                                             <div className="hof-avatar">
-                                                <Avatar
-                                                    src={getAvatarSrc(first.logo_url)}
-                                                    icon={<UserOutlined />}
-                                                    size={104}
-                                                />
+                                                <CosmeticFrame userId={first.id}>
+                                                    <Avatar src={getAvatarSrc(first.logo_url)} icon={<UserOutlined />} size={104} />
+                                                </CosmeticFrame>
                                             </div>
                                         </div>
-                                        <div className="hof-podium-name">{first.username}</div>
+                                        <div className="hof-podium-name"><CosmeticName userId={first.id}>{first.username}</CosmeticName></div>
+                                        <CosmeticTitle userId={first.id} />
                                         <div className="hof-podium-wins">
                                             <span>{first.wins}</span> {first.wins === 1 ? 'victoria' : 'victorias'}
                                         </div>
@@ -247,14 +246,13 @@ const HallOfFlame = () => {
                                     >
                                         <div className="hof-avatar-wrap">
                                             <div className="hof-avatar">
-                                                <Avatar
-                                                    src={getAvatarSrc(third.logo_url)}
-                                                    icon={<UserOutlined />}
-                                                    size={76}
-                                                />
+                                                <CosmeticFrame userId={third.id}>
+                                                    <Avatar src={getAvatarSrc(third.logo_url)} icon={<UserOutlined />} size={76} />
+                                                </CosmeticFrame>
                                             </div>
                                         </div>
-                                        <div className="hof-podium-name">{third.username}</div>
+                                        <div className="hof-podium-name"><CosmeticName userId={third.id}>{third.username}</CosmeticName></div>
+                                        <CosmeticTitle userId={third.id} />
                                         <div className="hof-podium-wins">
                                             <span>{third.wins}</span> {third.wins === 1 ? 'victoria' : 'victorias'}
                                         </div>
@@ -285,14 +283,12 @@ const HallOfFlame = () => {
                                         >
                                             <div className="hof-rest-rank">{rankNumber}</div>
                                             <div className="hof-rest-avatar">
-                                                <Avatar
-                                                    src={getAvatarSrc(player.logo_url)}
-                                                    icon={<UserOutlined />}
-                                                    size={44}
-                                                />
+                                                <CosmeticFrame userId={player.id}>
+                                                    <Avatar src={getAvatarSrc(player.logo_url)} icon={<UserOutlined />} size={44} />
+                                                </CosmeticFrame>
                                             </div>
                                             <div className="hof-rest-info">
-                                                <div className="hof-rest-name">{player.username}</div>
+                                                <div className="hof-rest-name"><CosmeticName userId={player.id}>{player.username}</CosmeticName> <CosmeticTitle userId={player.id} /></div>
                                                 <div className="hof-rest-leagues">{leaguesSummary}</div>
                                             </div>
                                             <div className="hof-rest-wins-badge">
@@ -334,13 +330,12 @@ const HallOfFlame = () => {
                                 <span className="hof-modal-crown">👑</span>
                             )}
                             <div className="hof-modal-avatar">
-                                <Avatar
-                                    src={getAvatarSrc(selectedPlayer.logo_url)}
-                                    icon={<UserOutlined />}
-                                    size={96}
-                                />
+                                <CosmeticFrame userId={selectedPlayer.id}>
+                                    <Avatar src={getAvatarSrc(selectedPlayer.logo_url)} icon={<UserOutlined />} size={96} />
+                                </CosmeticFrame>
                             </div>
-                            <h2 className="hof-modal-player-name">{selectedPlayer.username}</h2>
+                            <h2 className="hof-modal-player-name"><CosmeticName userId={selectedPlayer.id}>{selectedPlayer.username}</CosmeticName></h2>
+                            <CosmeticTitle userId={selectedPlayer.id} style={{ fontSize: 12 }} />
                             <div className="hof-modal-player-subtitle">
                                 {getSubtitle(selectedPlayer.wins)}
                             </div>

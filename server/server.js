@@ -29,6 +29,7 @@ const CoinTransaction = require('./models/coinTransaction'); // eslint-disable-l
 // Las cartas: también sin asociaciones; se requieren para que `db.sync` cree sus tablas.
 const UserCard = require('./models/userCard'); // eslint-disable-line no-unused-vars
 const CardPlay = require('./models/cardPlay'); // eslint-disable-line no-unused-vars
+const UserCosmetic = require('./models/userCosmetic'); // eslint-disable-line no-unused-vars
 
 const app = express();
 const PORT = 3001;

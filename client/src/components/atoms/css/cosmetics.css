@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*                                 COSMÉTICOS                                  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Marcos de avatar, colores de nombre y títulos de la tienda (server/utils/shop.js).
+   La clase de cada uno es su id del catálogo: un id no se cambia nunca.
+
+   Todo es fijo (sin animaciones, sin filtros): se pinta en listas largas como la
+   clasificación y no puede pesar. Los marcos usan los tokens de la web, así que
+   cambian solos en Worlds. Los colores de nombre tienen una versión para el tema
+   claro (.is-light), porque el claro no marca nada en <html> que el CSS pueda leer. */
+
+/* ── Marcos ── */
+.cos-frame {
+  display: inline-flex; flex: none;
+  padding: 2px; border-radius: 50%;
+  line-height: 0;
+  background: var(--cos-ring);
+}
+.cos-frame > .ant-avatar { box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.55); }
+/* Sin foto, el avatar de Antd es semitransparente y el marco se vería por todo el
+   círculo en vez de solo en el aro: se le da un fondo opaco. */
+.cos-frame > .ant-avatar:not(.ant-avatar-image) { background-color: var(--bg-elevated-2); }
+
+.frame_baron   { --cos-ring: linear-gradient(135deg, var(--purple), var(--violet) 55%, #4c1d95); }
+.frame_dragon  { --cos-ring: linear-gradient(135deg, var(--warning-light), var(--flame) 50%, var(--danger)); }
+.frame_hextech { --cos-ring: linear-gradient(135deg, var(--accent-light), #22d3ee 45%, var(--medal-gold)); }
+.frame_zaun    { --cos-ring: linear-gradient(135deg, #bef264, var(--success) 60%, #065f46); }
+.frame_oro     { --cos-ring: linear-gradient(135deg, var(--medal-gold), var(--medal-gold-deep)); box-shadow: 0 0 0 1.5px var(--medal-gold-deep); padding: 2.5px; }
+
+/* Arcoíris: una capa con un degradado cónico que gira debajo del avatar. Solo se
+   anima `transform`, que lo mueve la tarjeta gráfica sin repintar la página. */
+.frame_arcoiris { position: relative; overflow: hidden; isolation: isolate; --cos-ring: transparent; padding: 3px; }
+.frame_arcoiris::before {
+  content: ""; position: absolute; inset: -40%; z-index: -1;
+  background: conic-gradient(#f87171, #fbbf24, #4ade80, #22d3ee, #818cf8, #e879f9, #f87171);
+  animation: cos-spin 4s linear infinite;
+}
+.frame_arcoiris > * { position: relative; }
+@keyframes cos-spin { to { transform: rotate(1turn); } }
+
+/* Flame: lo mismo, con colores de fuego, más deprisa y con los tramos desiguales
+   para que parezca que parpadea. El brillo de fuera es fijo. Los colores van fijos
+   (no tokens): en Worlds los tokens de aviso y peligro pasan a dorado y el fuego
+   dejaría de parecer fuego. */
+.frame_flame {
+  position: relative; overflow: hidden; isolation: isolate; --cos-ring: transparent; padding: 3px;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.55), 0 0 2px rgba(253, 224, 71, 0.8);
+}
+.frame_flame::before {
+  content: ""; position: absolute; inset: -40%; z-index: -1;
+  background: conic-gradient(
+    #dc2626 0deg, #f97316 40deg, #fde047 70deg, #f97316 95deg,
+    #dc2626 150deg, #f97316 200deg, #facc15 230deg, #f97316 260deg,
+    #dc2626 310deg, #dc2626 360deg);
+  animation: cos-spin 1.8s linear infinite;
+}
+.frame_flame > * { position: relative; }
+
+/* ── Colores de nombre ── */
+.cos-name { color: var(--cos-name) !important; }
+.color_noxus     { --cos-name: #f87171; }
+.color_piltover  { --cos-name: #fbbf24; }
+.color_zaun      { --cos-name: #4ade80; }
+.color_vacio     { --cos-name: #c084fc; }
+.color_freljord  { --cos-name: #67e8f9; }
+.cos-name.is-light.color_noxus    { --cos-name: #dc2626; }
+.cos-name.is-light.color_piltover { --cos-name: #b45309; }
+.cos-name.is-light.color_zaun     { --cos-name: #15803d; }
+.cos-name.is-light.color_vacio    { --cos-name: #7e22ce; }
+.cos-name.is-light.color_freljord { --cos-name: #0e7490; }
+
+/* Arcoíris: el degradado se desliza por dentro de las letras. */
+.cos-name.color_arcoiris {
+  background-image: linear-gradient(90deg, #f87171, #fbbf24, #4ade80, #22d3ee, #818cf8, #e879f9, #f87171);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  animation: cos-slide 5s linear infinite;
+}
+.cos-name.is-light.color_arcoiris {
+  background-image: linear-gradient(90deg, #dc2626, #d97706, #16a34a, #0891b2, #4f46e5, #c026d3, #dc2626);
+}
+@keyframes cos-slide { to { background-position: -200% 0; } }
+
+/* Flame: el fuego de base es fijo (amarillo abajo, rojo arriba) y por encima sube un
+   brillo suave. El brillo es una baldosa de alto fijo que se desplaza justo su alto
+   en cada vuelta, así que enlaza sin salto. Colores fijos, como el marco. */
+.cos-name.color_flame {
+  background-image:
+    linear-gradient(0deg, rgba(254, 240, 138, 0) 0%, rgba(254, 240, 138, 0.6) 45%, rgba(254, 240, 138, 0) 90%),
+    linear-gradient(0deg, #fbbf24 0%, #f97316 45%, #dc2626 100%);
+  background-size: 100% 1.6em, 100% 100%;
+  background-repeat: repeat-y, no-repeat;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  text-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+  animation: cos-rise 1.8s linear infinite;
+}
+.cos-name.is-light.color_flame {
+  background-image:
+    linear-gradient(0deg, rgba(250, 204, 21, 0) 0%, rgba(250, 204, 21, 0.5) 45%, rgba(250, 204, 21, 0) 90%),
+    linear-gradient(0deg, #ca8a04 0%, #ea580c 45%, #b91c1c 100%);
+  text-shadow: none;
+}
+@keyframes cos-rise { from { background-position: 0 0, 0 0; } to { background-position: 0 -1.6em, 0 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .frame_arcoiris::before, .cos-name.color_arcoiris,
+  .frame_flame::before, .cos-name.color_flame { animation: none; }
+}
+
+/* ── Títulos ── */
+.cos-title {
+  display: inline-block; max-width: 100%;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--medal-gold);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  vertical-align: middle;
+}
+.cos-title.is-light { color: #a16207; }
+.cos-title::before { content: "« "; opacity: 0.6; }
+.cos-title::after { content: " »"; opacity: 0.6; }

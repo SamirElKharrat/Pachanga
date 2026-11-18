@@ -18,6 +18,7 @@ const ruleRoute = require("./rule");
 const roundRoute = require("./round");
 const coinRoute = require("./coin");
 const cardRoute = require("./card");
+const shopRoute = require("./shop");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -38,5 +39,6 @@ router.use("/rules", ruleRoute);
 router.use("/rounds", roundRoute);
 router.use("/coins", coinRoute);
 router.use("/cards", cardRoute);
+router.use("/shop", shopRoute);
 
 module.exports = router;
