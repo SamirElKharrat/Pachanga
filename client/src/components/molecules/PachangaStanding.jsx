@@ -9,6 +9,11 @@ import StatsSummaryCard from '../atoms/StatsSummaryCard';
 import './css/PachangaStanding.css';
 
 const { Title, Text, Paragraph } = Typography;
+
+/** El encabezado de cada bloque de normas que no es la normativa general. */
+const RULE_SECTIONS = {
+    cartas: 'Cartas, monedas y cofres',
+};
 const { TextArea } = Input;
 
 const PachangaStanding = () => {
@@ -177,7 +182,9 @@ const PachangaStanding = () => {
             const payload = {
                 title: values.title || null,
                 content: values.content,
-                category: values.category || 'general',
+                // El formulario no tiene campo de categoría: al editar se conserva la que
+                // tenía (si no, las de «cartas» se pasaban a «general» al guardarlas).
+                category: values.category || editingRule?.category || 'general',
                 year: values.year ? parseInt(values.year, 10) : selectedYear,
                 order_num: values.order_num !== undefined ? parseInt(values.order_num, 10) : 0,
                 league_id: null
@@ -478,8 +485,13 @@ const PachangaStanding = () => {
                     {rulesLoading ? (
                         <Skeleton active paragraph={{ rows: 8 }} />
                     ) : rulesList.length > 0 ? (
-                        rulesList.map((rule) => (
-                            <div key={rule.id} className="pachanga-rule-card">
+                        rulesList.map((rule, i) => (
+                            <React.Fragment key={rule.id}>
+                            {/* Un encabezado al empezar cada bloque que no es la normativa general */}
+                            {rule.category && rule.category !== 'general' && rule.category !== rulesList[i - 1]?.category && (
+                                <h2 className="pachanga-rules-section">{RULE_SECTIONS[rule.category] || rule.category}</h2>
+                            )}
+                            <div className="pachanga-rule-card">
                                 <div className="pachanga-rule-header">
                                     <h3 className="pachanga-rule-title">
                                         {rule.title || `Normativa ${rule.year}`}
@@ -521,6 +533,7 @@ const PachangaStanding = () => {
 
                                 {renderFormattedContent(rule.content)}
                             </div>
+                            </React.Fragment>
                         ))
                     ) : (
                         <div style={{ textAlign: 'center', padding: '40px 20px' }}>

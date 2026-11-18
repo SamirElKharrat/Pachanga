@@ -5,12 +5,13 @@ import StatsRecalc from '../atoms/StatsRecalc';
 import QuestionCorrection from '../atoms/QuestionCorrection';
 import CoinsAdmin from '../atoms/CoinsAdmin';
 import CardsAdmin from '../atoms/cards/CardsAdmin';
+import EconomyAdmin from '../atoms/EconomyAdmin';
 import { CoinIcon } from '../atoms/CoinBalance';
 import {
     SettingOutlined, UserOutlined, TeamOutlined,
     TrophyOutlined, ScheduleOutlined, GlobalOutlined,
     ControlOutlined, FileTextOutlined, BarChartOutlined,
-    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined, CalendarOutlined, ThunderboltOutlined
+    QuestionCircleOutlined, NotificationOutlined, CheckSquareOutlined, CalendarOutlined, ThunderboltOutlined, FundOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -178,6 +179,11 @@ const Admin = () => {
             key: '12',
             label: <span><ThunderboltOutlined /> Cartas</span>,
             children: <CardsAdmin />
+        },
+        {
+            key: '13',
+            label: <span><FundOutlined /> Economía</span>,
+            children: <EconomyAdmin />
         }
     ];
 

@@ -20,6 +20,7 @@ const coinRoute = require("./coin");
 const cardRoute = require("./card");
 const shopRoute = require("./shop");
 const chestRoute = require("./chest");
+const economyRoute = require("./economy");
 
 router.use("/users", userRoute);
 router.use("/roles", roleRoute);
@@ -42,5 +43,6 @@ router.use("/coins", coinRoute);
 router.use("/cards", cardRoute);
 router.use("/shop", shopRoute);
 router.use("/chests", chestRoute);
+router.use("/economy", economyRoute);
 
 module.exports = router;
