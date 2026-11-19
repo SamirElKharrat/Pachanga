@@ -16,10 +16,11 @@ const cards = require('./cards');
  * pachanguitas.
  *
  * - Catálogo fijo, siempre a la venta.
- * - Escaparate semanal (fase 6): 4 huecos que cambian cada lunes (hora de Madrid),
- *   uno de ellos rebajado un 30 %. Sale de una semilla (la semana), así que no hace
- *   falta ninguna tarea programada ni tabla: el mismo lunes da el mismo escaparate.
- *   Los títulos de temporada (`rotating`) solo se venden cuando salen en él.
+ * - Escaparate semanal (fase 6): 4 artículos del catálogo al azar que cambian cada
+ *   lunes (hora de Madrid), todos rebajados, cada uno con su descuento (del 15 al
+ *   40 %). Sale de una semilla (la semana), así que no hace falta ninguna tarea
+ *   programada ni tabla: el mismo lunes da el mismo escaparate. No hay nada exclusivo:
+ *   todo lo del escaparate se vende también fuera de él, a precio normal.
  * - Carta del partido (fase 6): cada partido de hoy de tus ligas con cartas trae una
  *   carta barata que solo vale para ese partido y se compra hasta que empieza. Una
  *   por partido.
@@ -89,14 +90,14 @@ const ITEMS = Object.freeze([
     { id: 'title_underdog', kind: 'title', label: 'Fan del underdog', price: 30 },
 
     // Títulos de temporada: solo se venden la semana que salen en el escaparate.
-    { id: 'title_remontada', kind: 'title', label: 'Rey de la remontada', price: 35, rotating: true },
-    { id: 'title_robabarones', kind: 'title', label: 'Robabarones', price: 35, rotating: true },
-    { id: 'title_moneda_al_aire', kind: 'title', label: 'Moneda al aire', price: 35, rotating: true },
-    { id: 'title_genio_draft', kind: 'title', label: 'Genio del draft', price: 35, rotating: true },
-    { id: 'title_tilt', kind: 'title', label: 'Tilt controlado', price: 35, rotating: true },
-    { id: 'title_macro', kind: 'title', label: 'Cerebro macro', price: 35, rotating: true },
-    { id: 'title_profeta', kind: 'title', label: 'Profeta del 3-0', price: 35, rotating: true },
-    { id: 'title_casi', kind: 'title', label: 'Casi pleno', price: 35, rotating: true },
+    { id: 'title_remontada', kind: 'title', label: 'Rey de la remontada', price: 35 },
+    { id: 'title_robabarones', kind: 'title', label: 'Robabarones', price: 35 },
+    { id: 'title_moneda_al_aire', kind: 'title', label: 'Moneda al aire', price: 35 },
+    { id: 'title_genio_draft', kind: 'title', label: 'Genio del draft', price: 35 },
+    { id: 'title_tilt', kind: 'title', label: 'Tilt controlado', price: 35 },
+    { id: 'title_macro', kind: 'title', label: 'Cerebro macro', price: 35 },
+    { id: 'title_profeta', kind: 'title', label: 'Profeta del 3-0', price: 35 },
+    { id: 'title_casi', kind: 'title', label: 'Casi pleno', price: 35 },
 
     // Banners: fondo animado de la cabecera del perfil, de tu tarjeta del menú y de
     // tu fila en la clasificación. Dibujados con CSS (sin imágenes de Riot).
@@ -118,7 +119,9 @@ const itemOf = (id) => ITEMS.find(i => i.id === id) || null;
 
 // ── Escaparate semanal ─────────────────────────────────────────────────────────
 
-const DEAL = 0.3;
+/** Cuántos artículos salen en el escaparate y los descuentos posibles (en %). */
+const SHOWCASE_SIZE = 4;
+const DISCOUNTS = Object.freeze([15, 20, 25, 30, 35, 40]);
 const MATCH_CARD_PRICE = Object.freeze({ gafe: 10, chivato: 5 });
 
 /** La fecha de hoy en Madrid, 'AAAA-MM-DD'. */
@@ -145,31 +148,40 @@ function seeded(text) {
 }
 
 /**
- * El escaparate de una semana: una carta, un título de temporada y dos cosméticos,
- * uno de los cuatro con un 30 % de rebaja.
+ * El escaparate de una semana: 4 artículos del catálogo al azar (una carta y tres
+ * cosméticos de tipos distintos), todos rebajados con un descuento al azar entre el
+ * 15 y el 40 %.
  *
- * @returns {{week: string, daysLeft: number, items: Array<{id: string, price: number, basePrice: number, deal: boolean}>}}
+ * @returns {{week: string, daysLeft: number, items: Array<{id: string, price: number, basePrice: number, discount: number, deal: boolean}>}}
  */
 function showcase(now = new Date()) {
     const { key, daysLeft } = weekOf(now);
     const rand = seeded(`escaparate:${key}`);
-    const pickFrom = (list) => list[rand(list.length)];
+    const take = (list, n) => {
+        const pool = [...list];
+        const out = [];
+        while (out.length < n && pool.length) out.push(pool.splice(rand(pool.length), 1)[0]);
+        return out;
+    };
     const cardsForSale = ITEMS.filter(i => i.kind === 'card');
-    const seasonal = ITEMS.filter(i => i.rotating);
-    const regular = ITEMS.filter(i => i.kind !== 'card' && !i.rotating);
-    const first = pickFrom(regular);
-    const rest = regular.filter(i => i.id !== first.id && i.kind !== first.kind);
-    const picked = [pickFrom(cardsForSale), pickFrom(seasonal), first, pickFrom(rest.length ? rest : regular)];
-    const dealAt = rand(picked.length);
+    const cosmetics = ITEMS.filter(i => i.kind !== 'card');
+    // Un cosmético de cada tipo primero (marco, color, título, banner) y luego al azar
+    const kinds = take([...new Set(cosmetics.map(i => i.kind))], SHOWCASE_SIZE - 1);
+    const looks = kinds.map(k => take(cosmetics.filter(i => i.kind === k), 1)[0]);
+    const picked = [...take(cardsForSale, 1), ...looks];
     return {
         week: key,
         daysLeft,
-        items: picked.map((item, i) => ({
-            id: item.id,
-            basePrice: item.price,
-            price: i === dealAt ? Math.max(1, Math.round(item.price * (1 - DEAL))) : item.price,
-            deal: i === dealAt,
-        })),
+        items: picked.map((item) => {
+            const discount = DISCOUNTS[rand(DISCOUNTS.length)];
+            return {
+                id: item.id,
+                basePrice: item.price,
+                price: Math.max(1, Math.round(item.price * (1 - discount / 100))),
+                discount,
+                deal: true,
+            };
+        }),
     };
 }
 
@@ -178,9 +190,6 @@ function priceOf(item, now = new Date()) {
     const slot = showcase(now).items.find(s => s.id === item.id);
     return slot ? slot.price : item.price;
 }
-
-/** Si se puede comprar ahora: los de temporada, solo la semana que salen. */
-const onSale = (item, now = new Date()) => !item.rotating || showcase(now).items.some(s => s.id === item.id);
 
 /** Un artículo listo para enseñar: las cartas, con su nombre y texto del catálogo de cartas. */
 function itemInfo(item, now = new Date()) {
@@ -216,8 +225,8 @@ async function shopFor(userId) {
         cap: coins.COIN_CAP,
         slots: SLOTS,
         // Los de temporada que no están esta semana no se enseñan.
-        items: ITEMS.filter(i => onSale(i, now)).map(i => itemInfo(i, now)),
-        showcase: { week: week.week, daysLeft: week.daysLeft, items: week.items.map(s => ({ ...itemInfo(itemOf(s.id), now), deal: s.deal })) },
+        items: ITEMS.map(i => itemInfo(i, now)),
+        showcase: { week: week.week, daysLeft: week.daysLeft, items: week.items.map(s => ({ ...itemInfo(itemOf(s.id), now), deal: s.deal, discount: s.discount })) },
         matchCards: await matchOffers(userId, leagues, now),
         owned: owned.map(o => ({ item_id: o.item_id, equipped: o.equipped, acquired_at: o.acquired_at })),
         cardLeagues: leagues.map((l, i) => ({ id: l.id, name: l.name, inHand: hands[i] })),
@@ -237,7 +246,6 @@ async function buy({ userId, itemId, leagueId }) {
     const item = itemOf(itemId);
     if (!item) throw new ShopError(400, 'Ese artículo no está en la tienda');
     const now = new Date();
-    if (!onSale(item, now)) throw new ShopError(409, 'Ese título solo se vende la semana que sale en el escaparate');
     const price = priceOf(item, now);
 
     return coins.withUserLock(userId, async (transaction) => {

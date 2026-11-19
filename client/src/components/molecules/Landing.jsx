@@ -10,6 +10,7 @@ import BrandMark from '../atoms/BrandMark';
 import MatchCard from '../atoms/MatchCard';
 import Footer from '../atoms/Footer';
 import ScreenshotCarousel from '../atoms/ScreenshotCarousel';
+import LandingNews from '../atoms/landing/LandingNews';
 import { STATUS_COLORS, QUESTION_POINTS, MATCH_POINTS } from '../../constants/pachanga';
 import './css/Landing.css';
 
@@ -146,6 +147,7 @@ export default function Landing() {
                     <BrandMark logoWidth={100} crestSize={36} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
                     {!isMobile && (
                         <Space size={4}>
+                            <Button type="text" onClick={() => scrollTo('novedades')}>Novedades</Button>
                             <Button type="text" onClick={() => scrollTo('como-se-juega')}>Cómo se juega</Button>
                             <Button type="text" onClick={() => scrollTo('puntuacion')}>Puntuación</Button>
                             {podium.length > 0 && (
@@ -167,6 +169,11 @@ export default function Landing() {
                             <Row gutter={[40, 32]} align="middle">
                                 <Col xs={24} lg={13}>
                                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                                        <button type="button" className="landing-new-pill" onClick={() => scrollTo('novedades')}>
+                                            <span className="landing-new-pill-tag">Nuevo</span>
+                                            Cartas, duelos y pachanguitas
+                                            <ArrowRightOutlined aria-hidden="true" />
+                                        </button>
                                         <Title level={1} className="landing-title">
                                             La porra del competitivo <span className="landing-title-hl">de toda la vida</span>
                                         </Title>
@@ -224,6 +231,9 @@ export default function Landing() {
                                 </Col>
                             </Row>
                         </section>
+
+                        {/* ── Novedades: cartas, duelos, pachanguitas, cofres y tienda ── */}
+                        <LandingNews onJoin={goLogin} />
 
                         {/* ── Así es por dentro ── */}
                         <motion.section {...reveal} id="por-dentro" style={{ scrollMarginTop: 80 }}>

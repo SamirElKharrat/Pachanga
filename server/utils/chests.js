@@ -48,7 +48,7 @@ const POOLS = {
     colors: pool(i => i.kind === 'color' && i.price <= 20),
     frames: pool(i => i.kind === 'frame' && i.price <= 20),
     banners: pool(i => i.kind === 'banner'),
-    titles: pool(i => i.kind === 'title' && !i.rotating),
+    titles: pool(i => i.kind === 'title'),
     animated: pool(i => (i.kind === 'frame' || i.kind === 'color') && i.price >= 50),
 };
 

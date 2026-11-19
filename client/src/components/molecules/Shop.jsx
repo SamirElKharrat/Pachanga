@@ -161,7 +161,7 @@ export default function Shop() {
                             onMouseLeave={() => setPreview({})}
                         >
                             <div className="shop-item-look">{render(item)}</div>
-                            <div className="shop-item-name">{item.label}{item.rotating && <span className="shop-tag">Solo esta semana</span>}</div>
+                            <div className="shop-item-name">{item.label}</div>
                             <div className="shop-item-foot">
                                 {mine
                                     ? <span className={`shop-owned${mine.equipped ? ' on' : ''}`}>{mine.equipped ? <><CheckOutlined /> Puesto</> : 'Tuyo'}</span>
@@ -199,7 +199,7 @@ export default function Shop() {
                 </div>
             </Card>
 
-            {/* El escaparate de la semana: 4 huecos, uno rebajado. Cambia cada lunes. */}
+            {/* El escaparate de la semana: 4 artículos al azar, todos rebajados. Cambia cada lunes. */}
             {shop.showcase?.items?.length > 0 && (
                 <Card
                     className="shop-section shop-showcase"
@@ -215,7 +215,7 @@ export default function Shop() {
                                 <div key={item.id} className={`shop-item${item.deal ? ' deal' : ''}`}
                                     onMouseEnter={() => !isCard && setPreview({ [item.kind]: item.kind === 'title' ? item.label : item.id })}
                                     onMouseLeave={() => setPreview({})}>
-                                    {item.deal && <span className="shop-deal">−30 %</span>}
+                                    {item.deal && <span className="shop-deal">−{item.discount ?? 30} %</span>}
                                     <div className="shop-item-look">
                                         {isCard ? (
                                             <span className={`shop-mini-card rar-${item.rarity}`}><CardEmblem cardKey={item.card} /></span>
@@ -226,7 +226,7 @@ export default function Shop() {
                                     </div>
                                     <div className="shop-item-name">
                                         {isCard ? `Carta · ${item.label}` : item.label}
-                                        {item.rotating && <span className="shop-tag">Solo esta semana</span>}
+                                        
                                     </div>
                                     <div className="shop-item-foot">
                                         {mine

@@ -84,6 +84,54 @@
 }
 @media (prefers-reduced-motion: reduce) { .card-tile { transition: none; } }
 
+/* ── Cartas de la jornada en Inicio: la cinta y el panel ──
+   Una tira bajo la cabecera de la liga con las jugadas que más han movido (se
+   desliza de lado) y un botón al panel lateral con todas, por partido. */
+.round-ribbon {
+  margin: 0 0 16px; padding: 8px 10px 8px 14px; border-radius: 14px;
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  background: var(--bg-surface); border: 1px solid rgba(var(--tint), 0.08);
+}
+.rr-label {
+  flex: none; padding-right: 10px; border-right: 1px solid rgba(var(--tint), 0.1);
+  font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-size: 14px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--violet);
+}
+.rr-chips {
+  flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  -webkit-mask: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+          mask: linear-gradient(90deg, #000 calc(100% - 40px), transparent);
+}
+.rr-chips::-webkit-scrollbar { display: none; }
+.rr-chip {
+  flex: none; display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 12px 4px 4px; border-radius: 999px; border: 0;
+  background: rgba(var(--tint), 0.05); box-shadow: inset 3px 0 0 var(--rc);
+  color: var(--text); font: inherit; font-size: 12.5px; white-space: nowrap; cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.rr-chip:hover { background: rgba(var(--tint), 0.09); transform: translateY(-1px); }
+.rr-chip:focus-visible, .rr-all:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rr-chip > b { color: var(--text-strong); }
+.rr-what { color: var(--text-muted); }
+.rr-chip .play-effect { font-size: 12.5px; }
+.rr-all {
+  flex: none; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer;
+  background: rgba(var(--violet-rgb, 139, 92, 246), 0.16); color: var(--text-strong);
+  font: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+.rr-all:hover { background: rgba(var(--violet-rgb, 139, 92, 246), 0.28); }
+.rcd-group + .rcd-group { margin-top: 18px; }
+.rcd-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+@media (max-width: 576px) {
+  .round-ribbon { flex-wrap: wrap; padding: 10px; }
+  .rr-label { border-right: 0; padding-right: 0; }
+  .rr-all { margin-left: auto; }
+  .rr-chips { order: 3; flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .rr-chip { transition: none; } }
+
 /* ── Formulario para jugar ── */
 .card-play-form { margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(var(--tint), 0.03); border: 1px solid rgba(var(--tint), 0.08); display: flex; flex-direction: column; gap: 10px; }
 .card-play-form .ant-select { width: 100%; }

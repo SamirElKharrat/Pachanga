@@ -98,7 +98,7 @@ Cada jugador recibe como mucho un castigo (Gafe o Robo, también uno rebotado) p
 
 Los cosméticos son para siempre y se ven en el menú, la clasificación, el Hall of Flame y tu perfil. Se ponen y se quitan desde tu inventario.
 
-Escaparate de la semana: cada lunes salen 4 artículos (una carta, un título de temporada y dos cosméticos) y uno de ellos está rebajado un 30 %. Los títulos de temporada solo se pueden comprar la semana que salen.
+Escaparate de la semana: cada lunes salen 4 artículos al azar de la tienda (una carta y tres cosméticos), todos rebajados, cada uno con su descuento (del 15 al 40 %).
 
 Carta del partido: cada partido de hoy de tus ligas con cartas trae una carta barata (Gafe a ${shop.MATCH_CARD_PRICE.gafe} o Chivato a ${shop.MATCH_CARD_PRICE.chivato}) que solo vale en ese partido. Se compra hasta que empieza, una por partido, y caduca si no la juegas.`,
     },
@@ -139,7 +139,7 @@ const CHANGES = [
     'Aviso a pantalla completa cuando alguien te echa el Gafe.',
     'Duelos: reta a alguien de tu liga para una jornada y apostad puntos o pachanguitas.',
     'Cartas nuevas: Robo (le quitas 1 a tu rival si le ganas la jornada) y Espejo (te devuelve los castigos).',
-    'Tienda: escaparate semanal con rebaja, títulos de temporada y la carta del partido de cada día.',
+    'Tienda: escaparate semanal con cuatro artículos rebajados y la carta del partido de cada día.',
     'Reglamento de cartas, pachanguitas y cofres en Normas.',
 ];
 

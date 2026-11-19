@@ -46,6 +46,38 @@
   z-index: 1;
 }
 
+/* La píldora de «Nuevo» encima del título: lleva a las novedades. */
+.landing-new-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 5px 14px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.18s ease, background-color 0.18s ease;
+}
+.landing-new-pill:hover { transform: translateY(-1px); background: rgba(var(--accent-rgb), 0.18); }
+.landing-new-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.landing-new-pill .anticon { font-size: 12px; transition: transform 0.18s ease; }
+.landing-new-pill:hover .anticon { transform: translateX(3px); }
+.landing-new-pill-tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--hof-flame-gradient);
+  color: var(--text-strong);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .landing-title.ant-typography {
   font-size: clamp(36px, 5.2vw, 58px);
   line-height: 1.05;

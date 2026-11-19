@@ -1,0 +1,204 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   PORTADA · NOVEDADES (cartas, duelos, pachanguitas, cofres y tienda)
+   ═══════════════════════════════════════════════════════════════════════════
+   Como el resto de la portada: solo tokens de tokens.css (en Worlds se pone en
+   oro solo). Las muestras usan las piezas de verdad (.card-tile, .rd-cta,
+   .coin-icon, .es-chest, .cos-banner…). Animaciones solo con transform y opacity,
+   y quietas con «reducir movimiento».
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.lnew { position: relative; display: flex; flex-direction: column; gap: 28px; }
+
+/* ── Cabecera ── */
+.lnew-head { display: flex; flex-direction: column; align-items: flex-start; max-width: 64ch; }
+.lnew-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px 5px 10px; margin-bottom: 14px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-strong);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+}
+.lnew-eyebrow i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); position: relative; }
+.lnew-eyebrow i::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--accent);
+  animation: lnew-ping 1.8s ease-out infinite;
+}
+.lnew-title.ant-typography { margin: 0 0 10px; font-size: clamp(28px, 3.6vw, 40px); line-height: 1.1; letter-spacing: -0.01em; text-wrap: balance; }
+.lnew-lead.ant-typography { margin: 0; font-size: 16px; line-height: 1.6; }
+
+/* ── La rejilla ── */
+.lnew-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+.lnew-tile {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: flex; flex-direction: column; gap: 18px;
+  padding: 22px; border-radius: 18px;
+  background: var(--bg-surface);
+  border: 1px solid rgba(var(--tint), 0.08);
+  min-width: 0;
+}
+.lnew-tile::before {
+  /* Una luz del color de cada novedad, arriba */
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  width: 340px; height: 340px; top: -190px; right: -120px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--glow), transparent);
+  opacity: 0.35;
+}
+.lnew-tile.is-cards { grid-column: span 4; flex-direction: row; align-items: center; --glow: var(--violet); }
+.lnew-tile.is-duel { grid-column: span 2; --glow: var(--danger); }
+.lnew-tile.is-coin { grid-column: span 2; --glow: var(--medal-gold); }
+.lnew-tile.is-chest { grid-column: span 2; --glow: var(--accent); }
+.lnew-tile.is-look { grid-column: span 2; --glow: var(--flame); }
+
+.lnew-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.is-cards .lnew-copy { flex: 0 0 34%; position: relative; z-index: 30; }
+.lnew-kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--glow); }
+.lnew-h.ant-typography { margin: 0; font-size: 21px; line-height: 1.2; }
+.lnew-p.ant-typography { font-size: 14.5px; line-height: 1.55; }
+
+/* ── Cartas: el abanico ── */
+.lnew-fan { position: relative; flex: 1; min-width: 0; height: 270px; }
+.lnew-fan-slot { position: absolute; left: 50%; top: 18px; width: 128px; margin-left: -64px; }
+.lnew-fan .lnew-card {
+  width: 128px; height: 186px; aspect-ratio: auto; cursor: default;
+  padding: 12px 10px 10px; gap: 6px;
+  /* Opacas: en el abanico se pisan unas a otras */
+  background: var(--bg-surface-2);
+  border-color: rgba(var(--tint), 0.12);
+  box-shadow: inset 0 2px 0 var(--rc), 0 14px 28px -14px rgba(0, 0, 0, 0.6);
+  transform: translateX(calc(var(--off) * 58px)) translateY(calc(var(--off) * var(--off) * 6px)) rotate(calc(var(--off) * 7deg));
+  transform-origin: 50% 120%;
+  transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+}
+.lnew-fan .card-emb { width: 52px; height: 52px; margin-top: 2px; }
+.lnew-fan .card-ico { width: 24px; height: 24px; }
+.lnew-fan .card-tile b { font-size: 17px; }
+.lnew-fan .card-tile p { font-size: 10.5px; }
+/* Al pasar el ratón se abre el abanico, y la carta de encima sube */
+.lnew-tile.is-cards:hover .lnew-card { transform: translateX(calc(var(--off) * 72px)) translateY(calc(var(--off) * var(--off) * 8px - 6px)) rotate(calc(var(--off) * 9deg)); }
+.lnew-fan .lnew-card:hover { transform: translateX(calc(var(--off) * 72px)) translateY(-22px) rotate(calc(var(--off) * 5deg)) scale(1.06) !important; }
+
+/* Los puntos que dan y quitan, flotando */
+.lnew-pop {
+  position: absolute; z-index: 20; pointer-events: none;
+  padding: 4px 10px; border-radius: 999px;
+  font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-size: 20px; font-weight: 800; line-height: 1;
+  color: var(--text-strong);
+  animation: lnew-float 3.2s ease-in-out infinite;
+}
+.lnew-pop.is-plus { top: 6px; left: calc(50% + 10px); background: rgba(var(--success-rgb), 0.9); }
+.lnew-pop.is-minus { top: 40px; left: calc(50% - 118px); background: rgba(var(--danger-rgb), 0.9); animation-delay: -1.6s; }
+
+/* ── Duelos: la pantalla partida en pequeño ── */
+.lnew-vs { position: relative; height: 150px; border-radius: 12px; overflow: hidden; background: rgba(var(--tint), 0.04); }
+.lnew-vs-half {
+  position: absolute; top: 0; bottom: 0; width: 62%;
+  display: flex; align-items: flex-end; padding: 12px 16px;
+  animation: lnew-vs-in 5s cubic-bezier(0.2, 1, 0.3, 1) infinite;
+}
+/* Sobre azul y rojo vivos el texto va siempre en blanco, en cualquier tema (como .rd-cta). */
+.lnew-vs-half b { font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif; font-size: 22px; letter-spacing: 0.04em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
+.lnew-vs-half.is-l { left: 0; clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%); background: linear-gradient(135deg, var(--accent), rgba(var(--accent-rgb), 0.55)); --from: -100%; }
+.lnew-vs-half.is-r { right: 0; justify-content: flex-end; clip-path: polygon(28% 0, 100% 0, 100% 100%, 0 100%); background: linear-gradient(315deg, var(--danger), rgba(var(--danger-rgb), 0.55)); --from: 100%; }
+.lnew-vs-word {
+  position: absolute; left: 50%; top: 50%; margin: -24px 0 0 -34px; width: 68px; text-align: center;
+  font-family: 'Barlow Condensed', 'League Spartan', 'Arial Narrow', sans-serif;
+  font-size: 46px; font-weight: 800; font-style: italic; line-height: 1; color: #fff;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+  animation: lnew-vs-slam 5s ease-out infinite;
+}
+.lnew-cta { margin-top: 8px; }
+
+/* ── Pachanguitas: la moneda girando ── */
+.lnew-coin-stage { position: relative; height: 150px; display: grid; place-items: center; perspective: 600px; }
+.lnew-coin { display: inline-flex; animation: lnew-coin 3.6s ease-in-out infinite; }
+.lnew-coin .coin-icon { box-shadow: inset 0 0 0 3px rgba(var(--medal-gold-deep-rgb), 0.9), inset 0 -5px 0 rgba(0, 0, 0, 0.15), 0 10px 30px -6px rgba(var(--medal-gold-rgb), 0.55); }
+.lnew-coin-shadow { position: absolute; bottom: 14px; width: 70px; height: 10px; border-radius: 50%; background: rgba(0, 0, 0, 0.35); animation: lnew-coin-shadow 3.6s ease-in-out infinite; }
+.lnew-earn { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; width: 100%; }
+.lnew-earn li { display: flex; align-items: baseline; gap: 6px; font-size: 13.5px; color: var(--text-muted); min-width: 0; }
+.lnew-earn b { font-size: 16px; color: var(--medal-gold); font-variant-numeric: tabular-nums; }
+
+/* ── Cofres ── */
+.lnew-chest-stage { position: relative; height: 150px; display: grid; place-items: center; }
+.lnew-chest-rays {
+  position: absolute; width: 230px; height: 230px; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(var(--accent-rgb), 0.22) 0 8deg, transparent 8deg 24deg);
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent);
+          mask: radial-gradient(closest-side, #000 30%, transparent);
+  animation: lnew-spin 14s linear infinite;
+}
+.lnew-chest { position: relative; display: inline-flex; animation: lnew-chest 3s ease-in-out infinite; transform-origin: 50% 100%; }
+.lnew-chest .es-gem { animation: co-gem 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.lnew-odds { display: flex; gap: 3px; width: 100%; height: 10px; margin: 6px 0 4px; }
+.lnew-odds span { border-radius: 3px; background: var(--rc); flex-basis: 0; }
+
+/* ── Tienda: un perfil vestido ── */
+.lnew-look { position: relative; height: 150px; border-radius: 12px; overflow: hidden; }
+.lnew-look-banner { position: absolute !important; inset: 0; height: 100% !important; }
+.lnew-look-who { position: absolute; left: 14px; bottom: 14px; z-index: 2; display: flex; align-items: center; gap: 12px; min-width: 0; }
+.lnew-look-avatar {
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg-surface); color: var(--text-strong); font-weight: 800; font-size: 20px; line-height: 1;
+}
+.lnew-look-text { display: flex; flex-direction: column; gap: 2px; line-height: 1.15; min-width: 0; }
+.lnew-look-name { font-size: 19px; font-weight: 800; }
+.lnew-look-text .cos-title { font-size: 12px; }
+
+/* En claro, el oro de las pachanguitas en su tono oscuro para que se lea */
+[data-color-mode="light"] .lnew-tile.is-coin { --glow: var(--medal-gold-deep); }
+[data-color-mode="light"] .lnew-earn b { color: var(--medal-gold-deep); }
+
+/* ── Capturas ── */
+.lnew-shots { margin-top: 4px; }
+
+/* ── Móvil y tableta ── */
+@media (max-width: 991px) {
+  .lnew-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lnew-tile.is-cards { grid-column: 1 / -1; }
+  .lnew-tile.is-duel, .lnew-tile.is-coin, .lnew-tile.is-chest, .lnew-tile.is-look { grid-column: span 1; }
+}
+@media (max-width: 680px) {
+  .lnew-grid { grid-template-columns: minmax(0, 1fr); }
+  .lnew-tile { padding: 18px; }
+  .lnew-tile.is-cards { flex-direction: column; align-items: stretch; }
+  .is-cards .lnew-copy { flex: none; }
+  .lnew-fan { flex: none; height: 270px; transform: scale(0.8); transform-origin: 50% 0; margin-bottom: -30px; }
+}
+
+@keyframes lnew-ping { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.8); opacity: 0; } }
+@keyframes lnew-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes lnew-spin { to { transform: rotate(1turn); } }
+@keyframes lnew-coin {
+  0%, 100% { transform: translateY(0) rotateY(0deg); }
+  40% { transform: translateY(-14px) rotateY(180deg); }
+  60% { transform: translateY(-14px) rotateY(360deg); }
+  80% { transform: translateY(0) rotateY(360deg); }
+}
+@keyframes lnew-coin-shadow { 0%, 100%, 80% { transform: scale(1); opacity: 1; } 40%, 60% { transform: scale(0.7); opacity: 0.55; } }
+@keyframes lnew-chest {
+  0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
+  66% { transform: translateY(-2px) rotate(-3deg); }
+  72% { transform: translateY(-2px) rotate(3deg); }
+  78% { transform: translateY(-2px) rotate(-2deg); }
+  84% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-6px); }
+}
+@keyframes lnew-vs-in {
+  0% { transform: translateX(var(--from)); opacity: 0; }
+  10%, 86% { transform: translateX(0); opacity: 1; }
+  96%, 100% { transform: translateX(0); opacity: 0; }
+}
+@keyframes lnew-vs-slam {
+  0%, 10% { transform: scale(2.6); opacity: 0; }
+  16% { transform: scale(0.92); opacity: 1; }
+  19% { transform: scale(1.04) rotate(-3deg); }
+  22%, 86% { transform: scale(1) rotate(0deg); opacity: 1; }
+  96%, 100% { transform: scale(1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lnew-eyebrow i::after, .lnew-pop, .lnew-coin, .lnew-coin-shadow, .lnew-chest-rays, .lnew-chest,
+  .lnew-chest .es-gem, .lnew-vs-half, .lnew-vs-word { animation: none; }
+  .lnew-fan .lnew-card { transition: none; }
+}
